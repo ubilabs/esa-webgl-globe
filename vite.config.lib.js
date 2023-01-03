@@ -1,17 +1,16 @@
-import path from 'path';
+import {resolve} from 'path';
 import {defineConfig} from 'vite';
-
-const rootDir = path.resolve(__dirname, 'src');
 
 export default defineConfig({
   base: './',
   resolve: {
-    alias: {'~': rootDir}
+    alias: {'~': resolve(__dirname, 'src')}
   },
   build: {
+    outDir: 'dist-module',
     emptyOutDir: true,
     lib: {
-      entry: path.resolve(rootDir, 'main.ts'),
+      entry: resolve(__dirname, 'src/main.ts'),
       name: 'globe',
       fileName: 'globe'
     }
