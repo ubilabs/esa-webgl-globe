@@ -6,7 +6,8 @@ A 3D globe library for rendering raster tiles in equirectangular projection.
 
 ### Links
 
-- Examples: https://storage.ubidev.net/...
+- Examples: https://storage.googleapis.com/ubilabs-webgl-globe/examples/index.html
+- GCP Project: https://console.cloud.google.com/home/dashboard?project=ubilabs-webgl-globe
 
 ### Team
 
@@ -43,7 +44,13 @@ npm start # start the server
 
 ### Deploy
 
-TBD
+#### Examples
+
+The example files will be build and copied to a Google CLoud Storage Bucket (see Links)
+
+```sh
+npm run deploy:examples
+```
 
 ### Release
 

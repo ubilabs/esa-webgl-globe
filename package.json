@@ -8,7 +8,7 @@
     "build": "tsc && npm run build:lib && npm run build:examples",
     "build:lib": "tsc && vite build -c vite.config.lib.js",
     "build:examples": "vite build -c vite.config.examples.js",
-    "deploy:examples": "npm run build && gsutil -m -h 'Cache-Control: no-cache' cp -r dist-examples/* gs://pw-test-stuff/webgl-globe/"
+    "deploy:examples": "npm run build && gsutil -m -h 'Cache-Control: no-cache' cp -r dist/examples/* gs://ubilabs-webgl-globe/examples/"
   },
   "devDependencies": {
     "glob": "^8.0.3",
