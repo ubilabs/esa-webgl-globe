@@ -1,0 +1,198 @@
+import {
+  Mesh,
+  PerspectiveCamera,
+  Scene,
+  SphereGeometry,
+  WebGLRenderer,
+  WebGLRenderTarget
+} from 'three';
+import {TileSelectionMaterial} from './tile-selector-material';
+import {TileSelectionDebugMaterial} from './tile-selector-debug-material';
+import {FullScreenQuad} from './full-screen-quad';
+import type {Tile, TileSelectorOptions} from './tile-selector';
+import {readPixelsAsync} from './read-pixels-async';
+import {WebGLUtils} from 'three/src/renderers/webgl/WebGLUtils';
+
+const DEFAULT_WIDTH = 480;
+const DEFAULT_HEIGHT = 270;
+
+export interface ITileSelectorImpl {
+  setOptions(options: TileSelectorOptions): Promise<void>;
+  computeVisibleTiles(
+    size: number[],
+    projectionMatrix: number[],
+    worldMatrix: number[]
+  ): Promise<Tile[]>;
+}
+
+export class TileSelectorImpl implements ITileSelectorImpl {
+  private options?: TileSelectorOptions;
+  private canvas?: OffscreenCanvas | HTMLCanvasElement;
+  private renderer?: WebGLRenderer;
+  private renderTarget?: WebGLRenderTarget;
+  private rendererUtils?: WebGLUtils;
+  private rgbaArray?: Uint8Array;
+
+  private readonly scene: Scene;
+  private readonly camera: PerspectiveCamera;
+  private readonly sphere: Mesh<SphereGeometry, TileSelectionMaterial>;
+
+  // debugging stuff
+  private isDebugMode: boolean = false;
+  private fsQuad: FullScreenQuad<TileSelectionDebugMaterial>;
+
+  constructor() {
+    this.camera = new PerspectiveCamera();
+    this.camera.matrixAutoUpdate = false;
+
+    this.sphere = new Mesh(new SphereGeometry(1, 90, 45), new TileSelectionMaterial());
+    this.scene = new Scene();
+    this.scene.add(this.sphere);
+
+    // used only for debug rendering
+    this.fsQuad = new FullScreenQuad(new TileSelectionDebugMaterial());
+  }
+
+  async setOptions(options: TileSelectorOptions): Promise<void> {
+    this.options = options;
+    this.isDebugMode = options.debug;
+  }
+
+  async computeVisibleTiles(size: number[], projectionMatrix: number[], worldMatrix: number[]) {
+    if (!this.renderer) this.initRenderer();
+
+    this.setSize(size[0], size[1]);
+    this.render(projectionMatrix, worldMatrix);
+
+    if (this.isDebugMode) {
+      this.renderDebug();
+    }
+
+    return this.collectData();
+  }
+
+  private setSize(width: number, height: number) {
+    this.canvas!.width = width;
+    this.canvas!.height = height;
+
+    this.renderTarget!.setSize(width, height);
+  }
+
+  private render(projectionMatrix: number[], worldMatrix: number[]) {
+    const renderer = this.renderer!;
+
+    this.camera.projectionMatrix.fromArray(projectionMatrix);
+    this.camera.matrix.fromArray(worldMatrix);
+    this.camera.matrixWorldNeedsUpdate = true;
+
+    renderer.setClearColor(0, 0);
+    renderer.setRenderTarget(this.renderTarget!);
+    renderer.render(this.scene, this.camera);
+  }
+
+  private renderDebug() {
+    const renderer = this.renderer!;
+
+    (this.fsQuad.material as TileSelectionDebugMaterial).uniforms.buf.value =
+      this.renderTarget!.texture;
+
+    renderer.setRenderTarget(null);
+    this.fsQuad.render(renderer);
+  }
+
+  private async collectData() {
+    const {width, height} = this.renderTarget!;
+    const renderer = this.renderer!;
+
+    if (!this.rgbaArray) {
+      this.rgbaArray = new Uint8Array(4 * width * height);
+    }
+
+    if (!renderer.capabilities.isWebGL2 || this.options!.useWorker) {
+      renderer.readRenderTargetPixels(this.renderTarget!, 0, 0, width, height, this.rgbaArray);
+    } else {
+      const texture = this.renderTarget!.texture;
+      const textureFormat = texture.format;
+      const textureType = texture.type;
+
+      await readPixelsAsync(
+        renderer.getContext() as WebGL2RenderingContext,
+        0,
+        0,
+        width,
+        height,
+        // note: @types/three got this function wrong
+        this.rendererUtils!.convert(textureFormat as any) as any,
+        this.rendererUtils!.convert(textureType as any) as any,
+        this.rgbaArray
+      );
+    }
+
+    // use Set to get unique values, then convert to uint8 so we can
+    // read rgba-bytes while preserving endianness
+    const uniqueTileIds = new Set(new Uint32Array(this.rgbaArray.buffer));
+    const u32Tiles = new Uint32Array(Array.from(uniqueTileIds));
+    const u8Tiles = new Uint8Array(u32Tiles.buffer);
+
+    const tiles = [];
+
+    for (let i = 0; i < u8Tiles.length; i += 4) {
+      if (u8Tiles[i + 3] === 0) continue;
+
+      const [x, y, zoom] = u8Tiles.subarray(i, i + 4);
+      tiles.push({x, y, zoom});
+    }
+
+    return tiles;
+  }
+
+  private initRenderer() {
+    this.canvas = this.createCanvas();
+
+    this.renderer = new WebGLRenderer({
+      canvas: this.canvas,
+      antialias: false,
+      alpha: true
+    });
+
+    this.renderTarget = new WebGLRenderTarget(DEFAULT_WIDTH, DEFAULT_HEIGHT, {
+      depthBuffer: false,
+      generateMipmaps: false
+    });
+
+    this.rendererUtils = new WebGLUtils(
+      this.renderer.getContext(),
+      this.renderer.extensions,
+      this.renderer.capabilities
+    );
+  }
+
+  private createCanvas() {
+    const width = DEFAULT_WIDTH;
+    const height = DEFAULT_HEIGHT;
+
+    if (typeof OffscreenCanvas !== 'undefined' && this.options && this.options.useOffscreenCanvas) {
+      return new OffscreenCanvas(width, height);
+    }
+
+    const c = document.createElement('canvas');
+    c.width = width;
+    c.height = height;
+
+    if (this.isDebugMode) {
+      c.style.cssText = `
+        position: absolute; 
+        z-index: 99; 
+        top: 0; right: 0; 
+        width: 25vw; height: 25vh; 
+        border: 1px solid white; 
+        background: repeating-conic-gradient(#808080 0% 25%, white 0% 50%) 
+                50% / 20px 20px;
+      `;
+
+      document.body.appendChild(c);
+    }
+
+    return c;
+  }
+}

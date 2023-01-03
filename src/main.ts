@@ -1,3 +1,4 @@
-export function hello(a: string) {
-  console.log(`hello ${a}`);
-}
+import {Renderer} from './renderer/renderer';
+import {TileSelector} from './tile-selector/tile-selector';
+
+export {Renderer, TileSelector};

@@ -10,7 +10,11 @@
     "build:examples": "vite build -c vite.config.examples.js",
     "deploy:examples": "npm run build && gsutil -m -h 'Cache-Control: no-cache' cp -r dist/examples/* gs://ubilabs-webgl-globe/examples/"
   },
+  "dependencies": {
+    "three": "^0.148.0"
+  },
   "devDependencies": {
+    "@types/three": "^0.147.1",
     "glob": "^8.0.3",
     "typescript": "^4.9.3",
     "vite": "^4.0.0"
