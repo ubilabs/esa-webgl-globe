@@ -17,7 +17,7 @@ export default defineConfig({
   base: './',
   resolve: {alias: {'~': resolve(__dirname, 'src')}},
   build: {
-    outDir: 'dist-examples',
+    outDir: 'dist/examples',
     emptyOutDir: true,
     rollupOptions: {
       input

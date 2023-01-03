@@ -7,7 +7,7 @@ export default defineConfig({
     alias: {'~': resolve(__dirname, 'src')}
   },
   build: {
-    outDir: 'dist-module',
+    outDir: 'dist/lib',
     emptyOutDir: true,
     lib: {
       entry: resolve(__dirname, 'src/main.ts'),
