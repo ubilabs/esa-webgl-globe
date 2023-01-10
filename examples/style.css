@@ -1,0 +1,16 @@
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+#info {
+  position: absolute;
+  bottom: 2em;
+  left: 2em;
+  background: #aaa;
+  padding: 1em 2em;
+  box-shadow: 1px 1px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}

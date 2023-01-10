@@ -4,6 +4,7 @@ import {getDebugTexture} from '../../src/renderer/lib/debug-texture';
 import {TileData} from '../../src/renderer/types/tile';
 
 const zoom = 2;
+
 const columns = Math.pow(2, zoom + 1);
 const rows = Math.pow(2, zoom);
 const tileCount = columns * rows;
@@ -31,8 +32,9 @@ async function getTiles() {
 }
 
 (async function () {
+  const container = document.getElementById('container')!;
   const tiles = await getTiles();
-  const renderer = new Renderer();
+  const renderer = new Renderer({container});
   renderer.updateTiles(tiles);
   console.log({tiles});
 })();
