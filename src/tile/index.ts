@@ -1,2 +1,2 @@
-export {Tile} from './tile';
-export type {TileId, TileIdArray} from './tile';
+export {TileId} from './tileId';
+export type {TileId, TileIdArray} from './tileId';
