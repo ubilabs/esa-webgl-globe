@@ -1,4 +1,4 @@
-import {TileIdCache} from './tile-cache';
+import {TileIdCache} from './tile-id-cache';
 
 export type TileIdArray = [x: number, y: number, zoom: number];
 
@@ -19,7 +19,7 @@ export class TileId {
   readonly zoom: number;
 
   private constructor(x: number, y: number, zoom: number) {
-    this.id = TileId.getStringId(x, y, zoom);
+    this.id = TileId.createStringId(x, y, zoom);
     this.x = x;
     this.y = y;
     this.zoom = zoom;
@@ -53,23 +53,23 @@ export class TileId {
     return children;
   }
 
-  private static tileCache = new TileIdCache();
+  private static cache = new TileIdCache();
 
   static fromXYZ(x: number, y: number, zoom: number): TileId {
-    const id = TileId.getStringId(x, y, zoom);
-    if (!TileId.tileCache.has(id)) {
-      TileId.tileCache.add(Object.freeze(new TileId(x, y, zoom)));
+    const id = TileId.createStringId(x, y, zoom);
+    if (!TileId.cache.has(id)) {
+      TileId.cache.add(Object.freeze(new TileId(x, y, zoom)));
     }
 
-    return TileId.tileCache.get(id) as TileId;
+    return TileId.cache.get(id) as TileId;
   }
 
   static fromId(id: string): TileId {
-    if (!TileId.tileCache.has(id)) {
-      TileId.tileCache.add(Object.freeze(new TileId(...TileId.parseStringId(id))));
+    if (!TileId.cache.has(id)) {
+      TileId.cache.add(Object.freeze(new TileId(...TileId.parseStringId(id))));
     }
 
-    return TileId.tileCache.get(id) as TileId;
+    return TileId.cache.get(id) as TileId;
   }
 
   static parseStringId(id: string): TileIdArray {
@@ -77,7 +77,7 @@ export class TileId {
     return [x, y, zoom];
   }
 
-  static getStringId(x: number, y: number, zoom: number): string {
+  static createStringId(x: number, y: number, zoom: number): string {
     return `${zoom}/${x}/${y}`;
   }
 }
