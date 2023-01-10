@@ -9,7 +9,7 @@ export type TileIdArray = [x: number, y: number, zoom: number];
  * tile-objects to be used like primitives in comparisons, maps, sets and
  * so on.
  *
- * A TileId instance can be retrieved using the static methods `TileId.fromId()`
+ * A TileId instance can be retrieved using the static methods `TileId.fromString()`
  * and `TileId.fromXYZ()`. The tileIds are of the format `z/x/y`.
  */
 export class TileId {
@@ -64,7 +64,7 @@ export class TileId {
     return TileId.cache.get(id) as TileId;
   }
 
-  static fromId(id: string): TileId {
+  static fromString(id: string): TileId {
     if (!TileId.cache.has(id)) {
       TileId.cache.add(Object.freeze(new TileId(...TileId.parseStringId(id))));
     }
