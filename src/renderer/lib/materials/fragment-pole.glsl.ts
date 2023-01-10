@@ -16,7 +16,7 @@ void main() {
   float r = floor(index / columns) / rows;
   float c = mod(index, columns) / columns;
 
-  // pole = 1 for north pole and = 0 for south
+  // pole = 1 for north pole and 0 for south
 
   float x = vUv.x;
   float k = 0.0;

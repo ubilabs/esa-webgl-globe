@@ -38,7 +38,7 @@ void main() {
   float xSphere = sin(lng / 2.0) * cf;
   float zSphere = cos(lng / 2.0) * cf;
   float ySphere = y;
-  vec4 spherePos = vec4(xSphere, ySphere, zSphere, 1.0) * size;
+  vec4 spherePos = vec4(xSphere, ySphere, zSphere, 1.0);
 
   // equirectangular
   float xEqui = newPosition.x * 2.0;
@@ -49,4 +49,4 @@ void main() {
 
   gl_Position = projectionMatrix * modelViewMatrix * finalPos;
 }
-`
+`;

@@ -1,10 +1,8 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
-import {Globe, TileDefinition} from './globe/globe';
-
-interface RendererOptions {
-  container?: HTMLElement;
-}
+import {TileCollection} from './tile-collection';
+import type {RendererProps} from './types/renderer';
+import type {TileData} from './types/tile';
 
 export class Renderer {
   container: HTMLElement;
@@ -12,18 +10,19 @@ export class Renderer {
   scene!: THREE.Scene;
   webglRenderer!: THREE.Renderer;
   controls!: OrbitControls;
-  globe!: Globe;
+  tileCollection!: TileCollection;
 
-  constructor(options: RendererOptions = {}) {
+  constructor(options: RendererProps = {}) {
     this.container = options.container || document.body;
     this.initScene();
-    this.addResizeListener();
-    this.animate();
+    this._addResizeListener();
+    this._animate();
   }
 
   private initScene() {
     // camera
-    this.camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.001, 5);
+    const {width, height} = this.container.getBoundingClientRect();
+    this.camera = new THREE.PerspectiveCamera(70, width / height, 0.001, 5);
     this.camera.position.z = 3;
     this.camera.position.y = 0;
 
@@ -32,9 +31,9 @@ export class Renderer {
 
     // renderer
     this.webglRenderer = new THREE.WebGLRenderer({antialias: true});
-    this.webglRenderer.setSize(window.innerWidth, window.innerHeight);
+    this.webglRenderer.setSize(width, height);
     // @ts-ignore
-    this.webglRenderer.setAnimationLoop(this.animate.bind(this));
+    this.webglRenderer.setAnimationLoop(this._animate.bind(this));
     this.container.appendChild(this.webglRenderer.domElement);
 
     // controls
@@ -50,31 +49,33 @@ export class Renderer {
     this.controls.minDistance = 1.05; // ~ zoom level 7
 
     // globe
-    this.globe = new Globe({
-      scene: this.scene,
-      projection: 0,
-      renderOffset: 0
-    });
+    this.tileCollection = new TileCollection({scene: this.scene});
   }
 
-  private animate() {
+  private _animate() {
     this.webglRenderer.render(this.scene, this.camera);
     this.controls.update();
     const cameraDistance = this.camera.position.length() - 1;
     this.controls.rotateSpeed = Math.max(0.05, Math.min(1.0, cameraDistance - 0.2));
   }
 
-  private addResizeListener() {
-    window.addEventListener('resize', () => {
-      const width = window.innerWidth;
-      const height = window.innerHeight;
-      this.webglRenderer.setSize(width, height);
-      this.camera.aspect = width / height;
-      this.camera.updateProjectionMatrix();
-    });
+  private _addResizeListener() {
+    this._resize = this._resize.bind(this);
+    window.addEventListener('resize', this._resize);
   }
 
-  async updateTiles(tiles: TileDefinition[]) {
-    this.globe.updateTiles(tiles);
+  private _resize() {
+    const {width, height} = this.container.getBoundingClientRect();
+    this.webglRenderer.setSize(width, height);
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
+  }
+
+  async updateTiles(tiles: TileData[]) {
+    this.tileCollection.updateTiles(tiles);
+  }
+
+  destroy() {
+    window.removeEventListener('resize', this._resize);
   }
 }
