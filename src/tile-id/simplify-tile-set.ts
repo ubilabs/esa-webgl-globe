@@ -1,7 +1,7 @@
 import {TileId} from './tile-id';
 
 function filterHierarchicalDuplicates(tileIds: string[]) {
-  const tiles = tileIds.map(id => TileId.fromId(id));
+  const tiles = tileIds.map(id => TileId.fromString(id));
   const tileset = new Set<TileId>(tiles);
 
   // sort by zoom-level
