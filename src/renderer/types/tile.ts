@@ -3,6 +3,7 @@ export interface TileProps {
   y: number;
   z: number;
   order: number;
+  url: string;
   scene: THREE.Scene;
   texture: THREE.Texture;
 }

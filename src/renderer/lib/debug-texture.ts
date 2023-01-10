@@ -1,9 +1,9 @@
 import type {TileData} from '../types/tile';
 
 interface Options {
-  rectColor: string;
-  rectSize: number;
-  backgroundColor: string;
+  rectColor?: string;
+  rectSize?: number;
+  backgroundColor?: string;
 }
 
 export function getDebugTexture(tile: TileData, options?: Options): Promise<ImageBitmap> {

@@ -8,25 +8,27 @@ import type {TileProps} from './types/tile';
 const GEOMETRIES = precalcGeometries(ZOOM_SEGMENT_MAP);
 
 export class Tile {
-  x: number;
-  y: number;
-  z: number;
-  order: number;
-  scene: THREE.Scene;
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly order: number;
+  url: string;
+  readonly scene: THREE.Scene;
   texture: TileProps['texture'];
-  index: number;
-  segments: number;
-  isNorthRow: boolean;
-  isSouthRow: boolean;
-  material: THREE.Material;
-  geometry: THREE.BufferGeometry;
-  mesh: THREE.Mesh;
+  readonly index: number;
+  readonly segments: number;
+  readonly isNorthRow: boolean;
+  readonly isSouthRow: boolean;
+  readonly material: THREE.Material;
+  readonly geometry: THREE.BufferGeometry;
+  readonly mesh: THREE.Mesh;
 
   constructor(options: TileProps) {
     this.x = options.x;
     this.y = options.y;
     this.z = options.z;
     this.order = options.order;
+    this.url = options.url;
     this.scene = options.scene;
     this.texture = options.texture;
 
@@ -96,23 +98,21 @@ export class Tile {
     }
   }
 
-  switchTexture(texture: THREE.Texture, noFade: boolean) {
+  switchTexture(texture: THREE.Texture, fade: boolean, speed = 0.045) {
     // @ts-ignore
-    const fade = this.material.uniforms.textureFade.value;
-    const active = fade < 0.5 ? 0 : 1;
+    const fadeValue = this.material.uniforms.textureFade.value;
+    const active = fadeValue < 0.5 ? 0 : 1;
     const target = active === 0 ? 1 : 0;
     const otherTexture = active === 0 ? 'texture1' : 'texture0';
 
     // @ts-ignore
     this.material.uniforms[otherTexture].value = texture;
 
-    if (noFade) {
+    if (!fade) {
       // @ts-ignore
       this.material.uniforms.textureFade.value = target;
       return;
     }
-
-    const speed = 0.045;
 
     this._fade(target, speed);
   }
