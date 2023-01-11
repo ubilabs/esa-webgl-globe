@@ -24,6 +24,6 @@ export function getTiles() {
 const tiles = getTiles();
 
 const renderer = new Renderer();
-renderer.updateTiles(tiles);
+await renderer.updateTiles(tiles);
 
 console.log({tiles});

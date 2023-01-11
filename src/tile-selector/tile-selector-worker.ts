@@ -1,4 +1,5 @@
-import {ITileSelectorImpl, TileSelectorImpl} from './tile-selector-impl';
+import {TileSelectorImpl} from './tile-selector-impl';
+import type {ITileSelectorImpl} from './tile-selector-impl';
 
 console.log('worker started.');
 

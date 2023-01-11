@@ -1,17 +1,13 @@
-import {
-  Mesh,
-  PerspectiveCamera,
-  Scene,
-  SphereGeometry,
-  WebGLRenderer,
-  WebGLRenderTarget
-} from 'three';
+import {Mesh, PerspectiveCamera, Scene, SphereGeometry, WebGLRenderer, WebGLRenderTarget} from 'three';
+import {WebGLUtils} from 'three/src/renderers/webgl/WebGLUtils';
+
 import {TileSelectionMaterial} from './tile-selector-material';
 import {TileSelectionDebugMaterial} from './tile-selector-debug-material';
-import {FullScreenQuad} from './full-screen-quad';
-import type {Tile, TileSelectorOptions} from './tile-selector';
-import {readPixelsAsync} from './read-pixels-async';
-import {WebGLUtils} from 'three/src/renderers/webgl/WebGLUtils';
+import {FullScreenQuad} from '../webgl/full-screen-quad';
+import {readPixelsAsync} from '../webgl/read-pixels-async';
+
+import type {TileSelectorOptions} from './tile-selector';
+import {TileId} from '../tile-id';
 
 const DEFAULT_WIDTH = 480;
 const DEFAULT_HEIGHT = 270;
@@ -22,7 +18,7 @@ export interface ITileSelectorImpl {
     size: number[],
     projectionMatrix: number[],
     worldMatrix: number[]
-  ): Promise<Tile[]>;
+  ): Promise<string[]>;
 }
 
 export class TileSelectorImpl implements ITileSelectorImpl {
@@ -35,6 +31,7 @@ export class TileSelectorImpl implements ITileSelectorImpl {
 
   private readonly scene: Scene;
   private readonly camera: PerspectiveCamera;
+  private readonly tileSelectionMaterial: TileSelectionMaterial;
   private readonly sphere: Mesh<SphereGeometry, TileSelectionMaterial>;
 
   // debugging stuff
@@ -45,7 +42,11 @@ export class TileSelectorImpl implements ITileSelectorImpl {
     this.camera = new PerspectiveCamera();
     this.camera.matrixAutoUpdate = false;
 
-    this.sphere = new Mesh(new SphereGeometry(1, 90, 45), new TileSelectionMaterial());
+    this.tileSelectionMaterial = new TileSelectionMaterial();
+    this.sphere = new Mesh(
+      new SphereGeometry(1, 90, 45),
+      this.tileSelectionMaterial
+    );
     this.scene = new Scene();
     this.scene.add(this.sphere);
 
@@ -58,7 +59,11 @@ export class TileSelectorImpl implements ITileSelectorImpl {
     this.isDebugMode = options.debug;
   }
 
-  async computeVisibleTiles(size: number[], projectionMatrix: number[], worldMatrix: number[]) {
+  async computeVisibleTiles(
+    size: number[],
+    projectionMatrix: number[],
+    worldMatrix: number[]
+  ): Promise<string[]> {
     if (!this.renderer) this.initRenderer();
 
     this.setSize(size[0], size[1]);
@@ -74,6 +79,7 @@ export class TileSelectorImpl implements ITileSelectorImpl {
   private setSize(width: number, height: number) {
     this.canvas!.width = width;
     this.canvas!.height = height;
+    this.rgbaArray = undefined;
 
     this.renderTarget!.setSize(width, height);
   }
@@ -85,6 +91,9 @@ export class TileSelectorImpl implements ITileSelectorImpl {
     this.camera.matrix.fromArray(worldMatrix);
     this.camera.matrixWorldNeedsUpdate = true;
 
+    this.tileSelectionMaterial.uniforms.renderScale.value = 0.25;
+    this.tileSelectionMaterial.uniforms.subsamplingFactor.value = 1.2;
+
     renderer.setClearColor(0, 0);
     renderer.setRenderTarget(this.renderTarget!);
     renderer.render(this.scene, this.camera);
@@ -93,14 +102,13 @@ export class TileSelectorImpl implements ITileSelectorImpl {
   private renderDebug() {
     const renderer = this.renderer!;
 
-    (this.fsQuad.material as TileSelectionDebugMaterial).uniforms.buf.value =
-      this.renderTarget!.texture;
+    this.fsQuad.material.uniforms.buf.value = this.renderTarget!.texture;
 
     renderer.setRenderTarget(null);
     this.fsQuad.render(renderer);
   }
 
-  private async collectData() {
+  private async collectData(): Promise<string[]> {
     const {width, height} = this.renderTarget!;
     const renderer = this.renderer!;
 
@@ -108,8 +116,18 @@ export class TileSelectorImpl implements ITileSelectorImpl {
       this.rgbaArray = new Uint8Array(4 * width * height);
     }
 
+    // readRenderTargetPixels is used only when running in a worker with OffscreenCanvcas
+    // (in this case doing it synchronously is perfectly fine) or when other means aren't
+    // available (WebGL1)
     if (!renderer.capabilities.isWebGL2 || this.options!.useWorker) {
-      renderer.readRenderTargetPixels(this.renderTarget!, 0, 0, width, height, this.rgbaArray);
+      renderer.readRenderTargetPixels(
+        this.renderTarget!,
+        0,
+        0,
+        width,
+        height,
+        this.rgbaArray
+      );
     } else {
       const texture = this.renderTarget!.texture;
       const textureFormat = texture.format;
@@ -134,13 +152,13 @@ export class TileSelectorImpl implements ITileSelectorImpl {
     const u32Tiles = new Uint32Array(Array.from(uniqueTileIds));
     const u8Tiles = new Uint8Array(u32Tiles.buffer);
 
-    const tiles = [];
+    const tiles: string[] = [];
 
     for (let i = 0; i < u8Tiles.length; i += 4) {
       if (u8Tiles[i + 3] === 0) continue;
 
       const [x, y, zoom] = u8Tiles.subarray(i, i + 4);
-      tiles.push({x, y, zoom});
+      tiles.push(TileId.createStringId(x, y, zoom));
     }
 
     return tiles;
@@ -171,7 +189,11 @@ export class TileSelectorImpl implements ITileSelectorImpl {
     const width = DEFAULT_WIDTH;
     const height = DEFAULT_HEIGHT;
 
-    if (typeof OffscreenCanvas !== 'undefined' && this.options && this.options.useOffscreenCanvas) {
+    if (
+      typeof OffscreenCanvas !== 'undefined' &&
+      this.options &&
+      this.options.useOffscreenCanvas
+    ) {
       return new OffscreenCanvas(width, height);
     }
 
