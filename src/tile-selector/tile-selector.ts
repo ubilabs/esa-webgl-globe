@@ -1,17 +1,12 @@
 import {ITileSelectorImpl, TileSelectorImpl} from './tile-selector-impl';
 import {TileSelectorWorkerProxy} from './tile-selector-worker-proxy';
-import {PerspectiveCamera, Vector2, Matrix4} from 'three';
+import {PerspectiveCamera, Vector2} from 'three';
+import {TileId} from '../tile-id';
 
 export type TileSelectorOptions = {
   debug: boolean;
   useOffscreenCanvas: boolean;
   useWorker: boolean;
-};
-
-export type Tile = {
-  x: number;
-  y: number;
-  zoom: number;
 };
 
 const DEFAULT_OPTIONS: TileSelectorOptions = {
@@ -52,17 +47,18 @@ export class TileSelector {
     this.camera = camera;
   }
 
-  async getVisibleTiles(): Promise<Tile[]> {
-    if (!this.camera) throw new Error('getVisibleTiles called without a camera set');
+  async getVisibleTiles(): Promise<Set<TileId>> {
+    if (!this.camera)
+      throw new Error('getVisibleTiles called without a camera');
 
     if (!this.initialized) await this.initialize();
 
-    const rotationMatrix = new Matrix4().makeRotationY(Math.PI / 2);
-
-    return this.impl!.computeVisibleTiles(
+    const tileIds = await this.impl!.computeVisibleTiles(
       this.size.toArray(),
       this.camera.projectionMatrix.toArray(),
-      rotationMatrix.multiply(this.camera.matrix).toArray()
+      this.camera.matrix.toArray()
     );
+
+    return new Set(tileIds.map(id => TileId.fromString(id)));
   }
 }

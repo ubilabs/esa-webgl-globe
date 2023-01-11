@@ -12,9 +12,16 @@ selector.setCamera(renderer.camera);
 selector.setSize(new Vector2(window.innerWidth, window.innerHeight).multiplyScalar(0.25).round());
 
 async function animate() {
-  const tiles = await selector.getVisibleTiles();
-  const newTiles = tiles.map(tile => ({...tile, url: 'debug/1'}));
-  renderer.updateTiles(newTiles);
+  const tileIds = await selector.getVisibleTiles();
+
+  const renderTiles = [];
+  for (let tileId of tileIds) {
+    const {x, y, zoom} = tileId;
+    renderTiles.push({x, y, zoom, url: 'debug/1'});
+  }
+
+  await renderer.updateTiles(renderTiles);
   requestAnimationFrame(animate);
 }
+
 animate();

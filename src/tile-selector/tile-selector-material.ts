@@ -1,13 +1,27 @@
 import {IUniform, ShaderMaterial} from 'three';
 
 type TileSelectionMaterialUniforms = {
-  downscaleFactor: IUniform<number>;
+  renderScale: IUniform<number>;
+  subsamplingFactor: IUniform<number>;
   tilesize: IUniform<number>;
 };
 
+/**
+ * The TileSelectorMaterial renders the optimal tile for every fragment based
+ * on the texture-coordinate derivatives.
+ */
 export class TileSelectionMaterial extends ShaderMaterial {
   uniforms: TileSelectionMaterialUniforms = {
-    downscaleFactor: {value: 0.25},
+    /**
+     * renderScale is the scaling of the viewport, by default we render at a quarter
+     * of the original size.
+     */
+    renderScale: {value: 0.25},
+    /**
+     * Additional scaling for subsampling to improve performance and reduce the
+     * number of tiles to load
+     */
+    subsamplingFactor: {value: 1.0},
     tilesize: {value: 256.0}
   };
 
@@ -20,31 +34,41 @@ export class TileSelectionMaterial extends ShaderMaterial {
     varying vec2 vUV;
 
     void main() {
-      vUV = vec2(uv.x, uv.y);
+      vUV = vec2(uv.x, 1.0 - uv.y);
       gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
     }
   `;
 
   //language=GLSL
   fragmentShader = `
-    uniform float downscaleFactor;
+    precision highp float;
+
+    uniform float renderScale;
+    uniform float subsamplingFactor;
     uniform float tilesize;
 
     varying vec2 vUV;
 
-    const float maxZoomLevel = 7.0;
+    // the maximum zoomlevel we can reliably handle with single precision
+    // (highp) float while still being able to tell single pixels apart 
+    // (max safe integer is 2^24-1). 
+    // We could possibly go up to zoomlevel 22 or 23, since we don't actually 
+    // need exact pixel-coordinates here, just the tile-index.
+    const float maxZoomLevel = 15.0;
 
     void main() {
-      float extent = tilesize * exp2(maxZoomLevel + 1.0);
+      float extent = tilesize * exp2(maxZoomLevel);
 
-      // pixel coordinates within a virtual texture assumed to be 
+      // pixel coordinates within a virtual texture assumed to be covering the whole 
+      // earth 
       vec2 virtualTexCoordPx = vUV * extent;
 
-      // those are the change rates of the virtual texture
-      vec2 dVtcDx = dFdx(virtualTexCoordPx) * downscaleFactor;
-      vec2 dVtcDy = dFdy(virtualTexCoordPx) * downscaleFactor;
+      // those are the change rates of the uv-coordinate along the fragment 
+      // x- and y-axes
+      vec2 dVtcDx = dFdx(virtualTexCoordPx) * renderScale * subsamplingFactor;
+      vec2 dVtcDy = dFdy(virtualTexCoordPx) * renderScale * subsamplingFactor;
 
-      // dot(v, v) is essentially the squared length of vector v (the square part of this
+      // dot(v, v) is the squared length of vector v (the square part of this
       // is compensated for after getting the logarithm). This is essentially the total 
       // distance in texture coordinates from one screen pixel to the next, computed both 
       // in screen x and y directions. 
@@ -63,7 +87,7 @@ export class TileSelectionMaterial extends ShaderMaterial {
         zoom / 255.0,
         1.0
       );
-      
+
       // debug version
       #ifdef DEBUG
         gl_FragColor = vec4(
@@ -73,7 +97,7 @@ export class TileSelectionMaterial extends ShaderMaterial {
           1.0
         );
       #endif
-      
+
       // 4 8bit output-channels: 
       //  - r: x tile coordinate (up to zoom 8)
       //  - g: y tile coordinate (up to zoom 8)
