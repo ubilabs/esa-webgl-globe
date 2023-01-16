@@ -1,6 +1,7 @@
 export default `
 varying vec2 vUv;
-uniform float index;
+uniform float x;
+uniform float y;
 uniform float zoom;
 uniform float projection;
 uniform float size;
@@ -13,16 +14,13 @@ void main() {
   float columns = pow(2.0, zoom + 1.0);
   float rows = pow(2.0, zoom);
 
-  float r = floor(index / columns) / rows;
-  float c = mod(index, columns) / columns;
-
   /*
    * Transform position so that:
    * position.x goes from -1...1
    * position.y goes from -0.5...0.5
    * position.z = 0
    */
-  vec3 newPosition = (vec3(c, r, 0.0) - vec3(0.5)) * vec3(2.0, 1.0, 0.0);
+  vec3 newPosition = (vec3(x / columns, y / rows, 0.0) - vec3(0.5)) * vec3(2.0, 1.0, 0.0);
 
   // add offset for every single vertex so that the quads vertices lie around the tile's center
   vec3 vertexOffset = (position / 2.0 + 0.5) * (2.0 / columns);
@@ -33,11 +31,11 @@ void main() {
   float lat = newPosition.y * PI;
 
   // sphere
-  float y = sin(lat);
-  float cf = sqrt(1.0 - pow(y, 2.0));
+  float py = sin(lat);
+  float cf = sqrt(1.0 - pow(py, 2.0));
   float xSphere = sin(lng / 2.0) * cf;
   float zSphere = cos(lng / 2.0) * cf;
-  float ySphere = y;
+  float ySphere = py;
   vec4 spherePos = vec4(xSphere, ySphere, zSphere, 1.0);
 
   // equirectangular

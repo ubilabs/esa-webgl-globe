@@ -14,8 +14,7 @@ export class Tile {
   readonly order: number;
   url: string;
   readonly scene: THREE.Scene;
-  texture: TileProps['texture'];
-  readonly index: number;
+  readonly texture: TileProps['texture'];
   readonly segments: number;
   readonly isNorthRow: boolean;
   readonly isSouthRow: boolean;
@@ -32,10 +31,8 @@ export class Tile {
     this.scene = options.scene;
     this.texture = options.texture;
 
-    const columns = Math.pow(2, this.z + 1);
     const rows = Math.pow(2, this.z);
 
-    this.index = columns * this.y + this.x;
     this.segments = ZOOM_SEGMENT_MAP[this.z];
     this.isNorthRow = this.y === rows - 1;
     this.isSouthRow = this.y === 0;
@@ -62,8 +59,9 @@ export class Tile {
 
   private _getMaterial(texture: THREE.Texture) {
     const uniforms = {
+      x: {value: this.x},
+      y: {value: this.y},
       zoom: {value: this.z},
-      index: {value: this.index},
       texture0: {value: texture},
       texture1: {value: null},
       textureFade: {value: 0},
@@ -78,10 +76,7 @@ export class Tile {
 
   private _getMesh(geometry: THREE.BufferGeometry, material: THREE.Material) {
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.userData.index = this.index;
-    mesh.userData.zoom = this.z;
     mesh.renderOrder = this.z * 100 + this.order; // ensure lower zoom tiles are rendered first
-    material.depthTest = false; // required so that the render order is used correctly
     return mesh;
   }
 

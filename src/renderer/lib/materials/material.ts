@@ -8,7 +8,8 @@ export function getTileMaterial(uniforms = {}) {
     uniforms: uniforms,
     vertexShader,
     fragmentShader,
-    transparent: true
+    transparent: true,
+    depthTest: false // required so that the render order is used correctly
   });
 }
 
@@ -17,6 +18,7 @@ export function getTileMaterialPole(uniforms = {}) {
     uniforms: uniforms,
     vertexShader,
     fragmentShader: fragmentShaderPole,
-    transparent: true
+    transparent: true,
+    depthTest: false // required so that the render order is used correctly
   });
 }
