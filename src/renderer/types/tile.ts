@@ -1,7 +1,7 @@
+import type {TileId} from '../../tile-id';
+
 export interface TileProps {
-  x: number;
-  y: number;
-  z: number;
+  tileId: TileId;
   order: number;
   url: string;
   scene: THREE.Scene;
@@ -9,9 +9,7 @@ export interface TileProps {
 }
 
 export interface TileData {
-  x: number;
-  y: number;
-  z: number;
+  tileId: TileId;
   url: string;
   order: number;
   data?: ImageBitmap;
