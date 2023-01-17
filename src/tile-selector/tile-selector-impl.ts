@@ -1,4 +1,11 @@
-import {Mesh, PerspectiveCamera, Scene, SphereGeometry, WebGLRenderer, WebGLRenderTarget} from 'three';
+import {
+  Mesh,
+  PerspectiveCamera,
+  Scene,
+  SphereGeometry,
+  WebGLRenderer,
+  WebGLRenderTarget
+} from 'three';
 import {WebGLUtils} from 'three/src/renderers/webgl/WebGLUtils';
 
 import {TileSelectionMaterial} from './tile-selector-material';
@@ -43,10 +50,8 @@ export class TileSelectorImpl implements ITileSelectorImpl {
     this.camera.matrixAutoUpdate = false;
 
     this.tileSelectionMaterial = new TileSelectionMaterial();
-    this.sphere = new Mesh(
-      new SphereGeometry(1, 90, 45),
-      this.tileSelectionMaterial
-    );
+    this.sphere = new Mesh(new SphereGeometry(1, 90, 45), this.tileSelectionMaterial);
+    this.sphere.geometry.rotateY(Math.PI / -2);
     this.scene = new Scene();
     this.scene.add(this.sphere);
 
@@ -120,14 +125,7 @@ export class TileSelectorImpl implements ITileSelectorImpl {
     // (in this case doing it synchronously is perfectly fine) or when other means aren't
     // available (WebGL1)
     if (!renderer.capabilities.isWebGL2 || this.options!.useWorker) {
-      renderer.readRenderTargetPixels(
-        this.renderTarget!,
-        0,
-        0,
-        width,
-        height,
-        this.rgbaArray
-      );
+      renderer.readRenderTargetPixels(this.renderTarget!, 0, 0, width, height, this.rgbaArray);
     } else {
       const texture = this.renderTarget!.texture;
       const textureFormat = texture.format;
@@ -189,11 +187,7 @@ export class TileSelectorImpl implements ITileSelectorImpl {
     const width = DEFAULT_WIDTH;
     const height = DEFAULT_HEIGHT;
 
-    if (
-      typeof OffscreenCanvas !== 'undefined' &&
-      this.options &&
-      this.options.useOffscreenCanvas
-    ) {
+    if (typeof OffscreenCanvas !== 'undefined' && this.options && this.options.useOffscreenCanvas) {
       return new OffscreenCanvas(width, height);
     }
 

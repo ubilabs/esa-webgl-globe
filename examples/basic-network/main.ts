@@ -1,7 +1,6 @@
 import '../style.css';
 import {Vector2} from 'three';
 import {Renderer, TileSelector} from '../../src/main';
-import {getDebugTexture} from '../../src/renderer/lib/debug-texture';
 import type {TileData} from '../../src/renderer/types/tile';
 
 const renderer = new Renderer();
@@ -15,21 +14,19 @@ selector.setCamera(renderer.camera);
 selector.setSize(new Vector2(window.innerWidth, window.innerHeight).multiplyScalar(0.25).round());
 
 async function animate() {
-  const tiles = await selector.getVisibleTiles();
-  const newTiles = tiles.map(
-    tile =>
+  const tileIds = [...(await selector.getVisibleTiles())];
+  const newTiles = tileIds.map(
+    tileId =>
       ({
-        x: tile.x,
-        y: tile.y,
-        z: tile.zoom,
-        url: `https://storage.googleapis.com/esa-cfs-tiles/1.9.0/basemaps/colored/${tile.zoom}/${tile.x}/${tile.y}.png`,
+        tileId,
+        url: `https://storage.googleapis.com/esa-cfs-tiles/1.9.0/basemaps/colored/${tileId.zoom}/${tileId.x}/${tileId.y}.png`,
         order: 0
       } as TileData)
   );
 
   await Promise.all(
     newTiles.map(async tile => {
-      const uniqTileId = `${tile.x}-${tile.y}-${tile.z}-${tile.url}`;
+      const uniqTileId = `${tile.tileId.id}-${tile.url}`;
       const cachedData = getCache(uniqTileId);
 
       try {

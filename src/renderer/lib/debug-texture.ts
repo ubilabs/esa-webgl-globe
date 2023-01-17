@@ -22,7 +22,7 @@ export function getDebugTexture(tile: TileData, options?: Options): Promise<Imag
   ctx.fillRect(rectX, rectX, rectSize, rectSize);
   ctx.fillStyle = 'black';
   ctx.font = '40px sans-serif';
-  ctx.fillText(`z${tile.z}-x${tile.x}-y${tile.y}`, 10, 50);
+  ctx.fillText(`z${tile.tileId.zoom}-x${tile.tileId.x}-y${tile.tileId.y}`, 10, 50);
   ctx.font = '40px sans-serif';
   ctx.fillText(`t${timestamp}`, 10, 90);
 

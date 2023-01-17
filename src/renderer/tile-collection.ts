@@ -51,9 +51,7 @@ export class TileCollection {
     texture.needsUpdate = true;
 
     this.tiles[id] = new Tile({
-      x: tileData.x,
-      y: tileData.y,
-      z: tileData.z,
+      tileId: tileData.tileId,
       order: tileData.order,
       url: tileData.url,
       scene: this.scene,
@@ -73,5 +71,5 @@ export class TileCollection {
 }
 
 function getUniqTileId(t: TileData) {
-  return `${t.x}-${t.y}-${t.z}-${t.order}`;
+  return `${t.tileId.id}-${t.order}`;
 }

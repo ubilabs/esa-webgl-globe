@@ -15,13 +15,11 @@ selector.setCamera(renderer.camera);
 selector.setSize(new Vector2(window.innerWidth, window.innerHeight).multiplyScalar(0.25).round());
 
 async function animate() {
-  const tiles = await selector.getVisibleTiles();
-  const newTiles = tiles.map(
-    tile =>
+  const tileIds = [...(await selector.getVisibleTiles())];
+  const newTiles = tileIds.map(
+    tileId =>
       ({
-        x: tile.x,
-        y: tile.y,
-        z: tile.zoom,
+        tileId,
         url: 'debug/1',
         order: 0
       } as TileData)
@@ -29,7 +27,7 @@ async function animate() {
 
   await Promise.all(
     newTiles.map(async tile => {
-      const uniqTileId = `${tile.x}-${tile.y}-${tile.z}-${tile.url}`;
+      const uniqTileId = `${tile.tileId.id}-${tile.url}`;
       const cachedData = getCache(uniqTileId);
 
       tile.data = cachedData || (await getDebugTexture(tile));
@@ -40,7 +38,7 @@ async function animate() {
     })
   );
 
-  renderer.updateTiles(newTiles);
+  await renderer.updateTiles(newTiles);
   requestAnimationFrame(animate);
 }
 animate();

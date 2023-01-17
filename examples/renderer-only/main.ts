@@ -13,10 +13,9 @@ async function getTiles() {
   const tiles = Array.from({length: tileCount}).map((_, i) => {
     const row = Math.floor(i / columns);
     const column = i % columns;
-    const tileId = TileId.fromXYZ(column, row, zoom);
 
     return {
-      tileId,
+      tileId: TileId.fromXYZ(column, row, zoom),
       url: 'debug/1',
       order: 0
     } as TileData;

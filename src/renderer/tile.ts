@@ -3,16 +3,15 @@ import {precalcGeometries} from './lib/precalc-geometries';
 import {getTileMaterial, getTileMaterialPole} from './lib/materials/material';
 import {ZOOM_SEGMENT_MAP} from './config';
 import type {TileProps} from './types/tile';
+import type {TileId} from '../tile-id';
 
 // precalulate all geometries on start
 const GEOMETRIES = precalcGeometries(ZOOM_SEGMENT_MAP);
 
 export class Tile {
-  readonly x: number;
-  readonly y: number;
-  readonly z: number;
-  readonly order: number;
   url: string;
+  readonly tileId: TileId;
+  readonly order: number;
   readonly scene: THREE.Scene;
   readonly texture: TileProps['texture'];
   readonly segments: number;
@@ -23,19 +22,17 @@ export class Tile {
   readonly mesh: THREE.Mesh;
 
   constructor(options: TileProps) {
-    this.x = options.x;
-    this.y = options.y;
-    this.z = options.z;
+    this.tileId = options.tileId;
     this.order = options.order;
     this.url = options.url;
     this.scene = options.scene;
     this.texture = options.texture;
 
-    const rows = Math.pow(2, this.z);
+    const rows = Math.pow(2, this.tileId.zoom);
 
-    this.segments = ZOOM_SEGMENT_MAP[this.z];
-    this.isNorthRow = this.y === rows - 1;
-    this.isSouthRow = this.y === 0;
+    this.segments = ZOOM_SEGMENT_MAP[this.tileId.zoom];
+    this.isNorthRow = this.tileId.y === rows - 1;
+    this.isSouthRow = this.tileId.y === 0;
     // @ts-ignore
     this.material = this._getMaterial(this.texture);
     this.geometry = this._getGeometry();
@@ -59,9 +56,9 @@ export class Tile {
 
   private _getMaterial(texture: THREE.Texture) {
     const uniforms = {
-      x: {value: this.x},
-      y: {value: this.y},
-      zoom: {value: this.z},
+      x: {value: this.tileId.x},
+      y: {value: this.tileId.y},
+      zoom: {value: this.tileId.zoom},
       texture0: {value: texture},
       texture1: {value: null},
       textureFade: {value: 0},
@@ -76,7 +73,7 @@ export class Tile {
 
   private _getMesh(geometry: THREE.BufferGeometry, material: THREE.Material) {
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.renderOrder = this.z * 100 + this.order; // ensure lower zoom tiles are rendered first
+    mesh.renderOrder = this.tileId.zoom * 100 + this.order; // ensure lower zoom tiles are rendered first
     return mesh;
   }
 
