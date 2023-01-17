@@ -9,20 +9,38 @@ const columns = Math.pow(2, zoom + 1);
 const rows = Math.pow(2, zoom);
 const tileCount = columns * rows;
 
+const COLOR_MAP = {
+  0: 'red',
+  1: 'green',
+  2: 'blue'
+};
+
 async function getTiles() {
-  const tiles = Array.from({length: tileCount}).map((_, i) => {
+  const tiles = Array.from({length: tileCount}).flatMap((_, i) => {
+    const columns = Math.pow(2, zoom + 1);
     const row = Math.floor(i / columns);
     const column = i % columns;
 
-    return {
+    const tileData = {
       tileId: TileId.fromXYZ(column, row, zoom),
-      url: 'debug/1',
+      url: 'debug',
       order: 0
     } as TileData;
+
+    return [
+      {...tileData, order: 0, url: 'debug/0'},
+      {...tileData, order: 1, url: 'debug/1'},
+      {...tileData, order: 2, url: 'debug/2'}
+    ];
   });
 
   for (const tile of tiles) {
-    tile.data = await getDebugTexture(tile);
+    const textureOptions = {
+      rectColor: COLOR_MAP[tile.order],
+      rectSize: (3 - tile.order) * 56,
+      backgroundColor: tile.order === 0 ? 'white' : 'transparent'
+    };
+    tile.data = await getDebugTexture(tile, textureOptions);
   }
 
   return tiles;

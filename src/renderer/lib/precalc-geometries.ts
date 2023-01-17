@@ -4,23 +4,23 @@ import {getPoleGeometry} from './get-pole-geometry';
 /*
  * Precalc all possible geometries for zoom levels. Returns geometries map as {[segments]: {}}:
  * {
- *  0: {quad, quadPoleN, quadPoleS},
- *  2: {quad, quadPoleN, quadPoleS},
+ *  0: {normal, north, south},
+ *  2: {normal, north, outh},
  *  ...
  * }
  */
 export function precalcGeometries(ZOOM_SEGMENT_MAP: Record<number, number>) {
   const segmentVariations = Object.values(ZOOM_SEGMENT_MAP);
   const geometries = segmentVariations.map(segments => {
-    const quad = new THREE.PlaneGeometry(2, 2, segments, segments);
-    const quadPoleN = getPoleGeometry(segments, true);
-    const quadPoleS = getPoleGeometry(segments, false);
+    const normal = new THREE.PlaneGeometry(2, 2, segments, segments);
+    const north = getPoleGeometry(segments, true);
+    const south = getPoleGeometry(segments, false);
 
     return {
       segments,
-      quad,
-      quadPoleN,
-      quadPoleS
+      normal,
+      north,
+      south
     };
   });
 

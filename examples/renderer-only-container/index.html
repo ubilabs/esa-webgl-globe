@@ -5,8 +5,20 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Example Renderer Only</title>
+    <style>
+      body {
+        display: grid;
+        place-items: center;
+        height: 100%;
+      }
+      #container {
+        width: 50vw;
+        height: 50vh;
+      }
+    </style>
   </head>
   <body>
+    <div id="container"></div>
     <div id="info">
       An example using only the renderer with static tiles rendering into a non full width container
       element.

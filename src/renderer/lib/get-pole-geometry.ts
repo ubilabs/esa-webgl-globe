@@ -1,5 +1,13 @@
 import * as THREE from 'three';
 
+/* Creates geometries like this:
+ *                     _________
+              / \      \___|___/ 
+             /_|_\      \__|__/
+            /__|__\      \_|_/
+           /___|___\      \ /
+             north      south
+*/
 export function getPoleGeometry(segments: number = 1, north: boolean = true) {
   const l = 1;
 
@@ -35,6 +43,7 @@ export function getPoleGeometry(segments: number = 1, north: boolean = true) {
         quad[j] = 0.5
       }
     }
+
     return quad
   })
   .map(quad => quad.map(p => p * 2 - 1)) // map to -1...1

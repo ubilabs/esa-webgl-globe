@@ -9,28 +9,35 @@ const columns = Math.pow(2, zoom + 1);
 const rows = Math.pow(2, zoom);
 const tileCount = columns * rows;
 
-async function getTiles() {
+async function getTiles(url: string, color: string, size: number) {
   const tiles = Array.from({length: tileCount}).map((_, i) => {
     const row = Math.floor(i / columns);
     const column = i % columns;
 
     return {
       tileId: TileId.fromXYZ(column, row, zoom),
-      url: 'debug/1',
+      url,
       order: 0
     } as TileData;
   });
 
   for (const tile of tiles) {
-    tile.data = await getDebugTexture(tile);
+    tile.data = await getDebugTexture(tile, {rectColor: color, rectSize: size});
   }
 
   return tiles;
 }
 
 (async function () {
-  const tiles = await getTiles();
+  const tilesA = await getTiles('debug/1', 'turquoise', 200);
+  const tilesB = await getTiles('debug/2', 'deeppink', 200);
+
   const renderer = new Renderer();
-  renderer.updateTiles(tiles);
-  console.log({tiles});
+  renderer.updateTiles(tilesA);
+  let isA = true;
+
+  setInterval(() => {
+    renderer.updateTiles(isA ? tilesB : tilesA);
+    isA = !isA;
+  }, 3000);
 })();

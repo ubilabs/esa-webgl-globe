@@ -29,8 +29,9 @@ async function getTiles() {
 }
 
 (async function () {
+  const container = document.getElementById('container')!;
   const tiles = await getTiles();
-  const renderer = new Renderer();
+  const renderer = new Renderer({container});
   renderer.updateTiles(tiles);
   console.log({tiles});
 })();
