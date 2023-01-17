@@ -22,9 +22,11 @@ export class Renderer {
   private initScene() {
     // camera
     const {width, height} = this.container.getBoundingClientRect();
-    this.camera = new THREE.PerspectiveCamera(70, width / height, 0.001, 5);
-    this.camera.position.z = 3;
+    this.camera = new THREE.PerspectiveCamera(70, width / height, 0.001, 100);
+    this.camera.position.z = 10;
     this.camera.position.y = 0;
+    this.camera.zoom = 5;
+    this.camera.updateProjectionMatrix();
 
     // scene
     this.scene = new THREE.Scene();
