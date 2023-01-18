@@ -16,9 +16,11 @@ interface MarkerOptions {
   renderer: Renderer;
   anchor: [number, number];
   lngLat: Position;
+  scale?: number;
 }
 
 export class Marker {
+  static count: number = 0;
   private sprite: Sprite;
   private scene: Scene;
   private camera: PerspectiveCamera;
@@ -26,13 +28,19 @@ export class Marker {
   constructor(options: MarkerOptions) {
     const texture = new CanvasTexture(options.image);
     texture.mapping = UVMapping;
-    const material = new SpriteMaterial({map: texture});
+    const material = new SpriteMaterial({map: texture, depthTest: false, sizeAttenuation: false});
     material.sizeAttenuation = false;
     this.sprite = new Sprite(material);
     geoPositionToWorldSpace(options.lngLat, this.sprite.position);
     this.sprite.center.set(...options.anchor);
-    this.sprite.scale.set(0.1, 0.01, 0.1);
-    this.sprite.renderOrder = 1e6;
+
+    // scale sprite
+    const aspectRatio = options.image.width / options.image.height;
+    const scale = options.scale || 1;
+    this.sprite.scale.set(0.1 * scale, (1 / (aspectRatio * 10)) * scale, 1);
+
+    Marker.count++;
+    this.sprite.renderOrder = 1e6 + Marker.count;
 
     this.scene = options.renderer.scene;
     this.scene.add(this.sprite);
@@ -50,12 +58,19 @@ export class Marker {
       const l2 = this.camera.position.length();
       const occluded = l1 < l2;
 
-      this.sprite.renderOrder = occluded ? 0 : 1e6;
+      this.sprite.renderOrder = occluded ? 0 : 1e6 + Marker.count;
 
       requestAnimationFrame(checkOcclusion.bind(this));
     };
 
     checkOcclusion();
+  }
+
+  destroy() {
+    this.scene.remove(this.sprite);
+    this.sprite.material.dispose();
+    this.sprite.geometry.dispose();
+    Marker.count--;
   }
 }
 

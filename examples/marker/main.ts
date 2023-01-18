@@ -44,6 +44,14 @@ async function getTiles() {
   console.log(renderer.camera);
   console.log(renderer);
 
-  const img = await getMarkerImage('Test 123');
-  const marker = new Marker({image: img, renderer, lngLat: [0, 0], anchor: [0, 0.5]});
+  for (let i = 0; i < 20; i++) {
+    const img = await getMarkerImage(`Test ${i}`);
+    const marker = new Marker({
+      image: img,
+      renderer,
+      lngLat: [(Math.random() - 0.5) * 360, (Math.random() - 0.5) * 180],
+      anchor: [0, 0.5],
+      scale: 0.8
+    });
+  }
 })();
