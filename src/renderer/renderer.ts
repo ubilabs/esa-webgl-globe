@@ -35,6 +35,8 @@ export class Renderer {
     this.webglRenderer = new THREE.WebGLRenderer({antialias: true});
     this.webglRenderer.setSize(width, height);
     // @ts-ignore
+    this.webglRenderer.setClearColor(0xffffff, 0);
+    // @ts-ignore
     this.webglRenderer.setAnimationLoop(this._animate.bind(this));
     this.container.appendChild(this.webglRenderer.domElement);
 

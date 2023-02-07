@@ -1,9 +1,8 @@
 import '../style.css';
-import {Renderer} from '../../src/main';
-import {Marker} from '../../src/main';
+import {MarkerWebGl, MarkerHtml, Renderer} from '../../src/main';
 import {getDebugTexture} from '../../src/renderer/lib/debug-texture';
 import {TileId} from '../../src/tile-id';
-import {getMarkerImage} from './marker-image';
+import {getMarkerHTML, getMarkerImage} from './marker-image';
 import type {TileData} from '../../src/renderer/types/tile';
 
 const zoom = 3;
@@ -41,17 +40,29 @@ async function getTiles() {
   renderer.updateTiles(tiles);
   console.log({tiles});
 
-  console.log(renderer.camera);
-  console.log(renderer);
+  // @ts-ignore
 
-  for (let i = 0; i < 20; i++) {
-    const img = await getMarkerImage(`Test ${i}`);
-    const marker = new Marker({
+  for (let i = 0; i < 5; i++) {
+    const img = await getMarkerImage(`Webgl ${i}`);
+
+    new MarkerWebGl({
       image: img,
       renderer,
       lngLat: [(Math.random() - 0.5) * 360, (Math.random() - 0.5) * 180],
-      anchor: [0, 0.5],
-      scale: 0.8
+      anchor: [1, -1], // 0 is center, -1 is left/bottom, 1 is right/top
+      offset: [-16, -16] // x/y offset in screen pixel
     });
+  }
+
+  for (let i = 0; i < 5; i++) {
+    const markerString = await getMarkerHTML(`HTML ${i}`);
+    new MarkerHtml({
+      html: markerString,
+      renderer: renderer,
+      offset: [-16, -16],
+      lngLat: [(Math.random() - 0.5) * 360, (Math.random() - 0.5) * 180]
+    });
+
+    console.log([(Math.random() - 0.5) * 360, (Math.random() - 0.5) * 180]);
   }
 })();
