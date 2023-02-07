@@ -26,15 +26,18 @@ export class TileId {
   }
 
   get parent(): TileId | null {
-    if (this.zoom === 0) {
-      return null;
-    }
+    return this.getParentAtZoom(this.zoom - 1);
+  }
 
-    const zoom = this.zoom - 1;
-    const x = this.x >> 1;
-    const y = this.y >> 1;
+  getParentAtZoom(parentZoom: number) {
+    if (parentZoom >= this.zoom) return null;
+    if (this.zoom === 0) return null;
 
-    return TileId.fromXYZ(x, y, zoom);
+    const dz = this.zoom - parentZoom;
+    const x = this.x >> dz;
+    const y = this.y >> dz;
+
+    return TileId.fromXYZ(x, y, parentZoom);
   }
 
   get children(): TileId[] {
