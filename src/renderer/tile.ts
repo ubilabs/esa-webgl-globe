@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {precalcGeometries} from './lib/precalc-geometries';
-import {getTileMaterial, getTileMaterialPole} from './lib/materials/material';
+import {getTileMaterial, getTileMaterialPole} from './lib/get-tile-material';
 import {ZOOM_SEGMENT_MAP} from './config';
 import type {TileProps} from './types/tile';
 import type {TileId} from '../tile-id';

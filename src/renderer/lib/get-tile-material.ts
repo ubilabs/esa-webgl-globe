@@ -1,7 +1,7 @@
 import {ShaderMaterial} from 'three';
-import fragmentShader from './fragment.glsl';
-import fragmentShaderPole from './fragment-pole.glsl';
-import vertexShader from './vertex.glsl';
+import fragmentShader from '../shader/tile/tile-fragment.glsl';
+import fragmentShaderPole from '../shader/tile/tile-fragment-pole.glsl';
+import vertexShader from '../shader/tile/tile-vertex.glsl';
 
 export function getTileMaterial(uniforms = {}) {
   return new ShaderMaterial({
@@ -9,7 +9,7 @@ export function getTileMaterial(uniforms = {}) {
     vertexShader,
     fragmentShader,
     transparent: true,
-    depthTest: false // required so that the render order is used correctly
+    depthTest: false
   });
 }
 
@@ -19,6 +19,6 @@ export function getTileMaterialPole(uniforms = {}) {
     vertexShader,
     fragmentShader: fragmentShaderPole,
     transparent: true,
-    depthTest: false // required so that the render order is used correctly
+    depthTest: false
   });
 }

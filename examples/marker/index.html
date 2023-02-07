@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Example Marker</title>
+    <style>
+      body {
+        background: #111;
+      }
+
+      canvas {
+        z-index: 1;
+        position: relative;
+      }
+
+      .myMarker {
+        cursor: pointer;
+        width: 150px;
+        height: 32px;
+      }
+
+      .myMarker svg > circle {
+        transition: all 0.2s;
+        transform-origin: center center;
+      }
+
+      .myMarker:hover svg > circle {
+        fill: deeppink;
+        transform: scale(1.3);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="info">An example with markers.</div>
+    <script type="module" src="main.ts"></script>
+  </body>
+</html>
