@@ -11,6 +11,7 @@
     "deploy:examples": "npm run build && gsutil -m -h 'Cache-Control: no-cache' cp -r dist/examples/* gs://ubilabs-webgl-globe/examples/"
   },
   "dependencies": {
+    "@probe.gl/stats": "^3.6.0",
     "three": "^0.148.0"
   },
   "devDependencies": {
