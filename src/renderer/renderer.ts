@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
 import {TileCollection} from './tile-collection';
 import type {RendererProps} from './types/renderer';
-import type {TileData} from './types/tile';
+import type {RenderTile} from './types/tile';
 
 export class Renderer {
   container: HTMLElement;
@@ -75,7 +75,7 @@ export class Renderer {
     this.camera.updateProjectionMatrix();
   }
 
-  async updateTiles(tiles: TileData[]) {
+  async updateTiles(tiles: RenderTile[]) {
     this.tileCollection.updateTiles(tiles);
   }
 

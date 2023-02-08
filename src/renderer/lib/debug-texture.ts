@@ -1,4 +1,4 @@
-import type {TileData} from '../types/tile';
+import type {RenderTile} from '../types/tile';
 
 interface Options {
   rectColor?: string;
@@ -6,7 +6,7 @@ interface Options {
   backgroundColor?: string;
 }
 
-export function getDebugTexture(tile: TileData, options?: Options): Promise<ImageBitmap> {
+export function getDebugTexture(tile: RenderTile, options?: Options): Promise<ImageBitmap> {
   const {rectColor = 'red', rectSize = 56, backgroundColor = 'white'} = options || {};
   const timestamp = tile.url.split('/')[1];
   const canvas = document.createElement('canvas');

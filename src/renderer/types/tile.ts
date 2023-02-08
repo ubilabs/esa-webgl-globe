@@ -2,15 +2,15 @@ import type {TileId} from '../../tile-id';
 
 export interface TileProps {
   tileId: TileId;
-  order: number;
+  zIndex: number;
   url: string;
-  scene: THREE.Scene;
   texture: THREE.Texture;
+  scene: THREE.Scene;
 }
 
-export interface TileData {
+export interface RenderTile {
   tileId: TileId;
+  zIndex: number;
   url: string;
-  order: number;
   data?: ImageBitmap;
 }

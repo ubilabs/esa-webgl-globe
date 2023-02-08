@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {Tile} from './tile';
 import type {TileCollectionProps} from './types/tile-collection';
-import type {TileData} from './types/tile';
+import type {RenderTile} from './types/tile';
 
 export class TileCollection {
   readonly scene: THREE.Scene;
@@ -12,8 +12,8 @@ export class TileCollection {
     this.tiles = {};
   }
 
-  updateTiles(newTiles: TileData[]) {
-    const newTilesMap: Record<string, TileData> = {};
+  updateTiles(newTiles: RenderTile[]) {
+    const newTilesMap: Record<string, RenderTile> = {};
 
     for (let i = 0; i < newTiles.length; i++) {
       // populate map to delete old tiles in second step
@@ -28,7 +28,7 @@ export class TileCollection {
         this._createTile(uniqTileId, newTile);
       } else if (newTile.url !== tile.url) {
         // fade tiles that are in tiles and newTiles
-        // and are identical in the sense that x, y, z, order are the same but url differs
+        // and are identical in the sense that x, y, z, zIndex are the same but url differs
         this._fadeTile(tile, newTile);
       }
     }
@@ -44,32 +44,32 @@ export class TileCollection {
     }
   }
 
-  private _createTile(id: string, tileData: TileData) {
-    const texture = new THREE.CanvasTexture(tileData.data!);
+  private _createTile(id: string, renderTile: RenderTile) {
+    const texture = new THREE.CanvasTexture(renderTile.data!);
     texture.format = THREE.RGBAFormat;
     texture.flipY = true;
     texture.needsUpdate = true;
 
     this.tiles[id] = new Tile({
-      tileId: tileData.tileId,
-      order: tileData.order,
-      url: tileData.url,
+      tileId: renderTile.tileId,
+      zIndex: renderTile.zIndex,
+      url: renderTile.url,
       scene: this.scene,
       texture
     });
   }
 
-  private _fadeTile(tile: Tile, newTileData: TileData) {
-    const texture = new THREE.CanvasTexture(newTileData.data!);
+  private _fadeTile(tile: Tile, newRenderTile: RenderTile) {
+    const texture = new THREE.CanvasTexture(newRenderTile.data!);
     texture.format = THREE.RGBAFormat;
     texture.flipY = true;
     texture.needsUpdate = true;
 
     tile.switchTexture(texture, true);
-    tile.url = newTileData.url;
+    tile.url = newRenderTile.url;
   }
 }
 
-function getUniqTileId(t: TileData) {
-  return `${t.tileId.id}-${t.order}`;
+function getUniqTileId(t: RenderTile) {
+  return `${t.tileId.id}-${t.zIndex}`;
 }
