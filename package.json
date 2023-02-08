@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@probe.gl/stats": "^3.6.0",
+    "lru-cache": "^7.14.1",
     "three": "^0.148.0"
   },
   "devDependencies": {

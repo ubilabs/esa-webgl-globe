@@ -1,8 +1,7 @@
 import {Stats} from '@probe.gl/stats';
 
-type Handle = unknown;
 type DoneFunction = () => any;
-type GetPriorityFunction = (handle: Handle) => number;
+type GetPriorityFunction<Handle> = (handle: Handle) => number;
 type RequestResult = {
   done: DoneFunction;
 } | null;
@@ -27,23 +26,23 @@ const DEFAULT_OPTIONS: Required<RequestSchedulerOptions> = {
 };
 
 /** Tracks one request */
-type Request = {
+type Request<Handle> = {
   handle: Handle;
   priority: number;
-  getPriority: GetPriorityFunction;
+  getPriority: GetPriorityFunction<Handle>;
   resolve: (value: any) => any;
 };
 
 /**
  * Used to issue a request, without having them "deeply queued" by the browser.
  */
-export default class RequestScheduler {
+export default class RequestScheduler<Handle> {
   readonly options: Required<RequestSchedulerOptions>;
   readonly stats: Stats;
   activeRequestCount: number = 0;
 
   /** Tracks the number of active requests and prioritizes/cancels queued requests. */
-  private requestQueue: Request[] = [];
+  private requestQueue: Request<Handle>[] = [];
   private requestMap: Map<Handle, Promise<RequestResult>> = new Map();
   private deferredUpdate: any = null;
 
@@ -81,7 +80,7 @@ export default class RequestScheduler {
    */
   scheduleRequest(
     handle: Handle,
-    getPriority: GetPriorityFunction = () => 0
+    getPriority: GetPriorityFunction<Handle> = () => 0
   ): Promise<RequestResult> {
     // Allows throttling to be disabled
     if (!this.options.throttleRequests) {
@@ -93,7 +92,7 @@ export default class RequestScheduler {
       return this.requestMap.get(handle) as Promise<any>;
     }
 
-    const request = {handle, priority: 0, getPriority} as Request;
+    const request = {handle, priority: 0, getPriority} as Request<Handle>;
     const promise = new Promise<RequestResult>(resolve => {
       request.resolve = resolve;
     });
@@ -108,7 +107,7 @@ export default class RequestScheduler {
 
   // PRIVATE
 
-  private _issueRequest(request: Request): Promise<any> {
+  private _issueRequest(request: Request<Handle>): Promise<any> {
     const {handle, resolve} = request;
     let isDone = false;
 
@@ -180,7 +179,7 @@ export default class RequestScheduler {
   }
 
   /** Update a single request by calling the callback */
-  private _updateRequest(request: Request) {
+  private _updateRequest(request: Request<Handle>) {
     request.priority = request.getPriority(request.handle); // eslint-disable-line callback-return
 
     // by returning a negative priority, the callback cancels the request

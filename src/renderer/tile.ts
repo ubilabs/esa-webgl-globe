@@ -11,7 +11,7 @@ const GEOMETRIES = precalcGeometries(ZOOM_SEGMENT_MAP);
 export class Tile {
   url: string;
   readonly tileId: TileId;
-  readonly order: number;
+  readonly zIndex: number;
   readonly scene: THREE.Scene;
   readonly texture: TileProps['texture'];
   readonly segments: number;
@@ -23,7 +23,7 @@ export class Tile {
 
   constructor(options: TileProps) {
     this.tileId = options.tileId;
-    this.order = options.order;
+    this.zIndex = options.zIndex;
     this.url = options.url;
     this.scene = options.scene;
     this.texture = options.texture;
@@ -73,7 +73,7 @@ export class Tile {
 
   private _getMesh(geometry: THREE.BufferGeometry, material: THREE.Material) {
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.renderOrder = this.tileId.zoom * 100 + this.order; // ensure lower zoom tiles are rendered first
+    mesh.renderOrder = this.tileId.zoom * 100 + this.zIndex; // ensure lower zoom tiles are rendered first
     return mesh;
   }
 
