@@ -10,18 +10,20 @@ interface LayerProps<UrlParameters> {
   getUrl: (p: getUrlParameters<UrlParameters>) => string;
   urlParameters: UrlParameters; // things that are relevant for fetching like "timestep"
   zIndex: number;
+  maxZoom: number;
 }
 
 export class Layer<UrlParameters> {
   scheduler: RequestScheduler<RenderTile>;
   props: LayerProps<UrlParameters>;
-  visibleTileIds: TileId[] = [];
+  visibleTileIds: Set<TileId> = new Set();
   cache: LRU<string, RenderTile>;
+  lastRenderTiles: Map<TileId, RenderTile> = new Map();
 
   constructor(scheduler: RequestScheduler<RenderTile>, props: LayerProps<UrlParameters>) {
     this.scheduler = scheduler;
     this.props = props;
-    this.cache = new LRU({max: 100});
+    this.cache = new LRU({max: 500});
   }
 
   /**
@@ -29,8 +31,23 @@ export class Layer<UrlParameters> {
    *
    * @param tileIds Visible tileIds
    */
-  public setVisibleTileIds(tileIds: TileId[]) {
-    this.visibleTileIds = tileIds;
+  public setVisibleTileIds(tileIds: Set<TileId>) {
+    const visibleTileIds = new Set<TileId>();
+
+    // Clamp zoom level of tiles to layer's maxZoom
+    for (const tileId of tileIds) {
+      if (tileId.zoom > this.props.maxZoom) {
+        const parentTile = tileId.getParentAtZoom(this.props.maxZoom);
+
+        if (parentTile) {
+          visibleTileIds.add(parentTile);
+        }
+      } else {
+        visibleTileIds.add(tileId);
+      }
+    }
+
+    this.visibleTileIds = visibleTileIds;
     this.updateQueue();
   }
 
@@ -63,6 +80,18 @@ export class Layer<UrlParameters> {
         renderTile.zIndex = this.props.zIndex;
 
         availableTiles.push(renderTile);
+
+        this.lastRenderTiles.set(tileId, renderTile);
+      }
+
+      // FIXME: this else part is just a test for now to see the tiles animate when switching timesteps
+      else {
+        // if we don't have the loaded tile in cache but we have an older rendered tile for this tileId
+        const lastRenderTile = this.lastRenderTiles.get(tileId);
+
+        if (lastRenderTile) {
+          availableTiles.push(lastRenderTile);
+        }
       }
     }
 
@@ -111,7 +140,7 @@ export class Layer<UrlParameters> {
    */
   private getTilePriority(renderTile: RenderTile) {
     // check if tileId is still visible and if parameters have not changed
-    const isInVisibleTileIds = this.visibleTileIds.find(tileId => tileId === renderTile.tileId);
+    const isInVisibleTileIds = this.visibleTileIds.has(renderTile.tileId);
     const hasMatchingParameters = renderTile.url === this.getUrlForTileId(renderTile.tileId);
 
     // if true then we still want this tile
