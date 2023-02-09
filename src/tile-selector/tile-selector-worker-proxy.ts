@@ -22,11 +22,7 @@ export class TileSelectorWorkerProxy implements ITileSelectorImpl {
     await this.callWorker('setOptions', [options]);
   }
 
-  private async callWorker(
-    type: string,
-    args: any[],
-    transfer?: Transferable[]
-  ): Promise<unknown> {
+  private async callWorker(type: string, args: any[], transfer?: Transferable[]): Promise<unknown> {
     const worker = await this.getWorker();
     const messageId = Math.random().toString(36).slice(2);
 
@@ -48,10 +44,9 @@ export class TileSelectorWorkerProxy implements ITileSelectorImpl {
 
   private async getWorker(): Promise<Worker> {
     if (!this.worker) {
-      this.worker = new Worker(
-        new URL('./tile-selector-worker', import.meta.url),
-        {type: 'module'}
-      );
+      this.worker = new Worker(new URL('./tile-selector-worker', import.meta.url), {
+        type: 'module'
+      });
     }
 
     return this.worker;

@@ -11,9 +11,7 @@ export class TileIdCache {
 
   constructor() {
     this.tileIdCache = new Map();
-    this.registry = new FinalizationRegistry<string>(id =>
-      this.tileIdCache.delete(id)
-    );
+    this.registry = new FinalizationRegistry<string>(id => this.tileIdCache.delete(id));
   }
 
   has(id: string): boolean {

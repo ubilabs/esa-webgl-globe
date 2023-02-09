@@ -52,6 +52,7 @@ export class TileSelectorImpl implements ITileSelectorImpl {
     this.tileSelectionMaterial = new TileSelectionMaterial();
     this.sphere = new Mesh(new SphereGeometry(1, 90, 45), this.tileSelectionMaterial);
     this.sphere.geometry.rotateY(Math.PI / -2);
+
     this.scene = new Scene();
     this.scene.add(this.sphere);
 
