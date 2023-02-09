@@ -2,8 +2,12 @@ import {PerspectiveCamera, Scene, WebGLRenderer} from 'three';
 
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
 import {TileCollection} from './tile-collection';
-import type {RendererProps} from './types/renderer';
+
 import type {RenderTile} from './types/tile';
+
+export interface RendererProps {
+  container?: HTMLElement;
+}
 
 export class Renderer {
   container: HTMLElement;

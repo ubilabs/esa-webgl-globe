@@ -4,16 +4,17 @@ import type {TileId} from '../tile-id';
 import type RequestScheduler from './request-sheduler';
 import type {RenderTile} from '../renderer/types/tile';
 
-type getUrlParameters<UrlParameters> = {x: number; y: number; zoom: number} & UrlParameters;
+type TileUrlParameters<UrlParameters> = {x: number; y: number; zoom: number} & UrlParameters;
 
-interface LayerProps<UrlParameters> {
-  getUrl: (p: getUrlParameters<UrlParameters>) => string;
+export interface LayerProps<UrlParameters = unknown> {
+  id: string;
+  getUrl: (p: TileUrlParameters<UrlParameters>) => string;
   urlParameters: UrlParameters; // things that are relevant for fetching like "timestep"
   zIndex: number;
   maxZoom: number;
 }
 
-export class Layer<UrlParameters> {
+export class Layer<UrlParameters = unknown> {
   scheduler: RequestScheduler<RenderTile>;
   props: LayerProps<UrlParameters>;
   visibleTileIds: Set<TileId> = new Set();

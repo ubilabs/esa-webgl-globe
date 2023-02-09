@@ -34,7 +34,7 @@ type Request<Handle> = {
 };
 
 /** Used to issue a request, without having them "deeply queued" by the browser. */
-export default class RequestScheduler<Handle> {
+export default class RequestScheduler<Handle = unknown> {
   readonly options: Required<RequestSchedulerOptions>;
   readonly stats: Stats;
   activeRequestCount: number = 0;
