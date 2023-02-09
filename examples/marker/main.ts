@@ -1,9 +1,9 @@
 import '../style.css';
-import {MarkerWebGl, MarkerHtml, Renderer} from '../../src/main';
+import {MarkerHtml, Renderer} from '../../src/main';
 import {getDebugTexture} from '../../src/renderer/lib/debug-texture';
 import {TileId} from '../../src/tile-id';
-import {getMarkerHTML, getMarkerImage} from './marker-image';
-import type {TileData} from '../../src/renderer/types/tile';
+import {getMarkerHTML} from './marker-image';
+import type {RenderTile} from '../../src/renderer/types/tile';
 
 const zoom = 3;
 const columns = Math.pow(2, zoom + 1);
@@ -18,8 +18,8 @@ async function getTiles() {
     return {
       tileId: TileId.fromXYZ(column, row, zoom),
       url: 'debug/1',
-      order: 0
-    } as TileData;
+      zIndex: 0
+    } as RenderTile;
   });
 
   for (const tile of tiles) {
@@ -38,31 +38,23 @@ async function getTiles() {
   const tiles = await getTiles();
   const renderer = new Renderer();
   renderer.updateTiles(tiles);
-  console.log({tiles});
 
-  // @ts-ignore
+  for (let i = 0; i < 100; i++) {
+    const lngLat: [number, number] = [(Math.random() - 0.5) * 360, (Math.random() - 0.5) * 180];
+    const markerString = await getMarkerHTML(`${lngLat.map(x => x.toFixed(1)).join(', ')}`);
 
-  for (let i = 0; i < 5; i++) {
-    const img = await getMarkerImage(`Webgl ${i}`);
-
-    new MarkerWebGl({
-      image: img,
-      renderer,
-      lngLat: [(Math.random() - 0.5) * 360, (Math.random() - 0.5) * 180],
-      anchor: [1, -1], // 0 is center, -1 is left/bottom, 1 is right/top
-      offset: [-16, -16] // x/y offset in screen pixel
-    });
-  }
-
-  for (let i = 0; i < 5; i++) {
-    const markerString = await getMarkerHTML(`HTML ${i}`);
     new MarkerHtml({
       html: markerString,
       renderer: renderer,
       offset: [-16, -16],
-      lngLat: [(Math.random() - 0.5) * 360, (Math.random() - 0.5) * 180]
+      lngLat
     });
-
-    console.log([(Math.random() - 0.5) * 360, (Math.random() - 0.5) * 180]);
   }
+
+  new MarkerHtml({
+    html: await getMarkerHTML(`Sicilia`),
+    renderer: renderer,
+    offset: [-16, -16],
+    lngLat: [14.111089, 37.585256]
+  });
 })();

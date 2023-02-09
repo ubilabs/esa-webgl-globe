@@ -1,7 +1,7 @@
 import '../style.css';
 import {Vector2} from 'three';
 import {Renderer, TileSelector} from '../../src/main';
-import type {TileData} from '../../src/renderer/types/tile';
+import type {RenderTile} from '../../src/renderer/types/tile';
 
 const renderer = new Renderer();
 const selector = new TileSelector({
@@ -20,8 +20,8 @@ async function animate() {
       ({
         tileId,
         url: `https://storage.googleapis.com/esa-cfs-tiles/1.9.0/basemaps/colored/${tileId.zoom}/${tileId.x}/${tileId.y}.png`,
-        order: 0
-      } as TileData)
+        zIndex: 0
+      } as RenderTile)
   );
 
   await Promise.all(
@@ -60,8 +60,6 @@ function setCache(key: string, data: ImageBitmap) {
   if (cacheList.length > MAX_CACHE) {
     cacheMap.delete(cacheList.shift());
   }
-
-  console.log(cacheList.length);
 }
 
 function getCache(key: string) {

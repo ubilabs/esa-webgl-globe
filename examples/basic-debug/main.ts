@@ -2,7 +2,7 @@ import '../style.css';
 import {Vector2} from 'three';
 import {Renderer, TileSelector} from '../../src/main';
 import {getDebugTexture} from '../../src/renderer/lib/debug-texture';
-import type {TileData} from '../../src/renderer/types/tile';
+import type {RenderTile} from '../../src/renderer/types/tile';
 
 const renderer = new Renderer();
 const selector = new TileSelector({
@@ -21,8 +21,8 @@ async function animate() {
       ({
         tileId,
         url: 'debug/1',
-        order: 0
-      } as TileData)
+        zIndex: 0
+      } as RenderTile)
   );
 
   await Promise.all(
