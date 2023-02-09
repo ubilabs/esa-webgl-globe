@@ -4,6 +4,7 @@ body {
   padding: 0;
   height: 100%;
   background: #111;
+  overflow: hidden;
 }
 
 #info {
@@ -14,4 +15,10 @@ body {
   padding: 1em 2em;
   box-shadow: 1px 1px 8px rgba(0, 0, 0, 0.1);
   border-radius: 4px;
+}
+
+canvas {
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
 }
