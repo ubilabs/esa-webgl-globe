@@ -1,10 +1,11 @@
-import * as THREE from 'three';
+import {CanvasTexture, RGBAFormat, Scene} from 'three';
+
 import {Tile} from './tile';
 import type {TileCollectionProps} from './types/tile-collection';
 import type {RenderTile} from './types/tile';
 
 export class TileCollection {
-  readonly scene: THREE.Scene;
+  readonly scene: Scene;
   tiles: Record<string, Tile>;
 
   constructor(props: TileCollectionProps) {
@@ -45,8 +46,8 @@ export class TileCollection {
   }
 
   private _createTile(id: string, renderTile: RenderTile) {
-    const texture = new THREE.CanvasTexture(renderTile.data!);
-    texture.format = THREE.RGBAFormat;
+    const texture = new CanvasTexture(renderTile.data!);
+    texture.format = RGBAFormat;
     texture.flipY = true;
     texture.needsUpdate = true;
 
@@ -60,8 +61,8 @@ export class TileCollection {
   }
 
   private _fadeTile(tile: Tile, newRenderTile: RenderTile) {
-    const texture = new THREE.CanvasTexture(newRenderTile.data!);
-    texture.format = THREE.RGBAFormat;
+    const texture = new CanvasTexture(newRenderTile.data!);
+    texture.format = RGBAFormat;
     texture.flipY = true;
     texture.needsUpdate = true;
 
