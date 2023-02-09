@@ -52,7 +52,8 @@ export class Layer<UrlParameters> {
   }
 
   /**
-   * Updates the layer props. Props will be merged so partial updates are ok for the first level. No deep merge logic!
+   * Updates the layer props. Props will be merged so partial updates are ok for the first level. No
+   * deep merge logic!
    *
    * @param props Layer props
    */
@@ -62,7 +63,8 @@ export class Layer<UrlParameters> {
   }
 
   /**
-   * Returns the best available list of render tiles to display at the moment. Will be called every frame.
+   * Returns the best available list of render tiles to display at the moment. Will be called every
+   * frame.
    *
    * @returns List of render tiles
    */
@@ -84,9 +86,11 @@ export class Layer<UrlParameters> {
         this.lastRenderTiles.set(tileId, renderTile);
       }
 
-      // FIXME: this else part is just a test for now to see the tiles animate when switching timesteps
+      // FIXME: this else part is just a test for now to see the tiles animate when
+      //  switching timesteps
       else {
-        // if we don't have the loaded tile in cache but we have an older rendered tile for this tileId
+        // if we don't have the loaded tile in cache, but we have an older rendered tile for
+        // this tileId
         const lastRenderTile = this.lastRenderTiles.get(tileId);
 
         if (lastRenderTile) {
@@ -99,12 +103,13 @@ export class Layer<UrlParameters> {
   }
 
   /**
-   * Updates the request scheduler queue.
-   * For every new tile not already in the cache a request will be scheduled.
+   * Updates the request scheduler queue. For every new tile not already in the cache a request will
+   * be scheduled.
    */
   private updateQueue() {
     this.visibleTileIds.forEach(async tileId => {
-      // url will be the cache key because it defines the loaded ressource and includes all relevant url paramters
+      // url will be the cache key because it defines the loaded ressource and includes all
+      // relevant url paramters
       const url = this.getUrlForTileId(tileId);
 
       // if already in cache then do nothing
@@ -126,35 +131,36 @@ export class Layer<UrlParameters> {
 
       // ready to fetch
       if (request) {
-        this.fetch(renderTile, request.done);
+        await this.fetch(renderTile, request.done);
       }
     });
   }
 
   /**
-   * Returns the priority for a requested tile depending on the zoom level - lowest levels first (for now).
-   * Will return -1 if the tile is not needed anymore.
+   * Returns the priority for a requested tile depending on the zoom level - lowest levels first
+   * (for now). Will return -1 if the tile is not needed anymore.
    *
    * @param renderTile The render tile
    * @returns Priority number
    */
-  private getTilePriority(renderTile: RenderTile) {
+  private getTilePriority = (renderTile: RenderTile) => {
     // check if tileId is still visible and if parameters have not changed
     const isInVisibleTileIds = this.visibleTileIds.has(renderTile.tileId);
     const hasMatchingParameters = renderTile.url === this.getUrlForTileId(renderTile.tileId);
 
     // if true then we still want this tile
     if (isInVisibleTileIds && hasMatchingParameters) {
-      // invert priority to get highest priority for lowest zoom levels
+      // invert priority to get the highest priority for lowest zoom levels
       return 100 - renderTile.tileId.zoom;
     }
 
     // otherwise cancel the request
     return -1;
-  }
+  };
 
   /**
-   * Returns the url of a tile by calling the provided getUrl function with the layer's current url parameters
+   * Returns the url of a tile by calling the provided getUrl function with the layer's current url
+   * parameters
    *
    * @param tileId The tileId to get the url for
    * @returns Url
@@ -169,8 +175,9 @@ export class Layer<UrlParameters> {
   }
 
   /**
-   * Fetches and sets a render tile's image data. The data property will be set to an ImageBitmap object.
-   * In case of an error the image data will be set to an empty 1x1px sizes ImageBitmap as a fallback.
+   * Fetches and sets a render tile's image data. The data property will be set to an ImageBitmap
+   * object. In case of an error the image data will be set to an empty 1x1px sizes ImageBitmap as a
+   * fallback.
    *
    * Calls the request scheduler's done() function when when complete.
    *
