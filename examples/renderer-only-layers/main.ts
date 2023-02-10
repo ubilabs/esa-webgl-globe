@@ -2,7 +2,7 @@ import '../style.css';
 import {Renderer} from '../../src/main';
 import {getDebugTexture} from '../../src/renderer/lib/debug-texture';
 import {TileId} from '../../src/tile-id';
-import type {TileData} from '../../src/renderer/types/tile';
+import type {RenderTile} from '../../src/renderer/types/tile';
 
 const zoom = 2;
 const columns = Math.pow(2, zoom + 1);
@@ -24,22 +24,23 @@ async function getTiles() {
     const tileData = {
       tileId: TileId.fromXYZ(column, row, zoom),
       url: 'debug',
-      order: 0
-    } as TileData;
+      zIndex: 0
+    } as RenderTile;
 
     return [
-      {...tileData, order: 0, url: 'debug/0'},
-      {...tileData, order: 1, url: 'debug/1'},
-      {...tileData, order: 2, url: 'debug/2'}
+      {...tileData, zIndex: 0, url: 'debug/0'},
+      {...tileData, zIndex: 1, url: 'debug/1'},
+      {...tileData, zIndex: 2, url: 'debug/2'}
     ];
   });
 
   for (const tile of tiles) {
     const textureOptions = {
-      rectColor: COLOR_MAP[tile.order],
-      rectSize: (3 - tile.order) * 56,
-      backgroundColor: tile.order === 0 ? 'white' : 'transparent'
+      rectColor: COLOR_MAP[tile.zIndex],
+      rectSize: (3 - tile.zIndex) * 56,
+      backgroundColor: 'transparent'
     };
+
     tile.data = await getDebugTexture(tile, textureOptions);
   }
 

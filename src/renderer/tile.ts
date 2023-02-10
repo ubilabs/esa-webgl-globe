@@ -7,6 +7,7 @@ import type {TileId} from '../tile-id';
 
 // precalulate all geometries on start
 const GEOMETRIES = precalcGeometries(ZOOM_SEGMENT_MAP);
+const MAX_ZOOM = 30; // just a high enough number
 
 export class Tile {
   url: string;
@@ -34,7 +35,7 @@ export class Tile {
     this.isNorthRow = this.tileId.y === rows - 1;
     this.isSouthRow = this.tileId.y === 0;
     // @ts-ignore
-    this.material = this._getMaterial(this.texture);
+    this.material = this._getMaterial(this.texture, options.zIndex);
     this.geometry = this._getGeometry();
     this.mesh = this._getMesh(this.geometry, this.material);
     this.scene.add(this.mesh);
@@ -54,7 +55,7 @@ export class Tile {
     return geometry;
   }
 
-  private _getMaterial(texture: THREE.Texture) {
+  private _getMaterial(texture: THREE.Texture, zIndex: number) {
     const uniforms = {
       x: {value: this.tileId.x},
       y: {value: this.tileId.y},
@@ -67,13 +68,17 @@ export class Tile {
       poleSegments: {value: this.segments}
     };
     return this.isNorthRow || this.isSouthRow
-      ? getTileMaterialPole(uniforms)
-      : getTileMaterial(uniforms);
+      ? getTileMaterialPole(uniforms, zIndex)
+      : getTileMaterial(uniforms, zIndex);
   }
 
   private _getMesh(geometry: THREE.BufferGeometry, material: THREE.Material) {
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.renderOrder = this.tileId.zoom * 100 + this.zIndex; // ensure lower zoom tiles are rendered first
+
+    // ensure layers are rendered from zIndex 0 -> n
+    // and per layer higher zoom tiles are rendered first
+    mesh.renderOrder = this.zIndex * MAX_ZOOM + (MAX_ZOOM - this.tileId.zoom);
+
     return mesh;
   }
 
