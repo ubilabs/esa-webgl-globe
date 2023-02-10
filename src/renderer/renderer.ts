@@ -4,10 +4,7 @@ import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
 import {TileCollection} from './tile-collection';
 
 import type {RenderTile} from './types/tile';
-
-export interface RendererProps {
-  container?: HTMLElement;
-}
+import type {RendererProps} from './types/renderer';
 
 export class Renderer {
   container: HTMLElement;
