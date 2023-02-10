@@ -1,13 +1,14 @@
-import * as THREE from 'three';
+import {BufferAttribute, BufferGeometry} from 'three';
 
 /* Creates geometries like this:
  *                     _________
-              / \      \___|___/ 
+              / \      \___|___/
              /_|_\      \__|__/
             /__|__\      \_|_/
            /___|___\      \ /
              north      south
 */
+
 export function getPoleGeometry(segments: number = 1, north: boolean = true) {
   const l = 1;
 
@@ -55,7 +56,7 @@ export function getPoleGeometry(segments: number = 1, north: boolean = true) {
     return quad
   })
 
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(quads.flat()), 3));
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new BufferAttribute(new Float32Array(quads.flat()), 3));
   return geometry;
 }

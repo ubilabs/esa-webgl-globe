@@ -13,6 +13,7 @@
   "dependencies": {
     "@probe.gl/stats": "^3.6.0",
     "lru-cache": "^7.14.1",
+    "prettier-plugin-jsdoc": "^0.4.2",
     "three": "^0.148.0"
   },
   "devDependencies": {

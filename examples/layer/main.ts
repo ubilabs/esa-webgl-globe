@@ -20,6 +20,7 @@ selector.setCamera(renderer.camera);
 selector.setSize(new Vector2(window.innerWidth, window.innerHeight).multiplyScalar(0.25).round());
 
 const layer = new Layer<{timestep: number}>(scheduler, {
+  id: 'layer',
   urlParameters: {timestep: 0},
   zIndex: 0,
   maxZoom: 7,
