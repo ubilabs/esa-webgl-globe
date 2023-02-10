@@ -46,6 +46,13 @@ export class WebGlGlobe {
   }
 
   setLayers(layers: LayerProps[]) {
+    const newLayerIds = layers.map(l => l.id);
+    const toRemove = Object.keys(this.layersById).filter(id => !newLayerIds.includes(id));
+
+    for (const layerId of toRemove) {
+      delete this.layersById[layerId];
+    }
+
     for (let props of layers) {
       let layer = this.layersById[props.id];
 
