@@ -1,24 +1,33 @@
-import {ShaderMaterial} from 'three';
+import {ShaderMaterial, GreaterStencilFunc, KeepStencilOp, ReplaceStencilOp} from 'three';
 import fragmentShader from '../shader/tile/tile-fragment.glsl';
 import fragmentShaderPole from '../shader/tile/tile-fragment-pole.glsl';
 import vertexShader from '../shader/tile/tile-vertex.glsl';
 
-export function getTileMaterial(uniforms = {}) {
+const baseOptions = {
+  vertexShader,
+  transparent: true,
+  depthTest: false,
+  stencilWrite: true,
+  stencilFunc: GreaterStencilFunc,
+  stencilFail: KeepStencilOp,
+  stencilZFail: KeepStencilOp,
+  stencilZPass: ReplaceStencilOp
+};
+
+export function getTileMaterial(uniforms = {}, zIndex: number) {
   return new ShaderMaterial({
-    uniforms: uniforms,
-    vertexShader,
+    ...baseOptions,
+    uniforms,
     fragmentShader,
-    transparent: true,
-    depthTest: false
+    stencilRef: zIndex + 1
   });
 }
 
-export function getTileMaterialPole(uniforms = {}) {
+export function getTileMaterialPole(uniforms = {}, zIndex: number) {
   return new ShaderMaterial({
-    uniforms: uniforms,
-    vertexShader,
+    ...baseOptions,
+    uniforms,
     fragmentShader: fragmentShaderPole,
-    transparent: true,
-    depthTest: false
+    stencilRef: zIndex + 1
   });
 }
