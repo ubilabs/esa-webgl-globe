@@ -1,11 +1,12 @@
+import type {Scene, Texture} from 'three';
 import type {TileId} from '../../tile-id';
 
 export interface TileProps {
   tileId: TileId;
   zIndex: number;
   url: string;
-  texture: THREE.Texture;
-  scene: THREE.Scene;
+  texture: Texture;
+  scene: Scene;
 }
 
 export interface RenderTile {

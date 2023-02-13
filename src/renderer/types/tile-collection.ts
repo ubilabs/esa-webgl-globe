@@ -1,3 +1,5 @@
+import type {Scene} from 'three';
+
 export interface TileCollectionProps {
-  scene: THREE.Scene;
+  scene: Scene;
 }

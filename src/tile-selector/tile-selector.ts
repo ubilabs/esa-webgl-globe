@@ -48,8 +48,7 @@ export class TileSelector {
   }
 
   async getVisibleTiles(): Promise<Set<TileId>> {
-    if (!this.camera)
-      throw new Error('getVisibleTiles called without a camera');
+    if (!this.camera) throw new Error('getVisibleTiles called without a camera');
 
     if (!this.initialized) await this.initialize();
 

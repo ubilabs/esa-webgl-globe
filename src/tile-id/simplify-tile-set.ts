@@ -18,8 +18,6 @@ function filterHierarchicalDuplicates(tileIds: string[]) {
   console.log([...tileset].map(t => t.id));
 }
 
-
-
 filterHierarchicalDuplicates([
   '0/0/0',
   '0/1/0',
@@ -31,4 +29,3 @@ filterHierarchicalDuplicates([
   '1/1/1',
   '1/3/1'
 ]);
-

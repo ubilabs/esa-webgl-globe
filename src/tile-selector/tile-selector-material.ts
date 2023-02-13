@@ -7,19 +7,19 @@ type TileSelectionMaterialUniforms = {
 };
 
 /**
- * The TileSelectorMaterial renders the optimal tile for every fragment based
- * on the texture-coordinate derivatives.
+ * The TileSelectorMaterial renders the optimal tile for every fragment based on the
+ * texture-coordinate derivatives.
  */
 export class TileSelectionMaterial extends ShaderMaterial {
   uniforms: TileSelectionMaterialUniforms = {
     /**
-     * renderScale is the scaling of the viewport, by default we render at a quarter
-     * of the original size.
+     * RenderScale is the scaling of the viewport, by default we render at a quarter of the original
+     * size.
      */
     renderScale: {value: 0.25},
     /**
-     * Additional scaling for subsampling to improve performance and reduce the
-     * number of tiles to load
+     * Additional scaling for subsampling to improve performance and reduce the number of tiles to
+     * load
      */
     subsamplingFactor: {value: 1.0},
     tilesize: {value: 256.0}

@@ -1,20 +1,23 @@
-import * as THREE from 'three';
+import {PerspectiveCamera, Scene, WebGLRenderer} from 'three';
+
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
 import {TileCollection} from './tile-collection';
-import type {RendererProps} from './types/renderer';
+
 import type {RenderTile} from './types/tile';
+import type {RendererProps} from './types/renderer';
 
 export class Renderer {
   container: HTMLElement;
-  camera!: THREE.PerspectiveCamera;
-  scene!: THREE.Scene;
-  webglRenderer!: THREE.Renderer;
+  camera!: PerspectiveCamera;
+  scene!: Scene;
+  webglRenderer!: WebGLRenderer;
   controls!: OrbitControls;
   tileCollection!: TileCollection;
 
   constructor(options: RendererProps = {}) {
     this.container = options.container || document.body;
     this.initScene();
+
     this._addResizeListener();
     this._animate();
   }
@@ -22,21 +25,19 @@ export class Renderer {
   private initScene() {
     // camera
     const {width, height} = this.container.getBoundingClientRect();
-    this.camera = new THREE.PerspectiveCamera(70, width / height, 0.001, 100);
+    this.camera = new PerspectiveCamera(70, width / height, 0.001, 100);
     this.camera.position.z = 10;
     this.camera.position.y = 0;
     this.camera.zoom = 5;
     this.camera.updateProjectionMatrix();
 
     // scene
-    this.scene = new THREE.Scene();
+    this.scene = new Scene();
 
     // renderer
-    this.webglRenderer = new THREE.WebGLRenderer({antialias: true});
+    this.webglRenderer = new WebGLRenderer({antialias: true});
     this.webglRenderer.setSize(width, height);
-    // @ts-ignore
     this.webglRenderer.setClearColor(0xffffff, 0);
-    // @ts-ignore
     this.webglRenderer.setAnimationLoop(this._animate.bind(this));
     this.container.appendChild(this.webglRenderer.domElement);
 
@@ -75,7 +76,7 @@ export class Renderer {
     this.camera.updateProjectionMatrix();
   }
 
-  async updateTiles(tiles: RenderTile[]) {
+  updateTiles(tiles: RenderTile[]) {
     this.tileCollection.updateTiles(tiles);
   }
 

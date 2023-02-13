@@ -3,14 +3,12 @@ import {TileIdCache} from './tile-id-cache';
 export type TileIdArray = [x: number, y: number, zoom: number];
 
 /**
- * The TileId primitive encapsulates basic tile-math operations (retrieve
- * parents, children). It is built in a way that guarantees that there can
- * only ever be a single instance of any given tile, which allows the
- * tile-objects to be used like primitives in comparisons, maps, sets and
- * so on.
+ * The TileId primitive encapsulates basic tile-math operations (retrieve parents, children). It is
+ * built in a way that guarantees that there can only ever be a single instance of any given tile,
+ * which allows the tile-objects to be used like primitives in comparisons, maps, sets and so on.
  *
- * A TileId instance can be retrieved using the static methods `TileId.fromString()`
- * and `TileId.fromXYZ()`. The tileIds are of the format `z/x/y`.
+ * A TileId instance can be retrieved using the static methods `TileId.fromString()` and
+ * `TileId.fromXYZ()`. The tileIds are of the format `z/x/y`.
  */
 export class TileId {
   readonly id: string;

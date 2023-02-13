@@ -1,4 +1,5 @@
-import * as THREE from 'three';
+import {BufferGeometry, Material, Mesh, Scene, Texture} from 'three';
+
 import {precalcGeometries} from './lib/precalc-geometries';
 import {getTileMaterial, getTileMaterialPole} from './lib/get-tile-material';
 import {ZOOM_SEGMENT_MAP} from './config';
@@ -13,14 +14,14 @@ export class Tile {
   url: string;
   readonly tileId: TileId;
   readonly zIndex: number;
-  readonly scene: THREE.Scene;
+  readonly scene: Scene;
   readonly texture: TileProps['texture'];
   readonly segments: number;
   readonly isNorthRow: boolean;
   readonly isSouthRow: boolean;
-  readonly material: THREE.Material;
-  readonly geometry: THREE.BufferGeometry;
-  readonly mesh: THREE.Mesh;
+  readonly material: Material;
+  readonly geometry: BufferGeometry;
+  readonly mesh: Mesh;
 
   constructor(options: TileProps) {
     this.tileId = options.tileId;
@@ -42,7 +43,7 @@ export class Tile {
   }
 
   private _getGeometry() {
-    let geometry: THREE.BufferGeometry = GEOMETRIES[this.segments].normal;
+    let geometry: BufferGeometry = GEOMETRIES[this.segments].normal;
 
     if (this.isNorthRow) {
       geometry = GEOMETRIES[this.segments].north;
@@ -55,7 +56,7 @@ export class Tile {
     return geometry;
   }
 
-  private _getMaterial(texture: THREE.Texture, zIndex: number) {
+  private _getMaterial(texture: Texture, zIndex: number) {
     const uniforms = {
       x: {value: this.tileId.x},
       y: {value: this.tileId.y},
@@ -73,7 +74,7 @@ export class Tile {
   }
 
   private _getMesh(geometry: THREE.BufferGeometry, material: THREE.Material) {
-    const mesh = new THREE.Mesh(geometry, material);
+    const mesh = new Mesh(geometry, material);
 
     // ensure layers are rendered from zIndex 0 -> n
     // and per layer higher zoom tiles are rendered first
@@ -95,7 +96,7 @@ export class Tile {
     }
   }
 
-  switchTexture(texture: THREE.Texture, fade: boolean, speed = 0.045) {
+  switchTexture(texture: Texture, fade: boolean, speed = 0.045) {
     // @ts-ignore
     const fadeValue = this.material.uniforms.textureFade.value;
     const active = fadeValue < 0.5 ? 0 : 1;

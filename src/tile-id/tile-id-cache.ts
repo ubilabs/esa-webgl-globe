@@ -1,11 +1,9 @@
 import type {TileId} from './tile-id';
 
 /**
- * The TileCache is basically a WeakSet of tiles that can be
- * queried via the tileId.
- * It is used to guarantee that there can always only exists
- * a single instance of a specific tile within the process and
- * thus that `tileA === tileB` will always work as expected.
+ * The TileCache is basically a WeakSet of tiles that can be queried via the tileId. It is used to
+ * guarantee that there can always only exists a single instance of a specific tile within the
+ * process and thus that `tileA === tileB` will always work as expected.
  */
 export class TileIdCache {
   private registry: FinalizationRegistry<string>;
@@ -13,9 +11,7 @@ export class TileIdCache {
 
   constructor() {
     this.tileIdCache = new Map();
-    this.registry = new FinalizationRegistry<string>(id =>
-      this.tileIdCache.delete(id)
-    );
+    this.registry = new FinalizationRegistry<string>(id => this.tileIdCache.delete(id));
   }
 
   has(id: string): boolean {
