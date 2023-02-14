@@ -10,7 +10,7 @@ const globe = new WebGlGlobe(document.body, {
     {
       id: 'basemap',
       zIndex: 0,
-      maxZoom: 7,
+      maxZoom: 5,
       urlParameters: {},
       getUrl: ({x, y, zoom}) =>
         `https://storage.googleapis.com/esa-cfs-tiles/1.9.0/basemaps/colored/${zoom}/${x}/${y}.png`

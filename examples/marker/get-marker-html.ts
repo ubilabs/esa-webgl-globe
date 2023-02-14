@@ -1,6 +1,6 @@
 // modiefied from https://github.com/ubilabs/esa-climate-from-space/blob/develop/src/scripts/libs/create-marker.ts
 
-export async function getMarkerHTML(title: string): Promise<string> {
+export function getMarkerHtml(title: string): string {
   return `
   <div class="myMarker" style="width: 100%"
         xmlns="http://www.w3.org/1999/xhtml">
