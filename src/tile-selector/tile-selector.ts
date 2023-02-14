@@ -22,7 +22,7 @@ export class TileSelector {
   private camera?: PerspectiveCamera;
   private size = new Vector2();
 
-  private initialized: boolean = false;
+  private initialized?: Promise<void>;
 
   constructor(options: Partial<TileSelectorOptions> = {}) {
     this.options = {...DEFAULT_OPTIONS, ...options};
@@ -36,7 +36,6 @@ export class TileSelector {
     }
 
     await this.impl.setOptions(this.options);
-    this.initialized = true;
   }
 
   setSize(size: Vector2): void {
@@ -50,7 +49,14 @@ export class TileSelector {
   async getVisibleTiles(): Promise<Set<TileId>> {
     if (!this.camera) throw new Error('getVisibleTiles called without a camera');
 
-    if (!this.initialized) await this.initialize();
+    if (!this.initialized) {
+      this.initialized = this.initialize();
+    }
+
+    await this.initialized;
+
+    this.camera.updateProjectionMatrix();
+    this.camera.updateMatrixWorld();
 
     const tileIds = await this.impl!.computeVisibleTiles(
       this.size.toArray(),
