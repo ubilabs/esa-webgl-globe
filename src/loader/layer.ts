@@ -187,9 +187,8 @@ export class Layer<UrlParameters = unknown> {
    * Calls the request scheduler's done() function when when complete.
    *
    * @param renderTile The render tile
-   * @param done
    */
-  private async fetch(renderTile: RenderTile, done: () => void) {
+  private async fetch(renderTile: RenderTile) {
     const {url} = renderTile;
 
     renderTile.loadingState = TileLoadingState.LOADING;
@@ -197,7 +196,6 @@ export class Layer<UrlParameters = unknown> {
     if (this.props.debug && this.props.debugMode !== LayerDebugMode.OVERLAY) {
       renderTile.data = await this.renderDebugInfo(renderTile);
       renderTile.loadingState = TileLoadingState.LOADED;
-      done();
 
       return;
     }
@@ -217,8 +215,6 @@ export class Layer<UrlParameters = unknown> {
     if (this.props.debug) {
       renderTile.data = await this.renderDebugInfo(renderTile);
     }
-
-    done();
   }
 
   private async renderDebugInfo(renderTile: RenderTile): Promise<ImageBitmap> {
