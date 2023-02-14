@@ -87,6 +87,7 @@ export class TileSelectorImpl implements ITileSelectorImpl {
   private setSize(width: number, height: number) {
     this.canvas!.width = width;
     this.canvas!.height = height;
+    this.renderer.setViewport(0, 0, width, height);
     this.rgbaArray = undefined;
 
     this.renderTarget.setSize(width, height);
