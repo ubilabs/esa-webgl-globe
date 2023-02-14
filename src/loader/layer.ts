@@ -114,28 +114,30 @@ export class Layer<UrlParameters = unknown> {
       // relevant url paramters
       const url = this.getUrlForTileId(tileId);
 
-      // if already in cache then do nothing
-      if (this.cache.has(url)) {
-        return;
+      // load the tile from cache or create it
+      let renderTile = this.cache.get(url);
+      if (!renderTile) {
+        renderTile = {
+          tileId,
+          url,
+          zIndex: -1, // zIndex will be set when render tile is returned because it can change over time
+          loadingState: TileLoadingState.QUEUED
+        };
+
+        this.cache.set(url, renderTile);
       }
 
-      // create new render tile (without data) and save to cache
-      const renderTile = {
-        tileId,
-        url,
-        zIndex: -1, // zIndex will be set when render tile is returned because it can change over time
-        loadingState: TileLoadingState.QUEUED
-      };
+      // return unless the tile is still queued and not currently being fetche
+      if (renderTile.loadingState !== TileLoadingState.QUEUED) return;
+      if (this.scheduler.isScheduled(renderTile)) return;
 
-      this.cache.set(url, renderTile);
-
-      // add to request queue
+      // now we know it's a new, unique request, wait for a place in the queue
       const request = await this.scheduler.scheduleRequest(renderTile, this.getTilePriority);
 
-      // ready to fetch
-      if (request) {
-        await this.fetch(renderTile, request.done);
-      }
+      if (!request) return;
+
+      await this.fetch(renderTile);
+      request.done();
     });
   }
 
@@ -246,21 +248,21 @@ export class Layer<UrlParameters = unknown> {
     }
 
     ctx.strokeStyle = `rgb(${color.join(',')}, 0.9)`;
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 2;
     ctx.strokeRect(0, 0, 256, 256);
 
     ctx.fillStyle = 'white';
     ctx.textAlign = 'center';
 
-    ctx.font = '48px sans-serif';
+    ctx.font = '48px monospace';
     ctx.fillText(`(${renderTile.tileId.x} | ${renderTile.tileId.y})`, 128, 128, 256);
 
-    ctx.font = '24px sans-serif';
+    ctx.font = '24px monospace';
     ctx.fillText(`zoom: ${renderTile.tileId.zoom}`, 128, 168, 256);
 
     if (renderTile.loadingState === TileLoadingState.ERROR) {
       ctx.fillStyle = 'red';
-      ctx.fillText('LOADING FAILED', 128, 88, 256);
+      ctx.fillText('LOADING FAILED', 128, 78, 256);
     }
 
     return await createImageBitmap(canvas, {imageOrientation: 'flipY'});

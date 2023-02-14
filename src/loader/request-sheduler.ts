@@ -107,6 +107,10 @@ export default class RequestScheduler<Handle = unknown> {
     return promise;
   }
 
+  isScheduled(handle: Handle) {
+    return this.requestMap.has(handle);
+  }
+
   // PRIVATE
 
   private _issueRequest(request: Request<Handle>): Promise<any> {
