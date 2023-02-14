@@ -4,19 +4,23 @@ import {RenderTile} from './renderer/types/tile';
 import {TileSelector} from './tile-selector/tile-selector';
 import {Vector2} from 'three';
 import {Renderer} from './renderer/renderer';
+import {MarkerHtml} from './main';
 
 import type {LngLatDist} from './renderer/types/lng-lat-dist';
 import type {LayerProps} from './loader/types/layer';
+import type {MarkerProps} from './renderer/types/marker';
 
 const TILESELECTOR_FPS = 10;
 
 type WebGlGlobeOptions = Partial<{
   layers: LayerProps<any>[];
   cameraView: LngLatDist;
+  markers: MarkerProps[];
 }>;
 
 export class WebGlGlobe extends EventTarget {
-  private layersById: {[id: string]: Layer} = {};
+  private layersById: Record<string, Layer> = {};
+  private markersById: Record<string, MarkerHtml> = {};
   private readonly scheduler: RequestScheduler<RenderTile>;
   private readonly renderer: Renderer;
   private readonly tileSelector: TileSelector;
@@ -54,6 +58,10 @@ export class WebGlGlobe extends EventTarget {
     if (props.cameraView) {
       this.renderer.setCameraView(props.cameraView);
     }
+
+    if (props.markers) {
+      this.setMarkers(props.markers);
+    }
   }
 
   start() {
@@ -70,6 +78,7 @@ export class WebGlGlobe extends EventTarget {
     // remove layers that are no longer needeed
     const newLayerIds = layers.map(l => l.id);
     const toRemove = Object.keys(this.layersById).filter(id => !newLayerIds.includes(id));
+
     for (const layerId of toRemove) {
       // fixme: do we need a destructor here, to free caches or sth like that?
       delete this.layersById[layerId];
@@ -85,6 +94,29 @@ export class WebGlGlobe extends EventTarget {
 
       // otherwise create the layer
       this.layersById[layer.id] = new Layer(this.scheduler, layer);
+    }
+  }
+
+  private setMarkers(markerProps: MarkerProps[]) {
+    // remove markers that are no longer needeed
+    const newMarkerIds = markerProps.map(m => m.id);
+    const toRemove = Object.keys(this.markersById).filter(id => !newMarkerIds.includes(id));
+
+    for (const markerId of toRemove) {
+      this.markersById[markerId].destroy();
+    }
+
+    for (let props of markerProps) {
+      // known markers get updated
+      const knownMarker = this.markersById[props.id];
+
+      if (knownMarker) {
+        knownMarker.setProps(props);
+        continue;
+      }
+
+      // otherwise create the marker
+      this.markersById[props.id] = new MarkerHtml({props, camera: this.renderer.camera});
     }
   }
 

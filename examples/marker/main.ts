@@ -1,63 +1,50 @@
 import '../style.css';
-import {MarkerHtml, Renderer} from '../../src/main';
-import {getDebugTexture} from '../../src/renderer/lib/debug-texture';
-import {TileId} from '../../src/tile-id';
-import {getMarkerHTML} from './marker-image';
-import type {RenderTile} from '../../src/renderer/types/tile';
 
-const zoom = 3;
-const columns = Math.pow(2, zoom + 1);
-const rows = Math.pow(2, zoom);
-const tileCount = columns * rows;
+import {WebGlGlobe} from '../../src/webgl-globe';
+import {LayerDebugMode} from '../../src/loader/types/layer';
+import {getMarkerHtml} from './get-marker-html';
+import type {LayerProps} from '../../src/loader/types/layer';
+import type {MarkerProps} from '../../src/renderer/types/marker';
 
-async function getTiles() {
-  const tiles = Array.from({length: tileCount}).map((_, i) => {
-    const row = Math.floor(i / columns);
-    const column = i % columns;
+const globe = new WebGlGlobe(document.body, {
+  layers: [
+    {
+      id: 'basemap',
+      debug: true,
+      debugMode: LayerDebugMode.OVERLAY,
+      urlParameters: {timestep: 0},
+      zIndex: 0,
+      maxZoom: 4,
+      getUrl: ({x, y, zoom}) =>
+        `https://storage.googleapis.com/esa-cfs-tiles/1.9.0/basemaps/colored/${zoom}/${x}/${y}.png`
+    } as LayerProps
+  ]
+});
 
-    return {
-      tileId: TileId.fromXYZ(column, row, zoom),
-      url: 'debug/1',
-      zIndex: 0
-    } as RenderTile;
+const markers: MarkerProps[] = [];
+
+for (let i = 0; i < 20; i++) {
+  const lng = (Math.random() - 0.5) * 360;
+  const lat = (Math.random() - 0.5) * 180;
+  markers.push({
+    id: i.toString(),
+    html: getMarkerHtml(`${lng.toFixed(1)}, ${lng.toFixed(1)}`),
+    lng,
+    lat,
+    offset: [-16, -16],
+    onClick: id => alert(`${id} / ${lng.toFixed(1)}, ${lng.toFixed(1)}`)
   });
-
-  for (const tile of tiles) {
-    const textureOptions = {
-      rectColor: '#666',
-      rectSize: 255,
-      backgroundColor: 'transparent'
-    };
-    tile.data = await getDebugTexture(tile, textureOptions);
-  }
-
-  return tiles;
 }
 
-(async function () {
-  const tiles = await getTiles();
-  const renderer = new Renderer();
-  renderer.updateTiles(tiles);
+const sicilia: MarkerProps = {
+  id: 'sicilia',
+  html: getMarkerHtml(`Sicilia`),
+  lng: 14.111089,
+  lat: 37.585256,
+  offset: [-16, -16],
+  onClick: id => alert(id)
+};
 
-  for (let i = 0; i < 100; i++) {
-    const lngLat = {
-      lng: (Math.random() - 0.5) * 360,
-      lat: (Math.random() - 0.5) * 180
-    };
-    const markerString = await getMarkerHTML(`${lngLat.lng.toFixed(1)}, ${lngLat.lng.toFixed(1)}`);
+markers.push(sicilia);
 
-    new MarkerHtml({
-      html: markerString,
-      renderer: renderer,
-      offset: [-16, -16],
-      lngLat
-    });
-  }
-
-  new MarkerHtml({
-    html: await getMarkerHTML(`Sicilia`),
-    renderer: renderer,
-    offset: [-16, -16],
-    lngLat: {lng: 14.111089, lat: 37.585256}
-  });
-})();
+globe.setProps({markers});
