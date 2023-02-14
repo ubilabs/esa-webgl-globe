@@ -40,8 +40,11 @@ async function getTiles() {
   renderer.updateTiles(tiles);
 
   for (let i = 0; i < 100; i++) {
-    const lngLat: [number, number] = [(Math.random() - 0.5) * 360, (Math.random() - 0.5) * 180];
-    const markerString = await getMarkerHTML(`${lngLat.map(x => x.toFixed(1)).join(', ')}`);
+    const lngLat = {
+      lng: (Math.random() - 0.5) * 360,
+      lat: (Math.random() - 0.5) * 180
+    };
+    const markerString = await getMarkerHTML(`${lngLat.lng.toFixed(1)}, ${lngLat.lng.toFixed(1)}`);
 
     new MarkerHtml({
       html: markerString,
@@ -55,6 +58,6 @@ async function getTiles() {
     html: await getMarkerHTML(`Sicilia`),
     renderer: renderer,
     offset: [-16, -16],
-    lngLat: [14.111089, 37.585256]
+    lngLat: {lng: 14.111089, lat: 37.585256}
   });
 })();

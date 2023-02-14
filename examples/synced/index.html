@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Example Layer</title>
+    <style>
+      body {
+        display: grid;
+        place-items: center;
+        background: red !important;
+      }
+
+      .grid {
+        height: 100%;
+        width: 100%;
+        display: grid;
+        grid-gap: 0.1em;
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: 50% 50%;
+      }
+
+      .globe {
+        background: #111;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="info">Sync two Globes</div>
+    <div class="grid">
+      <div class="globe" data-basemap="colored"></div>
+      <div class="globe" data-basemap="land"></div>
+      <div class="globe" data-basemap="blue"></div>
+      <div class="globe" data-basemap="dark"></div>
+    </div>
+
+    <script type="module" src="main.ts"></script>
+  </body>
+</html>

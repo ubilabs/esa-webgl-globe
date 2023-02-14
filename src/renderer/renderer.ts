@@ -2,19 +2,25 @@ import {PerspectiveCamera, Scene, WebGLRenderer} from 'three';
 
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
 import {TileCollection} from './tile-collection';
+import {lngLatDistToWorldSpace, worldSpaceToLngLatDist} from './lib/convert-spaces';
 
 import type {RenderTile} from './types/tile';
 import type {RendererProps} from './types/renderer';
+import type {LngLatDist} from './types/lng-lat-dist';
 
-export class Renderer {
+export class Renderer extends EventTarget {
   container: HTMLElement;
   camera!: PerspectiveCamera;
-  scene!: Scene;
-  webglRenderer!: WebGLRenderer;
-  controls!: OrbitControls;
-  tileCollection!: TileCollection;
+  private scene!: Scene;
+  private webglRenderer!: WebGLRenderer;
+  private controls!: OrbitControls;
+  private tileCollection!: TileCollection;
+  private cameraView?: LngLatDist;
+  private skipViewUpdate: boolean = false;
 
   constructor(options: RendererProps = {}) {
+    super();
+
     this.container = options.container || document.body;
     this.initScene();
 
@@ -25,10 +31,10 @@ export class Renderer {
   private initScene() {
     // camera
     const {width, height} = this.container.getBoundingClientRect();
-    this.camera = new PerspectiveCamera(70, width / height, 0.001, 100);
+    this.camera = new PerspectiveCamera(90, width / height, 0.001, 100);
     this.camera.position.z = 10;
     this.camera.position.y = 0;
-    this.camera.zoom = 5;
+    this.camera.zoom = 3.5;
     this.camera.updateProjectionMatrix();
 
     // scene
@@ -44,7 +50,7 @@ export class Renderer {
     // controls
     this.controls = new OrbitControls(this.camera, this.webglRenderer.domElement);
     this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.1;
+    this.controls.dampingFactor = 0.075;
     this.controls.enablePan = false;
     this.controls.enableZoom = true;
     this.controls.zoomSpeed = 0.5;
@@ -52,12 +58,18 @@ export class Renderer {
     this.controls.maxPolarAngle = Math.PI / 2 + Math.PI / 2;
     this.controls.minPolarAngle = Math.PI / 2 - Math.PI / 2;
     this.controls.minDistance = 1.05; // ~ zoom level 7
+    this.controls.addEventListener('change', () => {
+      const view = worldSpaceToLngLatDist(this.camera.position);
+      const event = new CustomEvent<LngLatDist>('cameraViewChanged', {detail: view});
+      this.dispatchEvent(event);
+    });
 
     // globe
     this.tileCollection = new TileCollection({scene: this.scene});
   }
 
   private _animate() {
+    this.skipViewUpdate = false;
     this.webglRenderer.render(this.scene, this.camera);
     this.controls.update();
     const cameraDistance = this.camera.position.length() - 1;
@@ -78,6 +90,17 @@ export class Renderer {
 
   updateTiles(tiles: RenderTile[]) {
     this.tileCollection.updateTiles(tiles);
+  }
+
+  setCameraView(cameraView: LngLatDist) {
+    if (cameraView === this.cameraView || this.skipViewUpdate) {
+      return;
+    }
+
+    lngLatDistToWorldSpace(cameraView, this.camera.position);
+    this.skipViewUpdate = true;
+    this.controls.update();
+    this.cameraView = cameraView;
   }
 
   destroy() {
