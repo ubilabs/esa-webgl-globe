@@ -1,13 +1,11 @@
 import {PerspectiveCamera, Vector3} from 'three';
 import {Renderer} from './renderer';
-import {lngLatToWorldSpace} from './lib/lnglat-to-world';
-
-type Position = [number, number];
+import {lngLatDistToWorldSpace} from './lib/convert-spaces';
 
 interface MarkerOptions {
   html: string;
   renderer: Renderer;
-  lngLat: Position;
+  lngLat: {lng: number; lat: number};
   offset: [number, number];
 }
 
@@ -30,7 +28,7 @@ export class MarkerHtml {
     const projected = new Vector3(0, 0, 0);
     this.lastCameraPosition = new Vector3(-99999, -99999, -99999);
 
-    lngLatToWorldSpace(options.lngLat, position);
+    lngLatDistToWorldSpace({...options.lngLat, distance: 1}, position);
 
     const updatePosition = () => {
       if (!this.active) {
