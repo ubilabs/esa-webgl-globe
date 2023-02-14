@@ -9,9 +9,17 @@ export interface TileProps {
   scene: Scene;
 }
 
+export const enum TileLoadingState {
+  QUEUED,
+  LOADING,
+  LOADED,
+  ERROR
+}
+
 export interface RenderTile {
   tileId: TileId;
   zIndex: number;
   url: string;
+  loadingState: TileLoadingState;
   data?: ImageBitmap;
 }

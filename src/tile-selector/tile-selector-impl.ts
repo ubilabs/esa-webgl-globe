@@ -30,10 +30,10 @@ export interface ITileSelectorImpl {
 
 export class TileSelectorImpl implements ITileSelectorImpl {
   private options?: TileSelectorOptions;
-  private canvas?: OffscreenCanvas | HTMLCanvasElement;
-  private renderer?: WebGLRenderer;
-  private renderTarget?: WebGLRenderTarget;
-  private rendererUtils?: WebGLUtils;
+  private canvas!: OffscreenCanvas | HTMLCanvasElement;
+  private renderer!: WebGLRenderer;
+  private renderTarget!: WebGLRenderTarget;
+  private rendererUtils!: WebGLUtils;
   private rgbaArray?: Uint8Array;
 
   private readonly scene: Scene;
@@ -75,11 +75,13 @@ export class TileSelectorImpl implements ITileSelectorImpl {
     this.setSize(size[0], size[1]);
     this.render(projectionMatrix, worldMatrix);
 
+    const visibleTiles = await this.collectData();
+
     if (this.isDebugMode) {
       this.renderDebug();
     }
 
-    return this.collectData();
+    return visibleTiles;
   }
 
   private setSize(width: number, height: number) {
@@ -87,11 +89,11 @@ export class TileSelectorImpl implements ITileSelectorImpl {
     this.canvas!.height = height;
     this.rgbaArray = undefined;
 
-    this.renderTarget!.setSize(width, height);
+    this.renderTarget.setSize(width, height);
   }
 
   private render(projectionMatrix: number[], worldMatrix: number[]) {
-    const renderer = this.renderer!;
+    const renderer = this.renderer;
 
     this.camera.projectionMatrix.fromArray(projectionMatrix);
     this.camera.matrix.fromArray(worldMatrix);
@@ -101,22 +103,22 @@ export class TileSelectorImpl implements ITileSelectorImpl {
     this.tileSelectionMaterial.uniforms.subsamplingFactor.value = 1.2;
 
     renderer.setClearColor(0, 0);
-    renderer.setRenderTarget(this.renderTarget!);
+    renderer.setRenderTarget(this.renderTarget);
     renderer.render(this.scene, this.camera);
   }
 
   private renderDebug() {
-    const renderer = this.renderer!;
+    const renderer = this.renderer;
 
-    this.fsQuad.material.uniforms.buf.value = this.renderTarget!.texture;
+    this.fsQuad.material.uniforms.buf.value = this.renderTarget.texture;
 
     renderer.setRenderTarget(null);
     this.fsQuad.render(renderer);
   }
 
   private async collectData(): Promise<string[]> {
-    const {width, height} = this.renderTarget!;
-    const renderer = this.renderer!;
+    const {width, height} = this.renderTarget;
+    const renderer = this.renderer;
 
     if (!this.rgbaArray) {
       this.rgbaArray = new Uint8Array(4 * width * height);
@@ -126,9 +128,9 @@ export class TileSelectorImpl implements ITileSelectorImpl {
     // (in this case doing it synchronously is perfectly fine) or when other means aren't
     // available (WebGL1)
     if (!renderer.capabilities.isWebGL2 || this.options!.useWorker) {
-      renderer.readRenderTargetPixels(this.renderTarget!, 0, 0, width, height, this.rgbaArray);
+      renderer.readRenderTargetPixels(this.renderTarget, 0, 0, width, height, this.rgbaArray);
     } else {
-      const texture = this.renderTarget!.texture;
+      const texture = this.renderTarget.texture;
       const textureFormat = texture.format;
       const textureType = texture.type;
 
@@ -139,8 +141,8 @@ export class TileSelectorImpl implements ITileSelectorImpl {
         width,
         height,
         // note: @types/three got this function wrong
-        this.rendererUtils!.convert(textureFormat as any) as any,
-        this.rendererUtils!.convert(textureType as any) as any,
+        this.rendererUtils.convert(textureFormat as any) as any,
+        this.rendererUtils.convert(textureType as any) as any,
         this.rgbaArray
       );
     }

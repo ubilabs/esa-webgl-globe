@@ -1,10 +1,12 @@
 import RequestScheduler from './loader/request-sheduler';
-import {Layer, LayerProps} from './loader/layer';
+import {Layer} from './loader/layer';
 import {RenderTile} from './renderer/types/tile';
 import {TileSelector} from './tile-selector/tile-selector';
 import {Vector2} from 'three';
 import {Renderer} from './renderer/renderer';
+
 import type {LngLatDist} from './renderer/types/lng-lat-dist';
+import type {LayerProps} from './loader/types/layer';
 
 const TILESELECTOR_FPS = 10;
 
@@ -65,22 +67,24 @@ export class WebGlGlobe extends EventTarget {
   }
 
   private setLayers(layers: LayerProps[]) {
+    // remove layers that are no longer needeed
     const newLayerIds = layers.map(l => l.id);
     const toRemove = Object.keys(this.layersById).filter(id => !newLayerIds.includes(id));
-
     for (const layerId of toRemove) {
+      // fixme: do we need a destructor here, to free caches or sth like that?
       delete this.layersById[layerId];
     }
 
-    for (let props of layers) {
-      let layer = this.layersById[props.id];
+    for (let layer of layers) {
+      // known layers get updated
+      if (this.layersById[layer.id]) {
+        this.layersById[layer.id].setProps(layer);
 
-      if (layer) {
-        layer.setProps(props);
-      } else {
-        layer = new Layer(this.scheduler, props);
-        this.layersById[props.id] = layer;
+        continue;
       }
+
+      // otherwise create the layer
+      this.layersById[layer.id] = new Layer(this.scheduler, layer);
     }
   }
 

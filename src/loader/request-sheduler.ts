@@ -14,7 +14,7 @@ export type RequestSchedulerOptions = {
 
 const STAT_QUEUED_REQUESTS = 'Queued Requests';
 const STAT_ACTIVE_REQUESTS = 'Active Requests';
-const STAT_CANCELLED_REQUESTS = 'Cancelled Requests';
+const STAT_CANCELLED_REQUESTS_EVER = 'Cancelled Requests';
 const STAT_QUEUED_REQUESTS_EVER = 'Queued Requests Ever';
 const STAT_ACTIVE_REQUESTS_EVER = 'Active Requests Ever';
 
@@ -53,7 +53,7 @@ export default class RequestScheduler<Handle = unknown> {
       stats: [
         {name: STAT_QUEUED_REQUESTS},
         {name: STAT_ACTIVE_REQUESTS},
-        {name: STAT_CANCELLED_REQUESTS},
+        {name: STAT_CANCELLED_REQUESTS_EVER},
         {name: STAT_QUEUED_REQUESTS_EVER},
         {name: STAT_ACTIVE_REQUESTS_EVER}
       ]
@@ -98,6 +98,8 @@ export default class RequestScheduler<Handle = unknown> {
     });
 
     this.stats.get(STAT_QUEUED_REQUESTS).incrementCount();
+    this.stats.get(STAT_QUEUED_REQUESTS_EVER).incrementCount();
+
     this.requestQueue.push(request);
     this.requestMap.set(handle, promise);
     this._issueNewRequests();
@@ -119,6 +121,8 @@ export default class RequestScheduler<Handle = unknown> {
         // Stop tracking a request - it has completed, failed, cancelled etc
         this.requestMap.delete(handle);
         this.activeRequestCount--;
+        this.stats.get(STAT_ACTIVE_REQUESTS).decrementCount();
+
         // A slot just freed up, see if any queued requests are waiting
         this._issueNewRequests();
       }
@@ -126,6 +130,10 @@ export default class RequestScheduler<Handle = unknown> {
 
     // Track this request
     this.activeRequestCount++;
+
+    this.stats.get(STAT_QUEUED_REQUESTS).decrementCount();
+    this.stats.get(STAT_ACTIVE_REQUESTS).incrementCount();
+    this.stats.get(STAT_ACTIVE_REQUESTS_EVER).incrementCount();
 
     return resolve ? resolve({done}) : Promise.resolve({done});
   }
@@ -184,6 +192,9 @@ export default class RequestScheduler<Handle = unknown> {
 
     // by returning a negative priority, the callback cancels the request
     if (request.priority < 0) {
+      this.stats.get(STAT_CANCELLED_REQUESTS_EVER).incrementCount();
+      this.stats.get(STAT_QUEUED_REQUESTS).decrementCount();
+
       request.resolve(null);
       return false;
     }

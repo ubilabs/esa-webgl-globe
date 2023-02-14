@@ -32,7 +32,7 @@ export class Renderer extends EventTarget {
     // camera
     const {width, height} = this.container.getBoundingClientRect();
     this.camera = new PerspectiveCamera(90, width / height, 0.001, 100);
-    this.camera.position.z = 10;
+    this.camera.position.z = 5;
     this.camera.position.y = 0;
     this.camera.zoom = 3.5;
     this.camera.updateProjectionMatrix();

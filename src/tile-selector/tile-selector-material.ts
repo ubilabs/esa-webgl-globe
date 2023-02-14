@@ -34,7 +34,7 @@ export class TileSelectionMaterial extends ShaderMaterial {
     varying vec2 vUV;
 
     void main() {
-      vUV = vec2(uv.x, 1.0 - uv.y);
+      vUV = vec2(uv.x, uv.y);
       gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
     }
   `;
