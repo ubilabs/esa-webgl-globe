@@ -35,13 +35,11 @@ export class TileCollection {
     }
 
     // then remove old ones with the help of the map we build in the previous step
-    for (const uniqTileId in this.tiles) {
-      if (Object.prototype.hasOwnProperty.call(this.tiles, uniqTileId)) {
-        if (!newTilesMap[uniqTileId]) {
-          this.tiles[uniqTileId].destroy();
-          delete this.tiles[uniqTileId];
-        }
-      }
+    for (const uniqTileId of Object.keys(this.tiles)) {
+      if (newTilesMap[uniqTileId]) continue;
+
+      this.tiles[uniqTileId].destroy();
+      delete this.tiles[uniqTileId];
     }
   }
 
