@@ -5,11 +5,12 @@ import type {MarkerProps} from './types/marker';
 interface MarkerOptions {
   props: MarkerProps;
   camera: PerspectiveCamera;
+  container: HTMLElement;
 }
 
 export class MarkerHtml {
   readonly id: string;
-  private container!: HTMLDivElement;
+  private markerEl!: HTMLDivElement;
   private camera: PerspectiveCamera;
   private props: MarkerProps;
   private position: Vector3;
@@ -20,13 +21,13 @@ export class MarkerHtml {
   constructor(options: MarkerOptions) {
     this.id = options.props.id;
     this.props = options.props;
-    this.container = document.createElement('div');
-    this.container.style.position = 'absolute';
-    this.container.style.willChange = 'transform';
-    document.body.appendChild(this.container);
+    this.markerEl = document.createElement('div');
+    this.markerEl.style.position = 'absolute';
+    this.markerEl.style.willChange = 'transform';
+    options.container.appendChild(this.markerEl);
 
     if (typeof this.props.onClick === 'function') {
-      this.container.addEventListener('click', () => this.props.onClick(this.id));
+      this.markerEl.addEventListener('click', () => this.props.onClick(this.id));
     }
 
     this.camera = options.camera;
@@ -61,7 +62,7 @@ export class MarkerHtml {
     const l2 = this.camera.position.length();
     const occluded = l1 < l2;
 
-    this.container.style.zIndex = occluded ? '0' : '2';
+    this.markerEl.style.zIndex = occluded ? '0' : '2';
 
     // update css position
     this.camera.updateMatrixWorld();
@@ -70,8 +71,8 @@ export class MarkerHtml {
 
     const left = this.projected.x * 100;
     const top = 100 - this.projected.y * 100;
-    this.container.style.left = `${left}%`;
-    this.container.style.top = `${top}%`;
+    this.markerEl.style.left = `${left}%`;
+    this.markerEl.style.top = `${top}%`;
 
     this.lastCameraPosition.copy(this.camera.position);
   }
@@ -79,15 +80,15 @@ export class MarkerHtml {
   setProps(props: MarkerProps) {
     this.props = props;
 
-    this.container.innerHTML = this.props.html;
-    this.container.style.transform = `translate(${this.props.offset[0]}px, ${this.props.offset[1]}px)`;
+    this.markerEl.innerHTML = this.props.html;
+    this.markerEl.style.transform = `translate(${this.props.offset[0]}px, ${this.props.offset[1]}px)`;
     lngLatDistToWorldSpace({lng: this.props.lng, lat: this.props.lat, distance: 1}, this.position);
 
     this.updatePosition();
   }
 
   destroy() {
-    this.container.parentElement?.removeChild(this.container);
+    this.markerEl.parentElement?.removeChild(this.markerEl);
     this.active = false;
   }
 }

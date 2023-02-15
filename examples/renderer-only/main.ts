@@ -2,7 +2,7 @@ import '../style.css';
 import {Renderer} from '../../src/main';
 import {getDebugTexture} from '../../src/renderer/lib/debug-texture';
 import {TileId} from '../../src/tile-id';
-import type {TileData} from '../../src/renderer/types/tile';
+import type {RenderTile} from '../../src/renderer/types/tile';
 
 const zoom = 2;
 const columns = Math.pow(2, zoom + 1);
@@ -17,8 +17,8 @@ async function getTiles() {
     return {
       tileId: TileId.fromXYZ(column, row, zoom),
       url: 'debug/1',
-      order: 0
-    } as TileData;
+      zIndex: 0
+    } as RenderTile;
   });
 
   for (const tile of tiles) {

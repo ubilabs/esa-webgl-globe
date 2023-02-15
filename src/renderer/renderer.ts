@@ -2,14 +2,16 @@ import {PerspectiveCamera, Scene, WebGLRenderer} from 'three';
 
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
 import {TileCollection} from './tile-collection';
+import {MarkerHtml} from './marker-html';
 import {lngLatDistToWorldSpace, worldSpaceToLngLatDist} from './lib/convert-spaces';
 
 import type {RenderTile} from './types/tile';
 import type {RendererProps} from './types/renderer';
 import type {LngLatDist} from './types/lng-lat-dist';
+import type {MarkerProps} from './types/marker';
 
 export class Renderer extends EventTarget {
-  container: HTMLElement;
+  private container: HTMLElement;
   camera!: PerspectiveCamera;
   private scene!: Scene;
   private webglRenderer!: WebGLRenderer;
@@ -17,6 +19,7 @@ export class Renderer extends EventTarget {
   private tileCollection!: TileCollection;
   private cameraView?: LngLatDist;
   private skipViewUpdate: boolean = false;
+  private markersById: Record<string, MarkerHtml> = {};
 
   constructor(options: RendererProps = {}) {
     super();
@@ -46,6 +49,8 @@ export class Renderer extends EventTarget {
     this.webglRenderer.setClearColor(0xffffff, 0);
     this.webglRenderer.setAnimationLoop(this._animate.bind(this));
     this.container.appendChild(this.webglRenderer.domElement);
+    this.container.style.position = 'relative';
+    this.container.style.overflow = 'hidden';
 
     // controls
     this.controls = new OrbitControls(this.camera, this.webglRenderer.domElement);
@@ -101,6 +106,33 @@ export class Renderer extends EventTarget {
     this.skipViewUpdate = true;
     this.controls.update();
     this.cameraView = cameraView;
+  }
+
+  setMarkers(markerProps: MarkerProps[]) {
+    // remove markers that are no longer needeed
+    const newMarkerIds = markerProps.map(m => m.id);
+    const toRemove = Object.keys(this.markersById).filter(id => !newMarkerIds.includes(id));
+
+    for (const markerId of toRemove) {
+      this.markersById[markerId].destroy();
+    }
+
+    for (let props of markerProps) {
+      // known markers get updated
+      const knownMarker = this.markersById[props.id];
+
+      if (knownMarker) {
+        knownMarker.setProps(props);
+        continue;
+      }
+
+      // otherwise create the marker
+      this.markersById[props.id] = new MarkerHtml({
+        props,
+        camera: this.camera,
+        container: this.container
+      });
+    }
   }
 
   destroy() {

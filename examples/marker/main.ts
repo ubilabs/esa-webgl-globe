@@ -1,7 +1,6 @@
 import '../style.css';
 
 import {WebGlGlobe} from '../../src/webgl-globe';
-import {LayerDebugMode} from '../../src/loader/types/layer';
 import {getMarkerHtml} from './get-marker-html';
 import type {LayerProps} from '../../src/loader/types/layer';
 import type {MarkerProps} from '../../src/renderer/types/marker';
@@ -10,8 +9,6 @@ const globe = new WebGlGlobe(document.body, {
   layers: [
     {
       id: 'basemap',
-      debug: true,
-      debugMode: LayerDebugMode.OVERLAY,
       urlParameters: {timestep: 0},
       zIndex: 0,
       maxZoom: 4,
