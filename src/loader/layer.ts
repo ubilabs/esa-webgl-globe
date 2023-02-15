@@ -2,8 +2,8 @@ import LRU from 'lru-cache';
 import {getEmptyImageBitmap} from './lib/get-empty-imagebitmap';
 import {TileLoadingState} from '../renderer/types/tile';
 import {LayerDebugMode} from './types/layer';
+import {TileId} from '../tile-id';
 
-import type {TileId} from '../tile-id';
 import type RequestScheduler from './request-sheduler';
 import type {RenderTile} from '../renderer/types/tile';
 import type {LayerProps} from './types/layer';
@@ -14,6 +14,17 @@ const DEBUG_COLORS = [
   [179, 63, 98],
   [249, 86, 79],
   [243, 198, 119]
+];
+
+const ZOOM_1_TILE_IDS = [
+  TileId.fromXYZ(0, 0, 1),
+  TileId.fromXYZ(1, 0, 1),
+  TileId.fromXYZ(2, 0, 1),
+  TileId.fromXYZ(3, 0, 1),
+  TileId.fromXYZ(0, 1, 1),
+  TileId.fromXYZ(1, 1, 1),
+  TileId.fromXYZ(2, 1, 1),
+  TileId.fromXYZ(3, 1, 1)
 ];
 
 export class Layer<UrlParameters = unknown> {
@@ -34,7 +45,7 @@ export class Layer<UrlParameters = unknown> {
    * @param tileIds Visible tileIds
    */
   public setVisibleTileIds(tileIds: Set<TileId>) {
-    const visibleTileIds = new Set<TileId>();
+    const visibleTileIds = new Set<TileId>(ZOOM_1_TILE_IDS);
 
     // Clamp zoom level of tiles to layer's maxZoom
     for (const tileId of tileIds) {
@@ -72,36 +83,58 @@ export class Layer<UrlParameters = unknown> {
    */
   public getRenderTiles(): RenderTile[] {
     // get all visible tiles we have in cache
-    const availableTiles: RenderTile[] = [];
+    const availableTiles: Map<TileId, RenderTile> = new Map();
 
     for (const tileId of this.visibleTileIds) {
       const url = this.getUrlForTileId(tileId);
       const renderTile = this.cache.get(url);
 
       // only add render tiles we have in cache and have data loaded
-      if (renderTile && renderTile.data) {
+      if (renderTile && renderTile.loadingState === TileLoadingState.LOADED) {
         // update the zIndex to the current set value in the layer props
         renderTile.zIndex = this.props.zIndex;
 
-        availableTiles.push(renderTile);
+        availableTiles.set(renderTile.tileId, renderTile);
 
         this.lastRenderTiles.set(tileId, renderTile);
-      }
+      } else {
+        // search for already loaded ancestors
+        const ancestor = this.getLoadedAncestor(tileId);
 
-      // FIXME: this else part is just a test for now to see the tiles animate when
-      //  switching timesteps
-      else {
-        // if we don't have the loaded tile in cache, but we have an older rendered tile for
-        // this tileId
-        const lastRenderTile = this.lastRenderTiles.get(tileId);
-
-        if (lastRenderTile) {
-          availableTiles.push(lastRenderTile);
+        if (ancestor) {
+          availableTiles.set(ancestor.tileId, ancestor);
         }
       }
+
+      // // FIXME: this else part is just a test for now to see the tiles animate when
+      // //  switching timesteps
+      // else {
+      //   // if we don't have the loaded tile in cache, but we have an older rendered tile for
+      //   // this tileId
+      //   const lastRenderTile = this.lastRenderTiles.get(tileId);
+
+      //   if (lastRenderTile) {
+      //     availableTiles.push(lastRenderTile);
+      //   }
+      // }
     }
 
-    return availableTiles;
+    return [...availableTiles.values()];
+  }
+
+  getLoadedAncestor(tileId: TileId): null | RenderTile {
+    if (!tileId.parent) {
+      return null;
+    }
+
+    const parentUrl = this.getUrlForTileId(tileId.parent);
+    const parentTile = parentUrl && this.cache.get(parentUrl);
+
+    if (parentTile && parentTile.loadingState === TileLoadingState.LOADED) {
+      return parentTile;
+    }
+
+    return this.getLoadedAncestor(tileId.parent);
   }
 
   /**
