@@ -15,6 +15,10 @@ const DEFAULT_OPTIONS: TileSelectorOptions = {
   useWorker: true
 };
 
+/**
+ * The TileSelector is the public interface to the tile selection process. Based on the configration
+ * it will start the actual implementation (`TileSelectorImpl`) in a worker or in the same process.
+ */
 export class TileSelector {
   private options: TileSelectorOptions;
   private impl?: ITileSelectorImpl;
@@ -24,30 +28,38 @@ export class TileSelector {
 
   private initialized?: Promise<void>;
 
+  /**
+   * Create the tile-selector frontend with the specified options.
+   *
+   * @param options
+   */
   constructor(options: Partial<TileSelectorOptions> = {}) {
     this.options = {...DEFAULT_OPTIONS, ...options};
   }
 
-  private async initialize() {
-    if (this.options.useWorker) {
-      this.impl = new TileSelectorWorkerProxy();
-    } else {
-      this.impl = new TileSelectorImpl();
-    }
-
-    await this.impl.setOptions(this.options);
-  }
-
+  /**
+   * Sets the size for the renderer
+   *
+   * @param size
+   */
   setSize(size: Vector2): void {
     this.size.copy(size);
   }
 
+  /**
+   * Attach a camera to the tile-selector.
+   *
+   * @param camera
+   */
   setCamera(camera: PerspectiveCamera): void {
     this.camera = camera;
   }
 
+  /** Retrieve the tiles currently visible for the specified camera. */
   async getVisibleTiles(): Promise<Set<TileId>> {
     if (!this.camera) throw new Error('getVisibleTiles called without a camera');
+    if (this.size.lengthSq() === 0)
+      throw new Error('getVisibleTiles called without setting a size');
 
     if (!this.initialized) {
       this.initialized = this.initialize();
@@ -65,5 +77,16 @@ export class TileSelector {
     );
 
     return new Set(tileIds.map(id => TileId.fromString(id)));
+  }
+
+  /** One-time initialization that is started when retrieving tiles for the first time. */
+  private async initialize() {
+    if (this.options.useWorker) {
+      this.impl = new TileSelectorWorkerProxy();
+    } else {
+      this.impl = new TileSelectorImpl();
+    }
+
+    await this.impl.setOptions(this.options);
   }
 }
