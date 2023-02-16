@@ -49,6 +49,17 @@ export class TileId {
     return this.getChildrenAtZoom(zoom);
   }
 
+  getAncestors(): TileId[] {
+    const ret = [];
+    let t: TileId | null = this;
+
+    while ((t = t.parent)) {
+      ret.push(t);
+    }
+
+    return ret;
+  }
+
   getParentAtZoom(zoom: number): TileId | null {
     if (zoom >= this.zoom) return null;
     if (this.zoom === 0) return null;

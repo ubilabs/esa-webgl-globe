@@ -64,38 +64,53 @@ export class Layer<UrlParameters = unknown> {
    * @returns List of render tiles
    */
   public getRenderTiles(): RenderTile[] {
-    // get all visible tiles we have in cache
-    const availableTiles: RenderTile[] = [];
+    const renderTiles = new Map<TileId, RenderTile>();
 
+    let maxZoom = 0;
+
+    // go through the requested tiles and see which ones can be rendered
+    // or replaced with a parent
     for (const tileId of this.getTileIdsToShow()) {
       const renderTile = this.getRenderTile(tileId);
 
-      // only add render tiles we have in cache and have data loaded
-      if (renderTile && renderTile.data) {
-        // update the zIndex to the current set value in the layer props
+      maxZoom = Math.max(tileId.zoom, maxZoom);
+
+      // if the tile is good to go, add it to the set and continue
+      if (renderTile.loadingState === TileLoadingState.LOADED) {
         renderTile.zIndex = this.props.zIndex;
-
-        availableTiles.push(renderTile);
-
-        this.lastRenderTiles.set(tileId, renderTile);
+        renderTiles.set(tileId, renderTile);
+        continue;
       }
 
-      // FIXME: this else part is just a test for now to see the tiles animate when
-      //  switching timesteps
-      else {
-        // if we don't have the loaded tile in cache, but we have an older rendered tile for
-        // this tileId
-        const lastRenderTile = this.lastRenderTiles.get(tileId);
-
-        if (lastRenderTile) {
-          availableTiles.push(lastRenderTile);
+      // otherwise, find the closest renderable parent
+      for (const parentTileId of tileId.getAncestors()) {
+        const parentRenderTile = this.getRenderTile(parentTileId);
+        if (parentRenderTile.loadingState === TileLoadingState.LOADED) {
+          renderTile.zIndex = this.props.zIndex;
+          renderTiles.set(parentTileId, parentRenderTile);
+          break;
         }
       }
     }
 
-    return availableTiles;
+    // remove all tiles where all children are in the list
+    const renderTileIds = new Set(renderTiles.keys());
+    for (let tileId of renderTileIds) {
+      if (tileId.zoom === maxZoom) continue;
+
+      if (tileId.children.every(c => renderTileIds.has(c))) {
+        renderTiles.delete(tileId);
+      }
+    }
+
+    return Array.from(renderTiles.values());
   }
 
+  /**
+   * Gets or creates a RenderTile instance for the specified tileId.
+   *
+   * @param tileId
+   */
   getRenderTile(tileId: TileId): RenderTile {
     const url = this.getUrlForTileId(tileId);
 
@@ -114,6 +129,10 @@ export class Layer<UrlParameters = unknown> {
     return renderTile;
   }
 
+  /**
+   * Returns the optimal list of tiles to load/render based on the optimal tileset we get from the
+   * tile-selector.
+   */
   getTileIdsToShow() {
     // fixme: very basic implementation, should take more factors into account, maybe should
     //   even live somewhere else, as much of the logic can be shared among layers.
