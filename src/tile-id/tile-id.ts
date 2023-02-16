@@ -1,4 +1,5 @@
 import {TileIdCache} from './tile-id-cache';
+import {assertNotNull} from '../util/assert';
 
 export type TileIdArray = [x: number, y: number, zoom: number];
 
@@ -27,26 +28,50 @@ export class TileId {
     return this.getParentAtZoom(this.zoom - 1);
   }
 
-  getParentAtZoom(parentZoom: number) {
-    if (parentZoom >= this.zoom) return null;
+  get children(): TileId[] {
+    return this.getChildrenAtZoom(this.zoom + 1);
+  }
+
+  atZoom(zoom: number): TileId[] {
+    if (zoom <= 0) {
+      throw new Error('zoom has to be >= 0');
+    }
+
+    if (zoom === this.zoom) return [this];
+
+    if (zoom < this.zoom) {
+      const parentAtZoom = this.getParentAtZoom(zoom);
+      assertNotNull(parentAtZoom);
+
+      return [parentAtZoom];
+    }
+
+    return this.getChildrenAtZoom(zoom);
+  }
+
+  getParentAtZoom(zoom: number): TileId | null {
+    if (zoom >= this.zoom) return null;
     if (this.zoom === 0) return null;
 
-    const dz = this.zoom - parentZoom;
+    const dz = this.zoom - zoom;
     const x = this.x >> dz;
     const y = this.y >> dz;
 
-    return TileId.fromXYZ(x, y, parentZoom);
+    return TileId.fromXYZ(x, y, zoom);
   }
 
-  get children(): TileId[] {
-    const zoom = this.zoom + 1;
+  getChildrenAtZoom(zoom: number): TileId[] {
+    if (zoom <= this.zoom) return [];
+    if (zoom === 0) return [];
 
-    const x0 = this.x << 1;
-    const y0 = this.y << 1;
+    const dz = zoom - this.zoom;
+    const numTiles = 1 << dz;
+    const x0 = this.x << dz;
+    const y0 = this.y << dz;
 
     const children = [];
-    for (let x = x0; x < x0 + 2; x++) {
-      for (let y = y0; y < y0 + 2; y++) {
+    for (let x = x0; x < x0 + numTiles; x++) {
+      for (let y = y0; y < y0 + numTiles; y++) {
         children.push(TileId.fromXYZ(x, y, zoom));
       }
     }

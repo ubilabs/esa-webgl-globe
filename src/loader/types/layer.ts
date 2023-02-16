@@ -6,6 +6,7 @@ export interface LayerProps<UrlParameters = unknown> {
   urlParameters: UrlParameters; // things that are relevant for fetching like "timestep"
   zIndex: number;
   maxZoom: number;
+  minZoom?: number;
   debug?: boolean;
   debugMode?: string;
 }

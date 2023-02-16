@@ -1,11 +1,10 @@
 import LRU from 'lru-cache';
 import {getEmptyImageBitmap} from './lib/get-empty-imagebitmap';
 import {renderDebugInfo} from './lib/render-debug-info';
-
 import {TileLoadingState} from '../renderer/types/tile';
 import {LayerDebugMode} from './types/layer';
+import {TileId} from '../tile-id';
 
-import type {TileId} from '../tile-id';
 import type RequestScheduler from './request-sheduler';
 import type {RenderTile} from '../renderer/types/tile';
 import type {LayerProps} from './types/layer';
@@ -68,9 +67,8 @@ export class Layer<UrlParameters = unknown> {
     // get all visible tiles we have in cache
     const availableTiles: RenderTile[] = [];
 
-    for (const tileId of this.visibleTileIds) {
-      const url = this.getUrlForTileId(tileId);
-      const renderTile = this.cache.get(url);
+    for (const tileId of this.getTileIdsToShow()) {
+      const renderTile = this.getRenderTile(tileId);
 
       // only add render tiles we have in cache and have data loaded
       if (renderTile && renderTile.data) {
@@ -98,38 +96,53 @@ export class Layer<UrlParameters = unknown> {
     return availableTiles;
   }
 
+  getRenderTile(tileId: TileId): RenderTile {
+    const url = this.getUrlForTileId(tileId);
+
+    let renderTile = this.cache.get(url);
+    if (!renderTile) {
+      renderTile = {
+        tileId,
+        url,
+        zIndex: -1, // zIndex will be set when render tiles are retrieved for rendering
+        loadingState: TileLoadingState.QUEUED
+      };
+
+      this.cache.set(url, renderTile);
+    }
+
+    return renderTile;
+  }
+
+  getTileIdsToShow() {
+    // fixme: very basic implementation, should take more factors into account, maybe should
+    //   even live somewhere else, as much of the logic can be shared among layers.
+    return new Set([...this.visibleTileIds, ...this.getMinZoomTileset(this.visibleTileIds)]);
+  }
+
   /**
    * Updates the request scheduler queue. For every new tile not already in the cache a request will
    * be scheduled.
    */
   private updateQueue() {
-    this.visibleTileIds.forEach(async tileId => {
-      // url will be the cache key because it defines the loaded ressource and includes all
-      // relevant url paramters
-      const url = this.getUrlForTileId(tileId);
+    const tileIdsToShow = this.getTileIdsToShow();
 
-      // load the tile from cache or create it
-      let renderTile = this.cache.get(url);
-      if (!renderTile) {
-        renderTile = {
-          tileId,
-          url,
-          zIndex: -1, // zIndex will be set when render tile is returned because it can change over time
-          loadingState: TileLoadingState.QUEUED
-        };
+    tileIdsToShow.forEach(async tileId => {
+      const renderTile = this.getRenderTile(tileId);
 
-        this.cache.set(url, renderTile);
-      }
-
-      // return unless the tile is still queued and not currently being fetche
+      // anything else but queued means it's either loading or already complete
       if (renderTile.loadingState !== TileLoadingState.QUEUED) return;
+
+      // only skip queued tiles if they're actually in the queue (might have been
+      // discarded from the queue before loading could start)
       if (this.scheduler.isScheduled(renderTile)) return;
 
-      // now we know it's a new, unique request, wait for a place in the queue
+      // if it's a new, unique request, wait for a place in the queue...
       const request = await this.scheduler.scheduleRequest(renderTile, this.getTilePriority);
 
       if (!request) return;
 
+      // ...and start the request
       await this.fetch(renderTile);
       request.done();
     });
@@ -209,5 +222,22 @@ export class Layer<UrlParameters = unknown> {
     if (this.props.debug) {
       renderTile.data = await renderDebugInfo(renderTile);
     }
+  }
+
+  /**
+   * Creates a derived tileset that contains only tiles at minZoom (default 1) covering at least the
+   * same area as the specified tiles.
+   *
+   * @param tiles
+   */
+  private getMinZoomTileset(tiles: Set<TileId>): Set<TileId> {
+    const res = new Set<TileId>();
+    const minZoom = this.props.minZoom || 1;
+
+    for (const tile of tiles) {
+      for (const t of tile.atZoom(minZoom)) res.add(t);
+    }
+
+    return res;
   }
 }
