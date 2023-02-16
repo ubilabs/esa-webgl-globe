@@ -138,7 +138,7 @@ export class Layer<UrlParameters = unknown> {
   getTileIdsToShow() {
     // fixme: very basic implementation, should take more factors into account, maybe should
     //   even live somewhere else, as much of the logic can be shared among layers.
-    return new Set([...this.visibleTileIds, ...this.getMinZoomTileset(this.visibleTileIds)]);
+    return new Set([...this.visibleTileIds, ...this.getMinZoomTileset()]);
   }
 
   /**
@@ -248,17 +248,12 @@ export class Layer<UrlParameters = unknown> {
   /**
    * Creates a derived tileset that contains only tiles at minZoom (default 1) covering at least the
    * same area as the specified tiles.
-   *
-   * @param tiles
    */
-  private getMinZoomTileset(tiles: Set<TileId>): Set<TileId> {
-    const res = new Set<TileId>();
+  private getMinZoomTileset(): Set<TileId> {
     const minZoom = this.props.minZoom || 1;
-
-    for (const tile of tiles) {
-      for (const t of tile.atZoom(minZoom)) res.add(t);
-    }
-
-    return res;
+    return new Set([
+      ...TileId.fromXYZ(0, 0, 0).atZoom(minZoom),
+      ...TileId.fromXYZ(1, 0, 0).atZoom(minZoom)
+    ]);
   }
 }
