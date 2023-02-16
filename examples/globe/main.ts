@@ -9,17 +9,17 @@ const globe = new WebGlGlobe(document.body, {
     {
       id: 'basemap',
       // debug: true,
-      // debugMode: LayerDebugMode.OVERLAY,
+      debugMode: LayerDebugMode.OVERLAY,
 
       zIndex: 0,
-      maxZoom: 7,
+      maxZoom: 4,
       urlParameters: {},
       getUrl: ({x, y, zoom}) =>
-        `https://storage.googleapis.com/esa-cfs-tiles/1.9.0/basemaps/colored/${zoom}/${x}/${y}.png`
+        `https://storage.googleapis.com/esa-cfs-tiles/1.9.0/basemaps/dark/${zoom}/${x}/${y}.png`
     } as LayerProps,
     {
       id: 'biomass.agb',
-      debug: true,
+      // debug: true,
       debugMode: LayerDebugMode.OVERLAY,
       urlParameters: {timestep: 0},
       zIndex: 1,
