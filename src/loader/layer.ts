@@ -82,6 +82,18 @@ export class Layer<UrlParameters = unknown> {
         continue;
       }
 
+      // in some cases, the children might already be loaded and could stand in
+      const allChildrenLoaded = tileId.children.every(t => {
+        const childRenderTile = this.getRenderTile(t, false);
+        return childRenderTile && childRenderTile.loadingState === TileLoadingState.LOADED;
+      });
+      if (allChildrenLoaded) {
+        for (let childId of tileId.children) {
+          renderTiles.set(childId, this.getRenderTile(childId));
+        }
+        continue;
+      }
+
       // otherwise, find the closest renderable parent
       for (const parentTileId of tileId.getAncestors()) {
         const parentRenderTile = this.getRenderTile(parentTileId, false);
