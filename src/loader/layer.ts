@@ -75,7 +75,7 @@ export class Layer<UrlParameters = unknown> {
 
       maxZoom = Math.max(tileId.zoom, maxZoom);
 
-      // if the tile is good to go, add it to the set and continue
+      // if the tile is good to go, add it to renderTiles and continue
       if (renderTile.loadingState === TileLoadingState.LOADED) {
         renderTile.zIndex = this.props.zIndex;
         renderTiles.set(tileId, renderTile);
@@ -84,8 +84,8 @@ export class Layer<UrlParameters = unknown> {
 
       // otherwise, find the closest renderable parent
       for (const parentTileId of tileId.getAncestors()) {
-        const parentRenderTile = this.getRenderTile(parentTileId);
-        if (parentRenderTile.loadingState === TileLoadingState.LOADED) {
+        const parentRenderTile = this.getRenderTile(parentTileId, false);
+        if (parentRenderTile && parentRenderTile.loadingState === TileLoadingState.LOADED) {
           renderTile.zIndex = this.props.zIndex;
           renderTiles.set(parentTileId, parentRenderTile);
           break;
@@ -111,11 +111,13 @@ export class Layer<UrlParameters = unknown> {
    *
    * @param tileId
    */
-  getRenderTile(tileId: TileId): RenderTile {
+  getRenderTile(tileId: TileId, createIfMissing?: true): RenderTile;
+  getRenderTile(tileId: TileId, createIfMissing?: false): RenderTile | null;
+  getRenderTile(tileId: TileId, createIfMissing = true): RenderTile | null {
     const url = this.getUrlForTileId(tileId);
 
-    let renderTile = this.cache.get(url);
-    if (!renderTile) {
+    let renderTile = this.cache.get(url) || null;
+    if (createIfMissing && !renderTile) {
       renderTile = {
         tileId,
         url,
