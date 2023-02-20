@@ -188,7 +188,9 @@ class OrbitControls extends EventDispatcher {
 
         spherical.makeSafe();
 
-        spherical.radius *= scale;
+        let scaleDiff = (scaleTarget - scaleCurrent) * scope.dampingFactor;
+        scaleCurrent += scaleDiff;
+        spherical.radius *= 1 - scaleDiff;
 
         // restrict radius to be between desired limits
         spherical.radius = Math.max(
@@ -291,6 +293,8 @@ class OrbitControls extends EventDispatcher {
     const sphericalDelta = new Spherical();
 
     let scale = 1;
+    let scaleTarget = scale;
+    let scaleCurrent = scale;
     const panOffset = new Vector3();
     let zoomChanged = false;
 
@@ -398,7 +402,8 @@ class OrbitControls extends EventDispatcher {
 
     function dollyOut(dollyScale) {
       if (scope.object.isPerspectiveCamera) {
-        scale /= dollyScale;
+        scaleTarget = 1 / (dollyScale * 1.25);
+        scaleCurrent = 1;
       } else if (scope.object.isOrthographicCamera) {
         scope.object.zoom = Math.max(
           scope.minZoom,
@@ -416,7 +421,8 @@ class OrbitControls extends EventDispatcher {
 
     function dollyIn(dollyScale) {
       if (scope.object.isPerspectiveCamera) {
-        scale *= dollyScale;
+        scaleTarget = 1 * (dollyScale * 1.25);
+        scaleCurrent = 1;
       } else if (scope.object.isOrthographicCamera) {
         scope.object.zoom = Math.max(
           scope.minZoom,
