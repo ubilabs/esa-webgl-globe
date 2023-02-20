@@ -1,6 +1,6 @@
 import {PerspectiveCamera, Scene, WebGLRenderer} from 'three';
 
-import {OrbitControls} from './lib/orbit-controls.js';
+import {OrbitControls} from './vendor/orbit-controls.js';
 import {TileCollection} from './tile-collection';
 import {lngLatDistToWorldSpace, worldSpaceToLngLatDist} from './lib/convert-spaces';
 
