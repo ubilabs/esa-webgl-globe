@@ -144,7 +144,7 @@ export class TileSelectorImpl implements ITileSelectorImpl {
       await readPixelsAsync(gl, 0, 0, width, height, texFmt, texType, this.rgbaArray);
     }
 
-    // use a Set to get unique uint32 values, then convert to uint8 so we can
+    // use a Set to get unique uint32 values, then convert it back to uint8 to
     // read rgba-bytes while preserving endianness
     const uniqueTileIds = new Set(new Uint32Array(this.rgbaArray.buffer));
     const u32Tiles = new Uint32Array(Array.from(uniqueTileIds));
