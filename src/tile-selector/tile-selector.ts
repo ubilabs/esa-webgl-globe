@@ -42,7 +42,7 @@ export class TileSelector {
     this.options = {...DEFAULT_OPTIONS, ...options};
 
     // when offscreencanvas or workers aren't supported, we can't use the worker-mode.
-    if (!support.offscreenCanvas || !support.worker) {
+    if (!support.offscreenCanvas || !support.worker || options.debug) {
       this.options.useWorker = false;
       this.options.useOffscreenCanvas = false;
     }
