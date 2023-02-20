@@ -42,7 +42,7 @@ export class Layer<UrlParameters = unknown> {
       }
     }
 
-    this.visibleTileIds = visibleTileIds;
+    this.visibleTileIds = new Set([...visibleTileIds, ...this.getMinZoomTileset()]);
     this.updateQueue();
   }
 
@@ -70,7 +70,7 @@ export class Layer<UrlParameters = unknown> {
 
     // go through the requested tiles and see which ones can be rendered
     // or replaced with a parent
-    for (const tileId of this.getTileIdsToShow()) {
+    for (const tileId of this.visibleTileIds) {
       const renderTile = this.getRenderTile(tileId);
 
       maxZoom = Math.max(tileId.zoom, maxZoom);
@@ -144,23 +144,11 @@ export class Layer<UrlParameters = unknown> {
   }
 
   /**
-   * Returns the optimal list of tiles to load/render based on the optimal tileset we get from the
-   * tile-selector.
-   */
-  getTileIdsToShow() {
-    // fixme: very basic implementation, should take more factors into account, maybe should
-    //   even live somewhere else, as much of the logic can be shared among layers.
-    return new Set([...this.visibleTileIds, ...this.getMinZoomTileset()]);
-  }
-
-  /**
    * Updates the request scheduler queue. For every new tile not already in the cache a request will
    * be scheduled.
    */
   private updateQueue() {
-    const tileIdsToShow = this.getTileIdsToShow();
-
-    tileIdsToShow.forEach(async tileId => {
+    this.visibleTileIds.forEach(async tileId => {
       const renderTile = this.getRenderTile(tileId);
 
       // anything else but queued means it's either loading or already complete
@@ -196,7 +184,7 @@ export class Layer<UrlParameters = unknown> {
     // if true then we still want this tile
     if (isInVisibleTileIds && hasMatchingParameters) {
       // invert priority to get the highest priority for lowest zoom levels
-      return 100 - renderTile.tileId.zoom;
+      return renderTile.tileId.zoom;
     }
 
     // otherwise cancel the request
