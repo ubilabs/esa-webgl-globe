@@ -72,7 +72,12 @@ export class TileSelectorImpl implements ITileSelectorImpl {
   ): Promise<string[]> {
     if (!this.renderer) this.initRenderer();
 
-    this.setSize(size[0], size[1]);
+    const [w, h] = size;
+
+    if (w !== this.canvas.width || h !== this.canvas.height) {
+      this.setSize(w, h);
+    }
+
     this.render(projectionMatrix, worldMatrix);
 
     const visibleTiles = await this.collectData();
@@ -132,23 +137,14 @@ export class TileSelectorImpl implements ITileSelectorImpl {
       renderer.readRenderTargetPixels(this.renderTarget, 0, 0, width, height, this.rgbaArray);
     } else {
       const texture = this.renderTarget.texture;
-      const textureFormat = texture.format;
-      const textureType = texture.type;
+      const texFmt = this.rendererUtils.convert(texture.format)!;
+      const texType = this.rendererUtils.convert(texture.type)!;
+      const gl = renderer.getContext() as WebGL2RenderingContext;
 
-      await readPixelsAsync(
-        renderer.getContext() as WebGL2RenderingContext,
-        0,
-        0,
-        width,
-        height,
-        // note: @types/three got this function wrong
-        this.rendererUtils.convert(textureFormat as any) as any,
-        this.rendererUtils.convert(textureType as any) as any,
-        this.rgbaArray
-      );
+      await readPixelsAsync(gl, 0, 0, width, height, texFmt, texType, this.rgbaArray);
     }
 
-    // use Set to get unique values, then convert to uint8 so we can
+    // use a Set to get unique uint32 values, then convert to uint8 so we can
     // read rgba-bytes while preserving endianness
     const uniqueTileIds = new Set(new Uint32Array(this.rgbaArray.buffer));
     const u32Tiles = new Uint32Array(Array.from(uniqueTileIds));

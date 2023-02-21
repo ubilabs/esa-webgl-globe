@@ -1,20 +1,13 @@
 import LRU from 'lru-cache';
 import {getEmptyImageBitmap} from './lib/get-empty-imagebitmap';
+import {renderDebugInfo} from './lib/render-debug-info';
 import {TileLoadingState} from '../renderer/types/tile';
 import {LayerDebugMode} from './types/layer';
+import {TileId} from '../tile-id';
 
-import type {TileId} from '../tile-id';
 import type RequestScheduler from './request-sheduler';
 import type {RenderTile} from '../renderer/types/tile';
 import type {LayerProps} from './types/layer';
-
-const DEBUG_COLORS = [
-  [12, 10, 62],
-  [123, 30, 122],
-  [179, 63, 98],
-  [249, 86, 79],
-  [243, 198, 119]
-];
 
 export class Layer<UrlParameters = unknown> {
   scheduler: RequestScheduler<RenderTile>;
@@ -49,7 +42,7 @@ export class Layer<UrlParameters = unknown> {
       }
     }
 
-    this.visibleTileIds = visibleTileIds;
+    this.visibleTileIds = new Set([...visibleTileIds, ...this.getMinZoomTileset()]);
     this.updateQueue();
   }
 
@@ -71,37 +64,83 @@ export class Layer<UrlParameters = unknown> {
    * @returns List of render tiles
    */
   public getRenderTiles(): RenderTile[] {
-    // get all visible tiles we have in cache
-    const availableTiles: RenderTile[] = [];
+    const renderTiles = new Map<TileId, RenderTile>();
 
+    let maxZoom = 0;
+
+    // go through the requested tiles and see which ones can be rendered
+    // or replaced with a parent
     for (const tileId of this.visibleTileIds) {
-      const url = this.getUrlForTileId(tileId);
-      const renderTile = this.cache.get(url);
+      const renderTile = this.getRenderTile(tileId);
 
-      // only add render tiles we have in cache and have data loaded
-      if (renderTile && renderTile.data) {
-        // update the zIndex to the current set value in the layer props
+      maxZoom = Math.max(tileId.zoom, maxZoom);
+
+      // if the tile is good to go, add it to renderTiles and continue
+      if (renderTile.loadingState === TileLoadingState.LOADED) {
         renderTile.zIndex = this.props.zIndex;
-
-        availableTiles.push(renderTile);
-
-        this.lastRenderTiles.set(tileId, renderTile);
+        renderTiles.set(tileId, renderTile);
+        continue;
       }
 
-      // FIXME: this else part is just a test for now to see the tiles animate when
-      //  switching timesteps
-      else {
-        // if we don't have the loaded tile in cache, but we have an older rendered tile for
-        // this tileId
-        const lastRenderTile = this.lastRenderTiles.get(tileId);
+      // in some cases, the children might already be loaded and could stand in
+      const allChildrenLoaded = tileId.children.every(t => {
+        const childRenderTile = this.getRenderTile(t, false);
+        return childRenderTile && childRenderTile.loadingState === TileLoadingState.LOADED;
+      });
+      if (allChildrenLoaded) {
+        for (let childId of tileId.children) {
+          renderTiles.set(childId, this.getRenderTile(childId));
+        }
+        continue;
+      }
 
-        if (lastRenderTile) {
-          availableTiles.push(lastRenderTile);
+      // otherwise, find the closest renderable parent
+      for (const parentTileId of tileId.getAncestors()) {
+        const parentRenderTile = this.getRenderTile(parentTileId, false);
+        if (parentRenderTile && parentRenderTile.loadingState === TileLoadingState.LOADED) {
+          renderTile.zIndex = this.props.zIndex;
+          renderTiles.set(parentTileId, parentRenderTile);
+          break;
         }
       }
     }
 
-    return availableTiles;
+    // remove all tiles where all children are in the list
+    const renderTileIds = new Set(renderTiles.keys());
+    for (let tileId of renderTileIds) {
+      if (tileId.zoom === maxZoom) continue;
+
+      if (tileId.children.every(c => renderTileIds.has(c))) {
+        renderTiles.delete(tileId);
+      }
+    }
+
+    return Array.from(renderTiles.values());
+  }
+
+  /**
+   * Gets or creates a RenderTile instance for the specified tileId.
+   *
+   * @param tileId
+   */
+  getRenderTile(tileId: TileId, createIfMissing?: true): RenderTile;
+  getRenderTile(tileId: TileId, createIfMissing?: false): RenderTile | null;
+  getRenderTile(tileId: TileId, createIfMissing = true): RenderTile | null {
+    const url = this.getUrlForTileId(tileId);
+
+    let renderTile = this.cache.get(url) || null;
+    if (createIfMissing && !renderTile) {
+      renderTile = {
+        tileId,
+        url,
+        zIndex: -1, // zIndex will be set when render tiles are retrieved for rendering
+        loadingState: TileLoadingState.QUEUED
+      };
+
+      this.cache.set(url, renderTile);
+    }
+
+    return renderTile;
   }
 
   /**
@@ -110,32 +149,21 @@ export class Layer<UrlParameters = unknown> {
    */
   private updateQueue() {
     this.visibleTileIds.forEach(async tileId => {
-      // url will be the cache key because it defines the loaded ressource and includes all
-      // relevant url paramters
-      const url = this.getUrlForTileId(tileId);
+      const renderTile = this.getRenderTile(tileId);
 
-      // load the tile from cache or create it
-      let renderTile = this.cache.get(url);
-      if (!renderTile) {
-        renderTile = {
-          tileId,
-          url,
-          zIndex: -1, // zIndex will be set when render tile is returned because it can change over time
-          loadingState: TileLoadingState.QUEUED
-        };
-
-        this.cache.set(url, renderTile);
-      }
-
-      // return unless the tile is still queued and not currently being fetche
+      // anything else but queued means it's either loading or already complete
       if (renderTile.loadingState !== TileLoadingState.QUEUED) return;
+
+      // only skip queued tiles if they're actually in the queue (might have been
+      // discarded from the queue before loading could start)
       if (this.scheduler.isScheduled(renderTile)) return;
 
-      // now we know it's a new, unique request, wait for a place in the queue
+      // if it's a new, unique request, wait for a place in the queue...
       const request = await this.scheduler.scheduleRequest(renderTile, this.getTilePriority);
 
       if (!request) return;
 
+      // ...and start the request
       await this.fetch(renderTile);
       request.done();
     });
@@ -156,7 +184,7 @@ export class Layer<UrlParameters = unknown> {
     // if true then we still want this tile
     if (isInVisibleTileIds && hasMatchingParameters) {
       // invert priority to get the highest priority for lowest zoom levels
-      return 100 - renderTile.tileId.zoom;
+      return renderTile.tileId.zoom;
     }
 
     // otherwise cancel the request
@@ -194,7 +222,7 @@ export class Layer<UrlParameters = unknown> {
     renderTile.loadingState = TileLoadingState.LOADING;
 
     if (this.props.debug && this.props.debugMode !== LayerDebugMode.OVERLAY) {
-      renderTile.data = await this.renderDebugInfo(renderTile);
+      renderTile.data = await renderDebugInfo(renderTile);
       renderTile.loadingState = TileLoadingState.LOADED;
 
       return;
@@ -213,54 +241,19 @@ export class Layer<UrlParameters = unknown> {
     }
 
     if (this.props.debug) {
-      renderTile.data = await this.renderDebugInfo(renderTile);
+      renderTile.data = await renderDebugInfo(renderTile);
     }
   }
 
-  private async renderDebugInfo(renderTile: RenderTile): Promise<ImageBitmap> {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d')!;
-
-    canvas.width = canvas.height = 256;
-
-    if (renderTile.data) {
-      // draw the image flipped
-      ctx.save();
-      ctx.scale(1, -1);
-      ctx.drawImage(renderTile.data, 0, -256);
-      ctx.restore();
-    }
-
-    let color = DEBUG_COLORS[Math.min(renderTile.tileId.zoom, DEBUG_COLORS.length - 1)];
-
-    if (renderTile.loadingState === TileLoadingState.ERROR) {
-      color = [255, 0, 0];
-    }
-
-    // only fill the debug-tile if there's no image-data
-    if (!renderTile.data) {
-      ctx.fillStyle = `rgb(${color.join(',')}, 0.6)`;
-      ctx.fillRect(0, 0, 256, 256);
-    }
-
-    ctx.strokeStyle = `rgb(${color.join(',')}, 0.9)`;
-    ctx.lineWidth = 2;
-    ctx.strokeRect(0, 0, 256, 256);
-
-    ctx.fillStyle = 'white';
-    ctx.textAlign = 'center';
-
-    ctx.font = '48px monospace';
-    ctx.fillText(`(${renderTile.tileId.x} | ${renderTile.tileId.y})`, 128, 128, 256);
-
-    ctx.font = '24px monospace';
-    ctx.fillText(`zoom: ${renderTile.tileId.zoom}`, 128, 168, 256);
-
-    if (renderTile.loadingState === TileLoadingState.ERROR) {
-      ctx.fillStyle = 'red';
-      ctx.fillText('LOADING FAILED', 128, 78, 256);
-    }
-
-    return await createImageBitmap(canvas, {imageOrientation: 'flipY'});
+  /**
+   * Creates a derived tileset that contains only tiles at minZoom (default 1) covering at least the
+   * same area as the specified tiles.
+   */
+  private getMinZoomTileset(): Set<TileId> {
+    const minZoom = this.props.minZoom || 1;
+    return new Set([
+      ...TileId.fromXYZ(0, 0, 0).atZoom(minZoom),
+      ...TileId.fromXYZ(1, 0, 0).atZoom(minZoom)
+    ]);
   }
 }
