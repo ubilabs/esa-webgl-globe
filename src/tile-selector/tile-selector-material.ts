@@ -49,21 +49,17 @@ export class TileSelectionMaterial extends ShaderMaterial {
 
     varying vec2 vUV;
 
-    // the maximum zoomlevel we can reliably handle with single precision
-    // (highp) float while still being able to tell single pixels apart 
-    // (max safe integer is 2^24-1). 
-    // We could possibly go up to zoomlevel 22 or 23, since we don't actually 
-    // need exact pixel-coordinates here, just the tile-index.
-    const float maxZoomLevel = 15.0;
+    // the maximum zoomlevel we can reliably encode in the 8bit tile-index
+    const float maxZoomLevel = 7.0;
 
     void main() {
       float extent = tilesize * exp2(maxZoomLevel);
 
       // pixel coordinates within a virtual texture assumed to be covering the whole 
-      // earth 
+      // earth at maxZoomLevel
       vec2 virtualTexCoordPx = vUV * extent;
 
-      // those are the change rates of the uv-coordinate along the fragment 
+      // those are the change rates of the pixel-coordinate along the screen 
       // x- and y-axes
       vec2 dVtcDx = dFdx(virtualTexCoordPx) * renderScale * subsamplingFactor;
       vec2 dVtcDy = dFdy(virtualTexCoordPx) * renderScale * subsamplingFactor;
@@ -73,7 +69,7 @@ export class TileSelectionMaterial extends ShaderMaterial {
       // distance in texture coordinates from one screen pixel to the next, computed both 
       // in screen x and y directions. 
       float d = max(dot(dVtcDx, dVtcDx), dot(dVtcDy, dVtcDy));
-      float zoom = maxZoomLevel - floor(0.5 * log2(d));
+      float zoom = min(maxZoomLevel, maxZoomLevel - floor(0.5 * log2(d)));
 
       float numTilesX = exp2(zoom + 1.0);
       float numTilesY = exp2(zoom);
@@ -87,16 +83,6 @@ export class TileSelectionMaterial extends ShaderMaterial {
         zoom / 255.0,
         1.0
       );
-
-      // debug version
-      #ifdef DEBUG
-        gl_FragColor = vec4(
-          tileX / numTilesX,
-          tileY / numTilesY,
-          zoom / maxZoomLevel,
-          1.0
-        );
-      #endif
 
       // 4 8bit output-channels: 
       //  - r: x tile coordinate (up to zoom 8)

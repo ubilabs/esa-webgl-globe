@@ -35,12 +35,9 @@ export class WebGlGlobe extends EventTarget {
 
     this.setProps(props);
 
-    this.tileSelector = new TileSelector({
-      debug: false,
-      useOffscreenCanvas: true,
-      useWorker: true
-    });
+    this.tileSelector = new TileSelector();
     this.tileSelector.setCamera(this.renderer.camera);
+
     const {width, height} = container.getBoundingClientRect();
     this.tileSelector.setSize(new Vector2(width, height).multiplyScalar(0.25).round());
 
