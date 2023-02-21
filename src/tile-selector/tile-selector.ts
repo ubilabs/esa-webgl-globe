@@ -15,6 +15,11 @@ const DEFAULT_OPTIONS: TileSelectorOptions = {
   useWorker: true
 };
 
+const support = {
+  worker: 'Worker' in window,
+  offscreenCanvas: 'OffscreenCanvas' in window
+};
+
 /**
  * The TileSelector is the public interface to the tile selection process. Based on the configration
  * it will start the actual implementation (`TileSelectorImpl`) in a worker or in the same process.
@@ -35,6 +40,12 @@ export class TileSelector {
    */
   constructor(options: Partial<TileSelectorOptions> = {}) {
     this.options = {...DEFAULT_OPTIONS, ...options};
+
+    // when offscreencanvas or workers aren't supported, we can't use the worker-mode.
+    if (!support.offscreenCanvas || !support.worker) {
+      this.options.useWorker = false;
+      this.options.useOffscreenCanvas = false;
+    }
   }
 
   /**
