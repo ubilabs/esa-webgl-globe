@@ -4,7 +4,6 @@ import {RenderTile} from './renderer/types/tile';
 import {TileSelector} from './tile-selector/tile-selector';
 import {Vector2} from 'three';
 import {Renderer} from './renderer/renderer';
-import {MarkerHtml} from './main';
 
 import type {LngLatDist} from './renderer/types/lng-lat-dist';
 import type {LayerProps} from './loader/types/layer';
@@ -20,7 +19,7 @@ type WebGlGlobeOptions = Partial<{
 
 export class WebGlGlobe extends EventTarget {
   private layersById: Record<string, Layer> = {};
-  private markersById: Record<string, MarkerHtml> = {};
+
   private readonly scheduler: RequestScheduler<RenderTile>;
   private readonly renderer: Renderer;
   private readonly tileSelector: TileSelector;
@@ -97,27 +96,8 @@ export class WebGlGlobe extends EventTarget {
     }
   }
 
-  private setMarkers(markerProps: MarkerProps[]) {
-    // remove markers that are no longer needeed
-    const newMarkerIds = markerProps.map(m => m.id);
-    const toRemove = Object.keys(this.markersById).filter(id => !newMarkerIds.includes(id));
-
-    for (const markerId of toRemove) {
-      this.markersById[markerId].destroy();
-    }
-
-    for (let props of markerProps) {
-      // known markers get updated
-      const knownMarker = this.markersById[props.id];
-
-      if (knownMarker) {
-        knownMarker.setProps(props);
-        continue;
-      }
-
-      // otherwise create the marker
-      this.markersById[props.id] = new MarkerHtml({props, camera: this.renderer.camera});
-    }
+  private setMarkers(markers: MarkerProps[]) {
+    this.renderer.setMarkers(markers);
   }
 
   private startTileSelectorLoop() {

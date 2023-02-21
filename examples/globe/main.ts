@@ -10,7 +10,6 @@ const globe = new WebGlGlobe(document.body, {
       id: 'basemap',
       // debug: true,
       debugMode: LayerDebugMode.OVERLAY,
-
       zIndex: 0,
       maxZoom: 4,
       urlParameters: {},
