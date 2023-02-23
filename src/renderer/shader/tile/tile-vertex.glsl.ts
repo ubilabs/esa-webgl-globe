@@ -1,18 +1,28 @@
 export default `
 varying vec2 vUv;
+varying vec2 vUvOrig;
+varying float columns;
 uniform float x;
 uniform float y;
 uniform float zoom;
 uniform float projection;
 uniform float size;
+uniform float isFullSize;
 
 void main() {
   float PI = 3.141592653589793;
 
-  vUv = position.xy / 2.0 + 0.5;
-
-  float columns = pow(2.0, zoom + 1.0);
+  columns = pow(2.0, zoom + 1.0);
   float rows = pow(2.0, zoom);
+
+  // use normal 0...1 uv coords for tiles
+  vec2 tiledUvs = position.xy / 2.0 + 0.5;
+
+  // divide uv coords by tile count and offset by tile position
+  vec2 fullSizeUvs = tiledUvs / vec2(columns, rows) + vec2(x / columns, y / rows);
+
+  vUv = mix(tiledUvs, fullSizeUvs, isFullSize);
+  vUvOrig = tiledUvs;
 
   /*
    * Transform position so that:
