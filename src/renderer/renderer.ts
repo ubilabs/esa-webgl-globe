@@ -1,5 +1,6 @@
 import {PerspectiveCamera, Scene, WebGLRenderer} from 'three';
 
+// @ts-ignore
 import {OrbitControls} from './vendor/orbit-controls.js';
 import {TileCollection} from './tile-collection';
 import {lngLatDistToWorldSpace, worldSpaceToLngLatDist} from './lib/convert-spaces';
@@ -53,7 +54,6 @@ export class Renderer extends EventTarget {
     this.controls.dampingFactor = 0.075;
     this.controls.enablePan = false;
     this.controls.enableZoom = true;
-    this.controls.zoomSpeed = 0.5;
     this.controls.rotateSpeed = 1;
     this.controls.maxPolarAngle = Math.PI / 2 + Math.PI / 2;
     this.controls.minPolarAngle = Math.PI / 2 - Math.PI / 2;

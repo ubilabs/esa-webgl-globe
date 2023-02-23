@@ -1,4 +1,15 @@
-import {EventDispatcher, MOUSE, Quaternion, Spherical, TOUCH, Vector2, Vector3} from 'three';
+import {
+  EventDispatcher,
+  Mesh,
+  MOUSE,
+  Quaternion,
+  Raycaster,
+  SphereGeometry,
+  Spherical,
+  TOUCH,
+  Vector2,
+  Vector3
+} from 'three';
 
 // This set of controls performs orbiting, dollying (zooming), and panning.
 // Unlike TrackballControls, it maintains the "up" direction object.up (+Y by default).
@@ -313,6 +324,13 @@ class OrbitControls extends EventDispatcher {
     const pointers = [];
     const pointerPositions = {};
 
+    // Added to raycast the currently hovered point on the globe
+    const raycaster = new Raycaster();
+    const raycasterPointer = new Vector2();
+    const unitSphere = new Mesh(new SphereGeometry(1, 32, 32));
+    const raycastSpherical = new Spherical();
+    const rayIntersection = new Vector3();
+
     function getAutoRotationAngle() {
       return ((2 * Math.PI) / 60 / 60) * scope.autoRotateSpeed;
     }
@@ -402,6 +420,7 @@ class OrbitControls extends EventDispatcher {
 
     function dollyOut(dollyScale) {
       if (scope.object.isPerspectiveCamera) {
+        // changed to momentum dollying
         scaleTarget = 1 / (dollyScale * 1.25);
         scaleCurrent = 1;
       } else if (scope.object.isOrthographicCamera) {
@@ -421,7 +440,8 @@ class OrbitControls extends EventDispatcher {
 
     function dollyIn(dollyScale) {
       if (scope.object.isPerspectiveCamera) {
-        scaleTarget = 1 * (dollyScale * 1.25);
+        // changed to momentum dollying
+        scaleTarget = 1 * (dollyScale * 1.15);
         scaleCurrent = 1;
       } else if (scope.object.isOrthographicCamera) {
         scope.object.zoom = Math.max(
@@ -499,8 +519,16 @@ class OrbitControls extends EventDispatcher {
     }
 
     function handleMouseWheel(event) {
+      raycastSpherical.setFromVector3(rayIntersection);
+
       if (event.deltaY < 0) {
         dollyIn(getZoomScale());
+
+        // Added to spin globe in the direction of the mouse target
+        const dTheta = spherical.theta - raycastSpherical.theta;
+        const dPhi = spherical.phi - raycastSpherical.phi;
+        sphericalDelta.theta = dTheta / -4;
+        sphericalDelta.phi = dPhi / -4;
       } else if (event.deltaY > 0) {
         dollyOut(getZoomScale());
       }
@@ -706,7 +734,7 @@ class OrbitControls extends EventDispatcher {
       if (event.pointerType === 'touch') {
         onTouchMove(event);
       } else {
-        onMouseMove(event);
+        onMouseMoveDown(event);
       }
     }
 
@@ -802,7 +830,17 @@ class OrbitControls extends EventDispatcher {
       }
     }
 
+    // Added to keep track of the currently hovered point on the globe surface
     function onMouseMove(event) {
+      raycasterPointer.x = (event.clientX / scope.domElement.clientWidth) * 2 - 1;
+      raycasterPointer.y = -(event.clientY / scope.domElement.clientHeight) * 2 + 1;
+      raycaster.setFromCamera(raycasterPointer, scope.object);
+
+      const intersection = raycaster.intersectObject(unitSphere)[0];
+      intersection && rayIntersection.copy(intersection.point);
+    }
+
+    function onMouseMoveDown(event) {
       switch (state) {
         case STATE.ROTATE:
           if (scope.enableRotate === false) return;
@@ -1000,6 +1038,7 @@ class OrbitControls extends EventDispatcher {
     scope.domElement.addEventListener('pointerdown', onPointerDown);
     scope.domElement.addEventListener('pointercancel', onPointerCancel);
     scope.domElement.addEventListener('wheel', onMouseWheel, {passive: false});
+    scope.domElement.addEventListener('pointermove', onMouseMove);
 
     // force an update at start
 
