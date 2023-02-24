@@ -16,14 +16,22 @@
         height: 32px;
       }
 
+      .myMarker > div:first-child > svg {
+        transition: 0.1s ease-in-out;
+      }
+
+      .myMarker:hover > div:first-child > svg {
+        transform: scale(1.3);
+      }
+
       .myMarker svg > circle {
         transition: all 0.2s;
         transform-origin: center center;
       }
 
       .myMarker:hover svg > circle {
-        fill: deeppink;
-        transform: scale(1.3);
+        transition-delay: 0.05s;
+        transform: scale(1.1);
       }
     </style>
   </head>

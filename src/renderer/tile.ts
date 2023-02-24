@@ -22,6 +22,7 @@ export class Tile {
   readonly material: Material;
   readonly geometry: BufferGeometry;
   readonly mesh: Mesh;
+  readonly type: TileProps['type'];
 
   constructor(options: TileProps) {
     this.tileId = options.tileId;
@@ -29,6 +30,7 @@ export class Tile {
     this.url = options.url;
     this.scene = options.scene;
     this.texture = options.texture;
+    this.type = options.type;
 
     const rows = Math.pow(2, this.tileId.zoom);
 
@@ -66,7 +68,8 @@ export class Tile {
       textureFade: {value: 0},
       projection: {value: 0},
       pole: {value: this.isNorthRow ? 1 : 0},
-      poleSegments: {value: this.segments}
+      poleSegments: {value: this.segments},
+      isFullSize: {value: this.type === 'tile' ? 0 : 1}
     };
     return this.isNorthRow || this.isSouthRow
       ? getTileMaterialPole(uniforms, zIndex)
