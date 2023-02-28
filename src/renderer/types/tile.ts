@@ -1,7 +1,7 @@
 import type {Scene, Texture} from 'three';
 import type {TileId} from '../../tile-id';
 
-type TileType = 'tile' | 'image';
+export type TileType = 'tile' | 'image';
 
 export interface TileProps {
   tileId: TileId;

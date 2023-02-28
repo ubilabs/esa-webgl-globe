@@ -1,4 +1,5 @@
-import {CanvasTexture, NearestFilter, LinearFilter, RGBAFormat, Scene} from 'three';
+import LRU from 'lru-cache';
+import {CanvasTexture, NearestFilter, RGBAFormat, Scene} from 'three';
 
 import {Tile} from './tile';
 import type {TileCollectionProps} from './types/tile-collection';
@@ -7,7 +8,8 @@ import type {RenderTile} from './types/tile';
 export class TileCollection {
   readonly scene: Scene;
   tiles: Record<string, Tile>;
-  cachedTexturesByUrl: Record<string, CanvasTexture> = {};
+  // optimisation for image textures to prevent multiple GPU uploads for same image data
+  textureCache: LRU<string, CanvasTexture> = new LRU({max: 1});
 
   constructor(props: TileCollectionProps) {
     this.scene = props.scene;
@@ -16,7 +18,6 @@ export class TileCollection {
 
   updateTiles(newTiles: RenderTile[]) {
     const newTilesMap: Record<string, RenderTile> = {};
-    this.cachedTexturesByUrl = {};
 
     for (let i = 0; i < newTiles.length; i++) {
       // populate map to delete old tiles in second step
@@ -43,6 +44,10 @@ export class TileCollection {
       this.tiles[uniqTileId].destroy();
       delete this.tiles[uniqTileId];
     }
+
+    // clean texture cache when a new layer is displayed
+    if (!newTiles.length) {
+    }
   }
 
   private _createTile(id: string, renderTile: RenderTile) {
@@ -66,21 +71,20 @@ export class TileCollection {
   }
 
   /**
-   * Creates a CanvasTexture for a renderTile. Caches textures by url. This has no effect for normal
-   * tiles but is an optimization for full size images.
+   * Creates a CanvasTexture for a renderTile. Caches the last created texture. This has no effect
+   * for normal tiles but is an optimization for full size images, so that subsequent textures with
+   * the same url use the same texture instance and will be uploaded only once to the GPU.
    */
   private _getTexture(renderTile: RenderTile) {
-    const cachedTexture = this.cachedTexturesByUrl[renderTile.url];
+    const cachedTexture = this.textureCache.get(renderTile.url);
     const texture = cachedTexture || new CanvasTexture(renderTile.data!);
     texture.format = RGBAFormat;
     texture.flipY = true;
     texture.needsUpdate = true;
     texture.minFilter = NearestFilter;
-    texture.magFilter = LinearFilter;
+    texture.magFilter = NearestFilter;
 
-    if (!cachedTexture) {
-      this.cachedTexturesByUrl[renderTile.url] = texture;
-    }
+    this.textureCache.set(renderTile.url, texture);
 
     return texture;
   }

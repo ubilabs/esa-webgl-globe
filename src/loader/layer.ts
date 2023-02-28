@@ -14,6 +14,7 @@ export class Layer<TUrlParameters = {}> {
   props: LayerProps<TUrlParameters>;
   visibleTileIds: Set<TileId> = new Set();
   cache: LRU<string, RenderTile> = new LRU({max: 500});
+  requestCache: LRU<string, Promise<ImageBitmap>> = new LRU({max: 1});
   lastRenderTiles: Map<TileId, RenderTile> = new Map();
 
   constructor(scheduler: RequestScheduler<RenderTile>, props: LayerProps<TUrlParameters>) {
@@ -28,6 +29,13 @@ export class Layer<TUrlParameters = {}> {
    */
   public setVisibleTileIds(tileIds: Set<TileId>) {
     const visibleTileIds = new Set<TileId>();
+
+    // Only use min zoom level for fullsize layers
+    if (this.props.type === 'image') {
+      this.visibleTileIds = this.getMinZoomTileset();
+      this.updateQueue();
+      return;
+    }
 
     // Clamp zoom level of tiles to layer's maxZoom
     for (const tileId of tileIds) {
@@ -143,8 +151,10 @@ export class Layer<TUrlParameters = {}> {
   getRenderTile(tileId: TileId, createIfMissing?: false): RenderTile | null;
   getRenderTile(tileId: TileId, createIfMissing = true): RenderTile | null {
     const url = this.getUrlForTileId(tileId);
+    const cacheKey = this.props.type === 'image' ? `${url}-${tileId.id}` : url;
 
-    let renderTile = this.cache.get(url) || null;
+    let renderTile = this.cache.get(cacheKey) || null;
+
     if (createIfMissing && !renderTile) {
       renderTile = {
         tileId,
@@ -152,11 +162,11 @@ export class Layer<TUrlParameters = {}> {
         urlParameters: this.props.urlParameters,
         zIndex: -1, // zIndex will be set when render tiles are retrieved for rendering
         loadingState: TileLoadingState.QUEUED,
-        type: 'tile',
+        type: this.props.type,
         placeholderDistance: tileId.zoom
       };
 
-      this.cache.set(url, renderTile);
+      this.cache.set(cacheKey, renderTile);
     }
 
     return renderTile;
@@ -287,9 +297,22 @@ export class Layer<TUrlParameters = {}> {
     }
 
     try {
-      const blob = await fetch(url).then(res => res.blob());
+      /**
+       * Cache the last fetched image bitmap by url with a cache of size 1. This is optional (but
+       * doesn't hurt) for type "tile" images but required for "image" type to prevent multiple
+       * requests to the same url.
+       */
+      let request = this.requestCache.get(url);
 
-      renderTile.data = await createImageBitmap(blob, {imageOrientation: 'flipY'});
+      if (!request) {
+        request = fetch(url)
+          .then(res => res.blob())
+          .then(blob => createImageBitmap(blob, {imageOrientation: 'flipY'}));
+
+        this.requestCache.set(url, request);
+      }
+
+      renderTile.data = await request;
       renderTile.loadingState = TileLoadingState.LOADED;
     } catch (err: unknown) {
       // fallback to empty imageBitmap in case of error

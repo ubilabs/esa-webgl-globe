@@ -1,3 +1,5 @@
+import {TileType} from '../../renderer/types/tile';
+
 export type TileUrlParameters<TUrlParameters> = {
   x: number;
   y: number;
@@ -11,6 +13,7 @@ export interface LayerProps<TUrlParameters = {}> {
   zIndex: number;
   maxZoom: number;
   minZoom?: number;
+  type: TileType;
   debug?: boolean;
   debugMode?: string;
 }
