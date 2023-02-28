@@ -15,7 +15,8 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
   visibleTileIds: Set<TileId> = new Set();
   cache: LRU<string, RenderTile> = new LRU({max: 500});
   responseCache: LRU<string, Promise<ImageBitmap>> = new LRU({max: 1});
-  lastRenderTiles: Map<TileId, RenderTile> = new Map();
+
+  private minZoomTileset: Set<TileId> | null = null;
 
   constructor(scheduler: RequestScheduler<RenderTile>, props: LayerProps<TUrlParameters>) {
     this.scheduler = scheduler;
@@ -69,6 +70,12 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
     if (wasDebugEnabled !== this.props.debug) {
       this.cache.clear();
     }
+
+    if (props.minZoom !== this.props.minZoom) {
+      this.minZoomTileset = null;
+    }
+
+    this.props = {...this.props, ...props};
 
     this.updateQueue();
   }
@@ -352,11 +359,15 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
    * same area as the specified tiles.
    */
   private getMinZoomTileset(): Set<TileId> {
-    const minZoom = this.props.minZoom || 1;
-    return new Set([
-      ...TileId.fromXYZ(0, 0, 0).atZoom(minZoom),
-      ...TileId.fromXYZ(1, 0, 0).atZoom(minZoom)
-    ]);
+    if (!this.minZoomTileset) {
+      const minZoom = this.props.minZoom || 1;
+      this.minZoomTileset = new Set([
+        ...TileId.fromXYZ(0, 0, 0).atZoom(minZoom),
+        ...TileId.fromXYZ(1, 0, 0).atZoom(minZoom)
+      ]);
+    }
+
+    return this.minZoomTileset;
   }
 
   private isFullsize() {
