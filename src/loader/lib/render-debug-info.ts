@@ -12,7 +12,8 @@ export async function renderDebugInfo(renderTile: RenderTile): Promise<ImageBitm
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d')!;
 
-  canvas.width = canvas.height = 256;
+  canvas.width = renderTile.data?.width ?? 256;
+  canvas.height = renderTile.data?.height ?? 256;
 
   const {data, tileId, urlParameters} = renderTile;
 
@@ -20,7 +21,7 @@ export async function renderDebugInfo(renderTile: RenderTile): Promise<ImageBitm
     // draw the image flipped
     ctx.save();
     ctx.scale(1, -1);
-    ctx.drawImage(data, 0, -256);
+    ctx.drawImage(data, 0, 0, canvas.width, -canvas.height);
     ctx.restore();
   }
 
@@ -32,21 +33,42 @@ export async function renderDebugInfo(renderTile: RenderTile): Promise<ImageBitm
   // only fill the debug-tile if there's no image-data
   if (!renderTile.data) {
     ctx.fillStyle = `rgb(${color.join(',')}, 0.6)`;
-    ctx.fillRect(0, 0, 256, 256);
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
+
+  // calculate left (x0), right (x1), top (y0), bottom (y1)
+  let x0, x1, y0, y1;
+  x0 = y0 = 0;
+  x1 = y1 = 256;
+
+  if (renderTile.type === 'image') {
+    const {x, y, zoom} = renderTile.tileId;
+    const columns = Math.pow(2, zoom + 1);
+    const rows = Math.pow(2, zoom);
+    x0 = (x / columns) * canvas.width;
+    x1 = ((x + 1) / columns) * canvas.width;
+    // invert y
+    y0 = (1 - y / rows) * canvas.height;
+    y1 = (1 - (y + 1) / rows) * canvas.height;
+  }
+
+  const dx = x1 - x0;
+  const dy = y1 - y0;
+  const xCenter = dx / 2 + x0;
+  const yCenter = dy / 2 + y0;
 
   ctx.strokeStyle = `rgb(${color.join(',')}, 0.9)`;
   ctx.lineWidth = 2;
-  ctx.strokeRect(0, 0, 256, 256);
+  ctx.strokeRect(x0, y0, dx, dy);
 
   ctx.fillStyle = 'black';
   ctx.textAlign = 'center';
 
   ctx.font = '48px monospace';
-  ctx.fillText(`(${tileId.x} | ${tileId.y})`, 128, 128, 256);
+  ctx.fillText(`(${tileId.x} | ${tileId.y})`, xCenter, yCenter, dx / 2);
 
   ctx.font = '24px monospace';
-  ctx.fillText(`zoom: ${tileId.zoom}`, 128, 168, 256);
+  ctx.fillText(`zoom: ${tileId.zoom}`, xCenter, yCenter + 40, dx / 2);
 
   if (Object.keys(urlParameters).length > 0) {
     const paramsString =
@@ -57,12 +79,24 @@ export async function renderDebugInfo(renderTile: RenderTile): Promise<ImageBitm
       ')';
 
     ctx.font = '16px monospace';
-    ctx.fillText(paramsString, 128, 192, 256);
+    ctx.fillText(paramsString, xCenter, yCenter + 70, dx / 2);
+  }
+
+  if (renderTile.type === 'image') {
+    ctx.font = '80px monospace';
+    ctx.globalAlpha = 0.2;
+    ctx.fillText(
+      'single-image'.split('').join('  '),
+      canvas.width / 2,
+      canvas.height / 2,
+      canvas.width
+    );
+    ctx.globalAlpha = 1.0;
   }
 
   if (renderTile.loadingState === TileLoadingState.ERROR) {
     ctx.fillStyle = 'red';
-    ctx.fillText('LOADING FAILED', 128, 78, 256);
+    ctx.fillText('LOADING FAILED', xCenter, yCenter - 50, dx / 2);
   }
 
   return await createImageBitmap(canvas, {imageOrientation: 'flipY'});

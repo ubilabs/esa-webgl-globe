@@ -14,6 +14,7 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
   props: LayerProps<TUrlParameters>;
   visibleTileIds: Set<TileId> = new Set();
   cache: LRU<string, RenderTile> = new LRU({max: 500});
+  responseCache: LRU<string, Promise<ImageBitmap>> = new LRU({max: 1});
   lastRenderTiles: Map<TileId, RenderTile> = new Map();
 
   constructor(scheduler: RequestScheduler<RenderTile>, props: LayerProps<TUrlParameters>) {
@@ -28,6 +29,13 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
    */
   public setVisibleTileIds(tileIds: Set<TileId>) {
     const visibleTileIds = new Set<TileId>();
+
+    // Use only the min zoom level for fullsize layers
+    if (this.isFullsize()) {
+      this.visibleTileIds = this.getMinZoomTileset();
+      this.updateQueue();
+      return;
+    }
 
     // Clamp zoom level of tiles to layer's maxZoom
     for (const tileId of tileIds) {
@@ -97,7 +105,7 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
 
       // if the tile is good to go, add it to renderTiles and continue
       if (renderTile.loadingState === TileLoadingState.LOADED) {
-        renderTile.zIndex = this.props.zIndex;
+        this.updateTileProps(renderTile);
         renderTiles.set(tileId, renderTile);
         continue;
       }
@@ -111,7 +119,7 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
       if (allChildrenLoaded) {
         for (let childId of tileId.children) {
           const childRenderTile = this.getRenderTile(childId);
-          childRenderTile.zIndex = this.props.zIndex;
+          this.updateTileProps(childRenderTile);
           renderTiles.set(childId, childRenderTile);
         }
 
@@ -123,7 +131,7 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
       for (const parentTileId of tileId.getAncestors()) {
         const parentRenderTile = this.getRenderTile(parentTileId, false);
         if (parentRenderTile && parentRenderTile.loadingState === TileLoadingState.LOADED) {
-          renderTile.zIndex = this.props.zIndex;
+          this.updateTileProps(renderTile);
           renderTile.placeholderDistance = renderTile.tileId.zoom - parentRenderTile.tileId.zoom;
           renderTiles.set(parentTileId, parentRenderTile);
 
@@ -145,13 +153,23 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
     return Array.from(renderTiles.values());
   }
 
+  private updateTileProps(renderTile: RenderTile) {
+    renderTile.zIndex = this.props.zIndex;
+    renderTile.debug = this.props.debug;
+  }
+
   /** Gets or creates a RenderTile instance for the specified tileId. */
   getRenderTile(tileId: TileId, createIfMissing?: true): RenderTile;
   getRenderTile(tileId: TileId, createIfMissing?: false): RenderTile | null;
   getRenderTile(tileId: TileId, createIfMissing = true): RenderTile | null {
     const url = this.getUrlForTileId(tileId);
 
-    let renderTile = this.cache.get(url) || null;
+    // use a more specific cacheKey for fullsize tiles to distinguish
+    // between render tiles despite having the same tile url
+    const cacheKey = this.isFullsize() ? `${url}-${tileId.id}` : url;
+
+    let renderTile = this.cache.get(cacheKey) || null;
+
     if (createIfMissing && !renderTile) {
       renderTile = {
         tileId,
@@ -159,11 +177,11 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
         urlParameters: this.props.urlParameters,
         zIndex: -1, // zIndex will be set when render tiles are retrieved for rendering
         loadingState: TileLoadingState.QUEUED,
-        type: 'tile',
+        type: this.props.type,
         placeholderDistance: tileId.zoom
       };
 
-      this.cache.set(url, renderTile);
+      this.cache.set(cacheKey, renderTile);
     }
 
     return renderTile;
@@ -297,9 +315,25 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
     }
 
     try {
-      const blob = await fetch(url).then(res => res.blob());
+      /**
+       * Cache the last fetched image bitmap by url with a cache of size 1. This is optional (but
+       * doesn't hurt) for type "tile" images but is required for "image" types to prevent making
+       * multiple requests to the same url.
+       *
+       * Also the request promise itself is cached, not only the final data to prevent duplicated
+       * requests when previous requests haven't resolved yet.
+       */
+      let response = this.responseCache.get(url);
 
-      renderTile.data = await createImageBitmap(blob, {imageOrientation: 'flipY'});
+      if (!response) {
+        response = fetch(url)
+          .then(res => res.blob())
+          .then(blob => createImageBitmap(blob, {imageOrientation: 'flipY'}));
+
+        this.responseCache.set(url, response);
+      }
+
+      renderTile.data = await response;
       renderTile.loadingState = TileLoadingState.LOADED;
     } catch (err: unknown) {
       // fallback to empty imageBitmap in case of error
@@ -323,5 +357,9 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
       ...TileId.fromXYZ(0, 0, 0).atZoom(minZoom),
       ...TileId.fromXYZ(1, 0, 0).atZoom(minZoom)
     ]);
+  }
+
+  private isFullsize() {
+    return this.props.type === 'image';
   }
 }
