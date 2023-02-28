@@ -11,9 +11,9 @@ export interface LayerProps<TUrlParameters extends Record<string, string | numbe
   getUrl: (p: TileUrlParameters<TUrlParameters>) => string;
   urlParameters: TUrlParameters; // things that are relevant for fetching like "timestep"
   zIndex: number;
+  type: TileType;
   maxZoom: number;
   minZoom?: number;
-  type: TileType;
   debug?: boolean;
   debugMode?: string;
 }

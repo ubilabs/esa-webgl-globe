@@ -105,7 +105,7 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
 
       // if the tile is good to go, add it to renderTiles and continue
       if (renderTile.loadingState === TileLoadingState.LOADED) {
-        renderTile.zIndex = this.props.zIndex;
+        this.updateTileProps(renderTile);
         renderTiles.set(tileId, renderTile);
         continue;
       }
@@ -119,7 +119,7 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
       if (allChildrenLoaded) {
         for (let childId of tileId.children) {
           const childRenderTile = this.getRenderTile(childId);
-          childRenderTile.zIndex = this.props.zIndex;
+          this.updateTileProps(childRenderTile);
           renderTiles.set(childId, childRenderTile);
         }
 
@@ -131,7 +131,7 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
       for (const parentTileId of tileId.getAncestors()) {
         const parentRenderTile = this.getRenderTile(parentTileId, false);
         if (parentRenderTile && parentRenderTile.loadingState === TileLoadingState.LOADED) {
-          renderTile.zIndex = this.props.zIndex;
+          this.updateTileProps(renderTile);
           renderTile.placeholderDistance = renderTile.tileId.zoom - parentRenderTile.tileId.zoom;
           renderTiles.set(parentTileId, parentRenderTile);
 
@@ -151,6 +151,11 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
     }
 
     return Array.from(renderTiles.values());
+  }
+
+  private updateTileProps(renderTile: RenderTile) {
+    renderTile.zIndex = this.props.zIndex;
+    renderTile.debug = this.props.debug;
   }
 
   /** Gets or creates a RenderTile instance for the specified tileId. */
@@ -314,6 +319,9 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
        * Cache the last fetched image bitmap by url with a cache of size 1. This is optional (but
        * doesn't hurt) for type "tile" images but is required for "image" types to prevent making
        * multiple requests to the same url.
+       *
+       * Also the request promise itself is cached, not only the final data to prevent duplicated
+       * requests when previous requests haven't resolved yet.
        */
       let request = this.requestCache.get(url);
 

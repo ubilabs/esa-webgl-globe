@@ -25,8 +25,9 @@ export interface RenderTile {
   url: string;
   urlParameters: Record<string, string | number>;
   loadingState: TileLoadingState;
+  type: TileType;
   data?: ImageBitmap;
-  type?: TileType;
+  debug?: boolean;
   /**
    * The distance in zoom-levels to the tile's placeholder, used to compute the loading-priority.
    * Computed as `tile.tileId.zoom - placeholder.tileId.zoom`, so -1 means we have the children

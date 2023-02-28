@@ -4,26 +4,27 @@ import {WebGlGlobe} from '../../src/webgl-globe';
 import {LayerDebugMode} from '../../src/loader/types/layer';
 import type {LayerProps} from '../../src/loader/types/layer';
 
-let basemapProps = {
+let basemapProps: LayerProps = {
   id: 'basemap',
   zIndex: 0,
   maxZoom: 4,
+  type: 'tile',
   urlParameters: {},
   getUrl: ({x, y, zoom}) =>
     `https://storage.googleapis.com/esa-cfs-tiles/1.9.1/basemaps/land/${zoom}/${x}/${y}.png`
-} as LayerProps;
+};
 
-let permafrostProps = {
+let permafrostProps: LayerProps<{timestep: number}> = {
   id: 'sst.analysed_sst',
-  debug: false,
+  debug: true,
   debugMode: LayerDebugMode.OVERLAY,
   urlParameters: {timestep: 0},
   zIndex: 1,
   maxZoom: 4,
   type: 'image',
-  getUrl: ({x, y, zoom, timestep}) =>
+  getUrl: ({timestep}) =>
     `https://storage.googleapis.com/esa-cfs-tiles/1.9.0/sst.analysed_sst/tiles/${timestep}/full.png`
-} as LayerProps<{timestep: number}>;
+};
 
 let layers = [basemapProps, permafrostProps];
 

@@ -1,5 +1,5 @@
 import LRU from 'lru-cache';
-import {CanvasTexture, NearestFilter, RGBAFormat, Scene} from 'three';
+import {CanvasTexture, NearestFilter, NearestMipmapNearestFilter, RGBAFormat, Scene} from 'three';
 
 import {Tile} from './tile';
 import type {TileCollectionProps} from './types/tile-collection';
@@ -44,10 +44,6 @@ export class TileCollection {
       this.tiles[uniqTileId].destroy();
       delete this.tiles[uniqTileId];
     }
-
-    // clean texture cache when a new layer is displayed
-    if (!newTiles.length) {
-    }
   }
 
   private _createTile(id: string, renderTile: RenderTile) {
@@ -76,13 +72,14 @@ export class TileCollection {
    * the same url use the same texture instance and will be uploaded only once to the GPU.
    */
   private _getTexture(renderTile: RenderTile) {
-    const cachedTexture = this.textureCache.get(renderTile.url);
+    const useCache = !renderTile.debug;
+    const cachedTexture = useCache ? this.textureCache.get(renderTile.url) : null;
     const texture = cachedTexture || new CanvasTexture(renderTile.data!);
     texture.format = RGBAFormat;
     texture.flipY = true;
     texture.needsUpdate = true;
     texture.minFilter = NearestFilter;
-    texture.magFilter = NearestFilter;
+    texture.magFilter = NearestMipmapNearestFilter;
 
     this.textureCache.set(renderTile.url, texture);
 
