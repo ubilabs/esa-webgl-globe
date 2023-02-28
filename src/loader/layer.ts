@@ -182,7 +182,7 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
         zIndex: -1, // zIndex will be set when render tiles are retrieved for rendering
         loadingState: TileLoadingState.QUEUED,
         type: this.props.type,
-        placeholderDistance: tileId.zoom
+        placeholderDistance: 8 // no placeholder
       };
 
       this.cache.set(cacheKey, renderTile);
@@ -270,12 +270,14 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
     // when there is a good replacement (i.e. replaced by children), we can safely defer
     // loading a bit
     if (placeholderDistance === -1) {
-      priority += 30;
+      priority += 42;
+    } else if (placeholderDistance === 8) {
+      priority -= 8;
     }
 
     // if there's no good replacement, we load with higher priority
-    if (placeholderDistance > 1) {
-      priority -= 10 * placeholderDistance;
+    else {
+      priority -= 6 * placeholderDistance;
     }
 
     return Math.max(priority, 0);
