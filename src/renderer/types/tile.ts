@@ -23,7 +23,7 @@ export interface RenderTile {
   tileId: TileId;
   zIndex: number;
   url: string;
-  urlParameters: any;
+  urlParameters: Record<string, string | number>;
   loadingState: TileLoadingState;
   data?: ImageBitmap;
   type?: TileType;
