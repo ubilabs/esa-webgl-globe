@@ -9,7 +9,7 @@ import type RequestScheduler from './request-sheduler';
 import type {RenderTile} from '../renderer/types/tile';
 import type {LayerProps} from './types/layer';
 
-export class Layer<TUrlParameters = {}> {
+export class Layer<TUrlParameters extends Record<string, string | number> = {}> {
   scheduler: RequestScheduler<RenderTile>;
   props: LayerProps<TUrlParameters>;
   visibleTileIds: Set<TileId> = new Set();
@@ -53,7 +53,15 @@ export class Layer<TUrlParameters = {}> {
    * @param props Layer props
    */
   public setProps(props: Partial<LayerProps<TUrlParameters>>) {
+    let wasDebugEnabled = this.props.debug;
     this.props = {...this.props, ...props};
+
+    // when switching to and from debug-mode, the cache needs to be cleared so tiles
+    // will be fetched new.
+    if (wasDebugEnabled !== this.props.debug) {
+      this.cache.clear();
+    }
+
     this.updateQueue();
   }
 
