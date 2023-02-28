@@ -19,10 +19,17 @@ type WebGlGlobeOptions = Partial<{
 
 export class WebGlGlobe extends EventTarget {
   private layersById: Record<string, Layer> = {};
+  /**
+   * Stores the previously rendered tiles per layer, these tiles will continue to get rendered while
+   * the layer is updating due to a change in parameters. A WeakMap is used here to avoid keeping
+   * the tiles around when the layer has been removed.
+   */
+  private previousRenderTiles: WeakMap<Layer, RenderTile[]> = new WeakMap();
 
   private readonly scheduler: RequestScheduler<RenderTile>;
   private readonly renderer: Renderer;
   private readonly tileSelector: TileSelector;
+
   private tileSelectorIntervalId: number = 0;
   private tileUpdateRafId: number = 0;
 
@@ -120,7 +127,14 @@ export class WebGlGlobe extends EventTarget {
     const tiles = [];
 
     for (const layer of Object.values(this.layersById)) {
-      tiles.push(...layer.getRenderTiles());
+      if (layer.canRender()) {
+        const renderTiles = layer.getRenderTiles();
+        this.previousRenderTiles.set(layer, renderTiles);
+
+        tiles.push(...renderTiles);
+      } else if (this.previousRenderTiles.has(layer)) {
+        tiles.push(...this.previousRenderTiles.get(layer)!);
+      }
     }
 
     this.renderer.updateTiles(tiles);

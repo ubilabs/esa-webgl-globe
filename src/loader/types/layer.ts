@@ -1,9 +1,13 @@
-export type TileUrlParameters<UrlParameters> = {x: number; y: number; zoom: number} & UrlParameters;
+export type TileUrlParameters<TUrlParameters> = {
+  x: number;
+  y: number;
+  zoom: number;
+} & TUrlParameters;
 
-export interface LayerProps<UrlParameters = unknown> {
+export interface LayerProps<TUrlParameters = {}> {
   id: string;
-  getUrl: (p: TileUrlParameters<UrlParameters>) => string;
-  urlParameters: UrlParameters; // things that are relevant for fetching like "timestep"
+  getUrl: (p: TileUrlParameters<TUrlParameters>) => string;
+  urlParameters: TUrlParameters; // things that are relevant for fetching like "timestep"
   zIndex: number;
   maxZoom: number;
   minZoom?: number;

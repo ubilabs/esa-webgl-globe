@@ -9,14 +9,14 @@ import type RequestScheduler from './request-sheduler';
 import type {RenderTile} from '../renderer/types/tile';
 import type {LayerProps} from './types/layer';
 
-export class Layer<UrlParameters = unknown> {
+export class Layer<TUrlParameters = {}> {
   scheduler: RequestScheduler<RenderTile>;
-  props: LayerProps<UrlParameters>;
+  props: LayerProps<TUrlParameters>;
   visibleTileIds: Set<TileId> = new Set();
   cache: LRU<string, RenderTile> = new LRU({max: 500});
   lastRenderTiles: Map<TileId, RenderTile> = new Map();
 
-  constructor(scheduler: RequestScheduler<RenderTile>, props: LayerProps<UrlParameters>) {
+  constructor(scheduler: RequestScheduler<RenderTile>, props: LayerProps<TUrlParameters>) {
     this.scheduler = scheduler;
     this.props = props;
   }
@@ -52,9 +52,22 @@ export class Layer<UrlParameters = unknown> {
    *
    * @param props Layer props
    */
-  public setProps(props: Partial<LayerProps<UrlParameters>>) {
+  public setProps(props: Partial<LayerProps<TUrlParameters>>) {
     this.props = {...this.props, ...props};
     this.updateQueue();
+  }
+
+  /** Returns true if the layer is ready to render a frame with the given parameters. */
+  public canRender() {
+    // fixme: only consider visible tiles from minZoom set
+    for (let tileId of this.getMinZoomTileset()) {
+      const renderTile = this.getRenderTile(tileId);
+
+      // anything but 'queued' means it's either loading or already complete
+      if (renderTile.loadingState !== TileLoadingState.LOADED) return false;
+    }
+
+    return true;
   }
 
   /**
@@ -82,15 +95,20 @@ export class Layer<UrlParameters = unknown> {
         continue;
       }
 
-      // in some cases, the children might already be loaded and could stand in
+      // the tile itself isn't ready, so find the best replacement.
+      // In some cases, the children might already be loaded and could stand in
       const allChildrenLoaded = tileId.children.every(t => {
         const childRenderTile = this.getRenderTile(t, false);
         return childRenderTile && childRenderTile.loadingState === TileLoadingState.LOADED;
       });
       if (allChildrenLoaded) {
         for (let childId of tileId.children) {
-          renderTiles.set(childId, this.getRenderTile(childId));
+          const childRenderTile = this.getRenderTile(childId);
+          childRenderTile.zIndex = this.props.zIndex;
+          renderTiles.set(childId, childRenderTile);
         }
+
+        renderTile.placeholderDistance = -1;
         continue;
       }
 
@@ -99,7 +117,9 @@ export class Layer<UrlParameters = unknown> {
         const parentRenderTile = this.getRenderTile(parentTileId, false);
         if (parentRenderTile && parentRenderTile.loadingState === TileLoadingState.LOADED) {
           renderTile.zIndex = this.props.zIndex;
+          renderTile.placeholderDistance = renderTile.tileId.zoom - parentRenderTile.tileId.zoom;
           renderTiles.set(parentTileId, parentRenderTile);
+
           break;
         }
       }
@@ -118,11 +138,7 @@ export class Layer<UrlParameters = unknown> {
     return Array.from(renderTiles.values());
   }
 
-  /**
-   * Gets or creates a RenderTile instance for the specified tileId.
-   *
-   * @param tileId
-   */
+  /** Gets or creates a RenderTile instance for the specified tileId. */
   getRenderTile(tileId: TileId, createIfMissing?: true): RenderTile;
   getRenderTile(tileId: TileId, createIfMissing?: false): RenderTile | null;
   getRenderTile(tileId: TileId, createIfMissing = true): RenderTile | null {
@@ -133,8 +149,11 @@ export class Layer<UrlParameters = unknown> {
       renderTile = {
         tileId,
         url,
+        urlParameters: this.props.urlParameters,
         zIndex: -1, // zIndex will be set when render tiles are retrieved for rendering
-        loadingState: TileLoadingState.QUEUED
+        loadingState: TileLoadingState.QUEUED,
+        type: 'tile',
+        placeholderDistance: tileId.zoom
       };
 
       this.cache.set(url, renderTile);
@@ -148,16 +167,25 @@ export class Layer<UrlParameters = unknown> {
    * be scheduled.
    */
   private updateQueue() {
-    this.visibleTileIds.forEach(async tileId => {
+    const pendingTiles: RenderTile[] = [];
+
+    for (let tileId of this.visibleTileIds) {
       const renderTile = this.getRenderTile(tileId);
 
-      // anything else but queued means it's either loading or already complete
-      if (renderTile.loadingState !== TileLoadingState.QUEUED) return;
+      // anything but 'queued' means it's either loading or already complete
+      if (renderTile.loadingState !== TileLoadingState.QUEUED) continue;
 
-      // only skip queued tiles if they're actually in the queue (might have been
+      // queued tiles are only skipped if they're actually in the queue (might have been
       // discarded from the queue before loading could start)
-      if (this.scheduler.isScheduled(renderTile)) return;
+      if (this.scheduler.isScheduled(renderTile)) continue;
 
+      pendingTiles.push(renderTile);
+    }
+
+    // fixme: this would be a place to reduce the zoomlevel when too many
+    //  tiles are requested at the same time.
+
+    pendingTiles.forEach(async renderTile => {
       // if it's a new, unique request, wait for a place in the queue...
       const request = await this.scheduler.scheduleRequest(renderTile, this.getTilePriority);
 
@@ -177,18 +205,48 @@ export class Layer<UrlParameters = unknown> {
    * @returns Priority number
    */
   private getTilePriority = (renderTile: RenderTile) => {
-    // check if tileId is still visible and if parameters have not changed
-    const isInVisibleTileIds = this.visibleTileIds.has(renderTile.tileId);
-    const hasMatchingParameters = renderTile.url === this.getUrlForTileId(renderTile.tileId);
+    // what goes into the priority:
+    //  - [x] zoom-level
+    //    - lower zoom-levels (fewer tiles covering more area) should load before
+    //      higher zoom-levels
+    //  - [x] zoom-distance of placeholder (do we have something decent to replace this?)
+    //    - tiles that can be replaced by its children (dz=1) are least important
+    //    - tiles that can be replaced by immediate parent (dz=-1) are less important than
+    //      tiles where the replacement is several zoomlevels away
+    //  - [ ] covered on-screen region of the tile (maybe from tileselector?): tiles that
+    //    cover a larger area are more important
+    //  - [ ] focal point
+    //    - tiles in the center of the screen are more important than tiles towards the edges
 
-    // if true then we still want this tile
-    if (isInVisibleTileIds && hasMatchingParameters) {
-      // invert priority to get the highest priority for lowest zoom levels
-      return renderTile.tileId.zoom;
+    // collect the contributing factors
+    // tiles that are no longer needed will be canceled unless they are in the minZoom tileset.
+    const isInVisibleTileIds = this.visibleTileIds.has(renderTile.tileId);
+    const isMinZoom = renderTile.tileId.zoom === (this.props.minZoom || 1);
+
+    const hasMatchingParameters = renderTile.url === this.getUrlForTileId(renderTile.tileId);
+    const placeholderDistance = renderTile.placeholderDistance || 0;
+
+    // if the tile is no longer visible or the layer parameters have changed, we
+    // only complete loading the minZoom tiles at high priority, all others will be canceled.
+    if (!hasMatchingParameters || !isInVisibleTileIds) {
+      return isMinZoom ? 0 : -1;
     }
 
-    // otherwise cancel the request
-    return -1;
+    // priority is primarily based on zoom-level
+    let priority = renderTile.tileId.zoom * 10;
+
+    // when there is a good replacement (i.e. replaced by children), we can safely defer
+    // loading a bit
+    if (placeholderDistance === -1) {
+      priority += 30;
+    }
+
+    // if there's no good replacement, we load with higher priority
+    if (placeholderDistance > 1) {
+      priority -= 10 * placeholderDistance;
+    }
+
+    return Math.max(priority, 0);
   };
 
   /**
