@@ -9,7 +9,7 @@ import type RequestScheduler from './request-sheduler';
 import type {RenderTile} from '../renderer/types/tile';
 import type {LayerProps} from './types/layer';
 
-export class Layer<TUrlParameters = {}> {
+export class Layer<TUrlParameters extends Record<string, string | number> = {}> {
   scheduler: RequestScheduler<RenderTile>;
   props: LayerProps<TUrlParameters>;
   visibleTileIds: Set<TileId> = new Set();
@@ -61,7 +61,15 @@ export class Layer<TUrlParameters = {}> {
    * @param props Layer props
    */
   public setProps(props: Partial<LayerProps<TUrlParameters>>) {
+    let wasDebugEnabled = this.props.debug;
     this.props = {...this.props, ...props};
+
+    // when switching to and from debug-mode, the cache needs to be cleared so tiles
+    // will be fetched new.
+    if (wasDebugEnabled !== this.props.debug) {
+      this.cache.clear();
+    }
+
     this.updateQueue();
   }
 
@@ -71,7 +79,6 @@ export class Layer<TUrlParameters = {}> {
     for (let tileId of this.getMinZoomTileset()) {
       const renderTile = this.getRenderTile(tileId);
 
-      // anything but 'queued' means it's either loading or already complete
       if (renderTile.loadingState !== TileLoadingState.LOADED) return false;
     }
 
@@ -236,10 +243,13 @@ export class Layer<TUrlParameters = {}> {
     const hasMatchingParameters = renderTile.url === this.getUrlForTileId(renderTile.tileId);
     const placeholderDistance = renderTile.placeholderDistance || 0;
 
-    // if the tile is no longer visible or the layer parameters have changed, we
-    // only complete loading the minZoom tiles at high priority, all others will be canceled.
-    if (!hasMatchingParameters || !isInVisibleTileIds) {
-      return isMinZoom ? 0 : -1;
+    // if the layer parameters have changed, all requests will be canceled.
+    if (!hasMatchingParameters) return -1;
+
+    // when the tile is no longer visible, only minZoom tiles will resume at low priority, tiles
+    // at others zoom levels will be canceled and need to queue again.
+    if (!isInVisibleTileIds) {
+      return isMinZoom ? 999 : -1;
     }
 
     // priority is primarily based on zoom-level

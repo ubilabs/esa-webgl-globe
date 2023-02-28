@@ -1,4 +1,12 @@
-import {ShaderMaterial, GreaterStencilFunc, KeepStencilOp, ReplaceStencilOp} from 'three';
+import {
+  ShaderMaterial,
+  GreaterStencilFunc,
+  KeepStencilOp,
+  ReplaceStencilOp,
+  CustomBlending,
+  OneFactor,
+  OneMinusSrcAlphaFactor
+} from 'three';
 import fragmentShader from '../shader/tile/tile-fragment.glsl';
 import fragmentShaderPole from '../shader/tile/tile-fragment-pole.glsl';
 import vertexShader from '../shader/tile/tile-vertex.glsl';
@@ -11,7 +19,10 @@ const baseOptions = {
   stencilFunc: GreaterStencilFunc,
   stencilFail: KeepStencilOp,
   stencilZFail: KeepStencilOp,
-  stencilZPass: ReplaceStencilOp
+  stencilZPass: ReplaceStencilOp,
+  blending: CustomBlending,
+  blendSrc: OneFactor,
+  blendDst: OneMinusSrcAlphaFactor
 };
 
 export function getTileMaterial(uniforms = {}, zIndex: number) {
