@@ -30,8 +30,8 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
   public setVisibleTileIds(tileIds: Set<TileId>) {
     const visibleTileIds = new Set<TileId>();
 
-    // Only use min zoom level for fullsize layers
-    if (this.props.type === 'image') {
+    // Use only the min zoom level for fullsize layers
+    if (this.isFullsize()) {
       this.visibleTileIds = this.getMinZoomTileset();
       this.updateQueue();
       return;
@@ -158,7 +158,10 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
   getRenderTile(tileId: TileId, createIfMissing?: false): RenderTile | null;
   getRenderTile(tileId: TileId, createIfMissing = true): RenderTile | null {
     const url = this.getUrlForTileId(tileId);
-    const cacheKey = this.props.type === 'image' ? `${url}-${tileId.id}` : url;
+
+    // use a more specific cacheKey for fullsize tiles to distinguish
+    // between render tiles despite having the same tile url
+    const cacheKey = this.isFullsize() ? `${url}-${tileId.id}` : url;
 
     let renderTile = this.cache.get(cacheKey) || null;
 
@@ -309,8 +312,8 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
     try {
       /**
        * Cache the last fetched image bitmap by url with a cache of size 1. This is optional (but
-       * doesn't hurt) for type "tile" images but required for "image" type to prevent multiple
-       * requests to the same url.
+       * doesn't hurt) for type "tile" images but is required for "image" types to prevent making
+       * multiple requests to the same url.
        */
       let request = this.requestCache.get(url);
 
@@ -346,5 +349,9 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
       ...TileId.fromXYZ(0, 0, 0).atZoom(minZoom),
       ...TileId.fromXYZ(1, 0, 0).atZoom(minZoom)
     ]);
+  }
+
+  private isFullsize() {
+    return this.props.type === 'image';
   }
 }
