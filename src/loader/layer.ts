@@ -14,7 +14,7 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
   props: LayerProps<TUrlParameters>;
   visibleTileIds: Set<TileId> = new Set();
   cache: LRU<string, RenderTile> = new LRU({max: 500});
-  requestCache: LRU<string, Promise<ImageBitmap>> = new LRU({max: 1});
+  responseCache: LRU<string, Promise<ImageBitmap>> = new LRU({max: 1});
   lastRenderTiles: Map<TileId, RenderTile> = new Map();
 
   constructor(scheduler: RequestScheduler<RenderTile>, props: LayerProps<TUrlParameters>) {
@@ -323,17 +323,17 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
        * Also the request promise itself is cached, not only the final data to prevent duplicated
        * requests when previous requests haven't resolved yet.
        */
-      let request = this.requestCache.get(url);
+      let response = this.responseCache.get(url);
 
-      if (!request) {
-        request = fetch(url)
+      if (!response) {
+        response = fetch(url)
           .then(res => res.blob())
           .then(blob => createImageBitmap(blob, {imageOrientation: 'flipY'}));
 
-        this.requestCache.set(url, request);
+        this.responseCache.set(url, response);
       }
 
-      renderTile.data = await request;
+      renderTile.data = await response;
       renderTile.loadingState = TileLoadingState.LOADED;
     } catch (err: unknown) {
       // fallback to empty imageBitmap in case of error

@@ -78,8 +78,8 @@ export class TileCollection {
     texture.format = RGBAFormat;
     texture.flipY = true;
     texture.needsUpdate = true;
-    texture.minFilter = NearestFilter;
-    texture.magFilter = NearestMipmapNearestFilter;
+    texture.minFilter = NearestMipmapNearestFilter;
+    texture.magFilter = NearestFilter;
 
     this.textureCache.set(renderTile.url, texture);
 

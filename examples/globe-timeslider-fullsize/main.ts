@@ -14,7 +14,7 @@ let basemapProps: LayerProps = {
     `https://storage.googleapis.com/esa-cfs-tiles/1.9.1/basemaps/land/${zoom}/${x}/${y}.png`
 };
 
-let permafrostProps: LayerProps<{timestep: number}> = {
+let sstProps: LayerProps<{timestep: number}> = {
   id: 'sst.analysed_sst',
   debug: true,
   debugMode: LayerDebugMode.OVERLAY,
@@ -26,7 +26,7 @@ let permafrostProps: LayerProps<{timestep: number}> = {
     `https://storage.googleapis.com/esa-cfs-tiles/1.9.0/sst.analysed_sst/tiles/${timestep}/full.png`
 };
 
-let layers = [basemapProps, permafrostProps];
+let layers = [basemapProps, sstProps];
 
 const globe = new WebGlGlobe(document.body, {layers: layers});
 
@@ -43,7 +43,7 @@ function setTimestamp(value: number) {
     layers: [
       basemapProps,
       {
-        ...permafrostProps,
+        ...sstProps,
         urlParameters: {timestep: value}
       } as LayerProps<{timestep: number}>
     ]
