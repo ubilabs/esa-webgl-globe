@@ -62,12 +62,9 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
    * @param props Layer props
    */
   public setProps(props: Partial<LayerProps<TUrlParameters>>) {
-    let wasDebugEnabled = this.props.debug;
-    this.props = {...this.props, ...props};
-
     // when switching to and from debug-mode, the cache needs to be cleared so tiles
     // will be fetched new.
-    if (wasDebugEnabled !== this.props.debug) {
+    if (props.debug !== this.props.debug) {
       this.cache.clear();
     }
 
