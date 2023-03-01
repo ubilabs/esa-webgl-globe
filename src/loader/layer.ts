@@ -15,7 +15,8 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
   visibleTileIds: Set<TileId> = new Set();
   cache: LRU<string, RenderTile> = new LRU({max: 500});
   responseCache: LRU<string, Promise<ImageBitmap>> = new LRU({max: 1});
-  lastRenderTiles: Map<TileId, RenderTile> = new Map();
+
+  private minZoomTileset: Set<TileId> | null = null;
 
   constructor(scheduler: RequestScheduler<RenderTile>, props: LayerProps<TUrlParameters>) {
     this.scheduler = scheduler;
@@ -61,14 +62,17 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
    * @param props Layer props
    */
   public setProps(props: Partial<LayerProps<TUrlParameters>>) {
-    let wasDebugEnabled = this.props.debug;
-    this.props = {...this.props, ...props};
-
     // when switching to and from debug-mode, the cache needs to be cleared so tiles
     // will be fetched new.
-    if (wasDebugEnabled !== this.props.debug) {
+    if (props.debug !== this.props.debug) {
       this.cache.clear();
     }
+
+    if (props.minZoom !== this.props.minZoom) {
+      this.minZoomTileset = null;
+    }
+
+    this.props = {...this.props, ...props};
 
     this.updateQueue();
   }
@@ -178,7 +182,7 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
         zIndex: -1, // zIndex will be set when render tiles are retrieved for rendering
         loadingState: TileLoadingState.QUEUED,
         type: this.props.type,
-        placeholderDistance: tileId.zoom
+        placeholderDistance: 8 // no placeholder
       };
 
       this.cache.set(cacheKey, renderTile);
@@ -266,12 +270,14 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
     // when there is a good replacement (i.e. replaced by children), we can safely defer
     // loading a bit
     if (placeholderDistance === -1) {
-      priority += 30;
+      priority += 42;
+    } else if (placeholderDistance === 8) {
+      priority -= 8;
     }
 
     // if there's no good replacement, we load with higher priority
-    if (placeholderDistance > 1) {
-      priority -= 10 * placeholderDistance;
+    else {
+      priority -= 6 * placeholderDistance;
     }
 
     return Math.max(priority, 0);
@@ -352,11 +358,15 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
    * same area as the specified tiles.
    */
   private getMinZoomTileset(): Set<TileId> {
-    const minZoom = this.props.minZoom || 1;
-    return new Set([
-      ...TileId.fromXYZ(0, 0, 0).atZoom(minZoom),
-      ...TileId.fromXYZ(1, 0, 0).atZoom(minZoom)
-    ]);
+    if (!this.minZoomTileset) {
+      const minZoom = this.props.minZoom || 1;
+      this.minZoomTileset = new Set([
+        ...TileId.fromXYZ(0, 0, 0).atZoom(minZoom),
+        ...TileId.fromXYZ(1, 0, 0).atZoom(minZoom)
+      ]);
+    }
+
+    return this.minZoomTileset;
   }
 
   private isFullsize() {
