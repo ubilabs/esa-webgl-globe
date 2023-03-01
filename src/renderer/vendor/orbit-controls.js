@@ -330,6 +330,8 @@ class OrbitControls extends EventDispatcher {
     const unitSphere = new Mesh(new SphereGeometry(1, 32, 32));
     const raycastSpherical = new Spherical();
     const rayIntersection = new Vector3();
+    const rotateStartSpherical = new Spherical();
+    const rotateEndSpherical = new Spherical();
 
     function getAutoRotationAngle() {
       return ((2 * Math.PI) / 60 / 60) * scope.autoRotateSpeed;
@@ -421,7 +423,8 @@ class OrbitControls extends EventDispatcher {
     function dollyOut(dollyScale) {
       if (scope.object.isPerspectiveCamera) {
         // changed to momentum dollying
-        scaleTarget = 1 / (dollyScale * 1.25);
+        const s = (dollyScale - 1) * -1.25 + 1;
+        scaleTarget = 1 / s;
         scaleCurrent = 1;
       } else if (scope.object.isOrthographicCamera) {
         scope.object.zoom = Math.max(
@@ -477,13 +480,24 @@ class OrbitControls extends EventDispatcher {
     function handleMouseMoveRotate(event) {
       rotateEnd.set(event.clientX, event.clientY);
 
-      rotateDelta.subVectors(rotateEnd, rotateStart).multiplyScalar(scope.rotateSpeed);
+      // Changed: Handle mouse rotation with raycasting on the unit sphere
+      const startPosition = intersectUnitSphere(rotateStart.x, rotateStart.y);
+      const endPosition = intersectUnitSphere(rotateEnd.x, rotateEnd.y);
 
-      const element = scope.domElement;
+      if (!startPosition || !endPosition) {
+        return;
+      }
 
-      rotateLeft((2 * Math.PI * rotateDelta.x) / element.clientHeight); // yes, height
+      rotateEndSpherical.setFromVector3(endPosition);
+      rotateStartSpherical.setFromVector3(startPosition);
+      const dTheta = rotateEndSpherical.theta - rotateStartSpherical.theta;
+      const dPhi = rotateEndSpherical.phi - rotateStartSpherical.phi;
 
-      rotateUp((2 * Math.PI * rotateDelta.y) / element.clientHeight);
+      // fixme: skip for now if over the 360 degree border
+      if (Math.abs(dTheta) < Math.PI) {
+        rotateLeft(dTheta);
+      }
+      rotateUp(dPhi);
 
       rotateStart.copy(rotateEnd);
 
@@ -527,7 +541,12 @@ class OrbitControls extends EventDispatcher {
         // Added to spin globe in the direction of the mouse target
         const dTheta = spherical.theta - raycastSpherical.theta;
         const dPhi = spherical.phi - raycastSpherical.phi;
-        sphericalDelta.theta = dTheta / -4;
+
+        // fixme: skip for now if over the 360 degree border
+        if (Math.abs(dTheta) < Math.PI) {
+          sphericalDelta.theta = dTheta / -4;
+        }
+
         sphericalDelta.phi = dPhi / -4;
       } else if (event.deltaY > 0) {
         dollyOut(getZoomScale());
@@ -644,15 +663,37 @@ class OrbitControls extends EventDispatcher {
         rotateEnd.set(x, y);
       }
 
-      rotateDelta.subVectors(rotateEnd, rotateStart).multiplyScalar(scope.rotateSpeed);
+      // Changed: Handle mouse rotation with raycasting on the unit sphere
+      const startPosition = intersectUnitSphere(rotateStart.x, rotateStart.y);
+      const endPosition = intersectUnitSphere(rotateEnd.x, rotateEnd.y);
 
-      const element = scope.domElement;
+      if (!startPosition || !endPosition) {
+        return;
+      }
 
-      rotateLeft((2 * Math.PI * rotateDelta.x) / element.clientHeight); // yes, height
+      rotateEndSpherical.setFromVector3(endPosition);
+      rotateStartSpherical.setFromVector3(startPosition);
+      const dTheta = rotateEndSpherical.theta - rotateStartSpherical.theta;
+      const dPhi = rotateEndSpherical.phi - rotateStartSpherical.phi;
 
-      rotateUp((2 * Math.PI * rotateDelta.y) / element.clientHeight);
+      rotateUp(dPhi);
+
+      // fixme: skip for now if over the 360 degree border
+      if (Math.abs(dTheta) < Math.PI) {
+        rotateLeft(dTheta);
+      }
 
       rotateStart.copy(rotateEnd);
+
+      scope.update();
+    }
+
+    function intersectUnitSphere(clientX, clientY) {
+      raycasterPointer.x = (clientX / scope.domElement.clientWidth) * 2 - 1;
+      raycasterPointer.y = -(clientY / scope.domElement.clientHeight) * 2 + 1;
+      raycaster.setFromCamera(raycasterPointer, scope.object);
+      const intersection = raycaster.intersectObject(unitSphere)[0];
+      return intersection && intersection.point;
     }
 
     function handleTouchMovePan(event) {
