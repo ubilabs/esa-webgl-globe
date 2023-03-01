@@ -27,8 +27,6 @@ export class Renderer extends EventTarget {
 
     this.container = options.container || document.body;
     this.initScene();
-
-    this._addResizeListener();
     this._animate();
   }
 
@@ -81,13 +79,7 @@ export class Renderer extends EventTarget {
     this.controls.rotateSpeed = Math.max(0.05, Math.min(1.0, cameraDistance - 0.2));
   }
 
-  private _addResizeListener() {
-    this._resize = this._resize.bind(this);
-    window.addEventListener('resize', this._resize);
-  }
-
-  private _resize() {
-    const {width, height} = this.container.getBoundingClientRect();
+  resize(width: number, height: number) {
     this.webglRenderer.setSize(width, height);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
@@ -136,6 +128,6 @@ export class Renderer extends EventTarget {
   }
 
   destroy() {
-    window.removeEventListener('resize', this._resize);
+    // TODO threejs cleanup?
   }
 }

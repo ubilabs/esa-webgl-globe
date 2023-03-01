@@ -26,6 +26,7 @@ export class WebGlGlobe extends EventTarget {
    */
   private previousRenderTiles: WeakMap<Layer, RenderTile[]> = new WeakMap();
 
+  private container: HTMLElement;
   private readonly scheduler: RequestScheduler<RenderTile>;
   private readonly renderer: Renderer;
   private readonly tileSelector: TileSelector;
@@ -38,6 +39,7 @@ export class WebGlGlobe extends EventTarget {
 
     this.scheduler = new RequestScheduler();
 
+    this.container = container;
     this.renderer = new Renderer({container});
 
     this.setProps(props);
@@ -45,9 +47,7 @@ export class WebGlGlobe extends EventTarget {
     this.tileSelector = new TileSelector();
     this.tileSelector.setCamera(this.renderer.camera);
 
-    const {width, height} = container.getBoundingClientRect();
-    this.tileSelector.setSize(new Vector2(width, height).multiplyScalar(0.25).round());
-
+    this.resize();
     this.attachEventListeners();
     this.startTileSelectorLoop();
     this.startTileUpdateLoop();
@@ -140,11 +140,32 @@ export class WebGlGlobe extends EventTarget {
     this.renderer.updateTiles(tiles);
   }
 
+  private resize() {
+    const {width, height} = this.container.getBoundingClientRect();
+
+    // Resize tile selector size
+    this.tileSelector.setSize(new Vector2(width, height).multiplyScalar(0.25).round());
+
+    // Resize renderer size
+    this.renderer.resize(width, height);
+  }
+
   private attachEventListeners() {
+    // Window Resize
+    this.resize = this.resize.bind(this);
+    window.addEventListener('resize', this.resize);
+
+    // Dispatch camera view changed event
     this.renderer.addEventListener('cameraViewChanged', (event: CustomEventInit<LngLatDist>) => {
       // create a new event since we cannot dispatch the same event twice
       const newEvent = new CustomEvent<LngLatDist>('cameraViewChanged', {detail: event.detail});
       this.dispatchEvent(newEvent);
     });
+  }
+
+  destroy() {
+    window.removeEventListener('resize', this.resize);
+    this.renderer.destroy();
+    // FIXME: tile selector destroy?
   }
 }
