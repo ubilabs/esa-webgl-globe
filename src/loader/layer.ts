@@ -38,9 +38,13 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
       return;
     }
 
-    // Clamp zoom level of tiles to layer's maxZoom
     for (const tileId of tileIds) {
-      if (tileId.zoom > this.props.maxZoom) {
+      const minZoomParent = tileId.getParentAtZoom(this.props.minZoom || 1);
+      if (minZoomParent) visibleTileIds.add(minZoomParent);
+
+      // when maxZoom is configured, replace tiles with tiles at
+      // higher zoom with tiles at max zoom.
+      if (this.props.maxZoom && tileId.zoom > this.props.maxZoom) {
         const parentTile = tileId.getParentAtZoom(this.props.maxZoom);
 
         if (parentTile) {
@@ -51,7 +55,8 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
       }
     }
 
-    this.visibleTileIds = new Set([...visibleTileIds, ...this.getMinZoomTileset()]);
+    this.visibleTileIds = visibleTileIds;
+
     this.updateQueue();
   }
 
@@ -79,8 +84,9 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
 
   /** Returns true if the layer is ready to render a frame with the given parameters. */
   public canRender() {
-    // fixme: only consider visible tiles from minZoom set
     for (let tileId of this.getMinZoomTileset()) {
+      if (!this.visibleTileIds.has(tileId)) continue;
+
       const renderTile = this.getRenderTile(tileId);
 
       if (renderTile.loadingState !== TileLoadingState.LOADED) return false;
@@ -197,8 +203,9 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
    */
   private updateQueue() {
     const pendingTiles: RenderTile[] = [];
+    const tileIdsToLoad = new Set([...this.visibleTileIds, ...this.getMinZoomTileset()]);
 
-    for (let tileId of this.visibleTileIds) {
+    for (let tileId of tileIdsToLoad) {
       const renderTile = this.getRenderTile(tileId);
 
       // anything but 'queued' means it's either loading or already complete
@@ -248,10 +255,8 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
     //    - tiles in the center of the screen are more important than tiles towards the edges
 
     // collect the contributing factors
-    // tiles that are no longer needed will be canceled unless they are in the minZoom tileset.
     const isInVisibleTileIds = this.visibleTileIds.has(renderTile.tileId);
     const isMinZoom = renderTile.tileId.zoom === (this.props.minZoom || 1);
-
     const hasMatchingParameters = renderTile.url === this.getUrlForTileId(renderTile.tileId);
     const placeholderDistance = renderTile.placeholderDistance || 0;
 
