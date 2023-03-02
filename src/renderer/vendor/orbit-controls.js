@@ -466,19 +466,19 @@ class OrbitControls extends EventDispatcher {
     //
 
     function handleMouseDownRotate(event) {
-      rotateStart.set(event.clientX, event.clientY);
+      rotateStart.set(event.offsetX, event.offsetY);
     }
 
     function handleMouseDownDolly(event) {
-      dollyStart.set(event.clientX, event.clientY);
+      dollyStart.set(event.offsetX, event.offsetY);
     }
 
     function handleMouseDownPan(event) {
-      panStart.set(event.clientX, event.clientY);
+      panStart.set(event.offsetX, event.offsetY);
     }
 
     function handleMouseMoveRotate(event) {
-      rotateEnd.set(event.clientX, event.clientY);
+      rotateEnd.set(event.offsetX, event.offsetY);
 
       // Changed: Handle mouse rotation with raycasting on the unit sphere
       const startPosition = intersectUnitSphere(rotateStart.x, rotateStart.y);
@@ -505,7 +505,7 @@ class OrbitControls extends EventDispatcher {
     }
 
     function handleMouseMoveDolly(event) {
-      dollyEnd.set(event.clientX, event.clientY);
+      dollyEnd.set(event.offsetX, event.offsetY);
 
       dollyDelta.subVectors(dollyEnd, dollyStart);
 
@@ -521,7 +521,7 @@ class OrbitControls extends EventDispatcher {
     }
 
     function handleMouseMovePan(event) {
-      panEnd.set(event.clientX, event.clientY);
+      panEnd.set(event.offsetX, event.offsetY);
 
       panDelta.subVectors(panEnd, panStart).multiplyScalar(scope.panSpeed);
 
@@ -610,10 +610,10 @@ class OrbitControls extends EventDispatcher {
 
     function handleTouchStartRotate() {
       if (pointers.length === 1) {
-        rotateStart.set(pointers[0].pageX, pointers[0].pageY);
+        rotateStart.set(pointers[0].offsetX, pointers[0].offsetY);
       } else {
-        const x = 0.5 * (pointers[0].pageX + pointers[1].pageX);
-        const y = 0.5 * (pointers[0].pageY + pointers[1].pageY);
+        const x = 0.5 * (pointers[0].offsetX + pointers[1].offsetX);
+        const y = 0.5 * (pointers[0].offsetY + pointers[1].offsetY);
 
         rotateStart.set(x, y);
       }
@@ -621,18 +621,18 @@ class OrbitControls extends EventDispatcher {
 
     function handleTouchStartPan() {
       if (pointers.length === 1) {
-        panStart.set(pointers[0].pageX, pointers[0].pageY);
+        panStart.set(pointers[0].offsetX, pointers[0].offsetY);
       } else {
-        const x = 0.5 * (pointers[0].pageX + pointers[1].pageX);
-        const y = 0.5 * (pointers[0].pageY + pointers[1].pageY);
+        const x = 0.5 * (pointers[0].offsetX + pointers[1].offsetX);
+        const y = 0.5 * (pointers[0].offsetY + pointers[1].offsetY);
 
         panStart.set(x, y);
       }
     }
 
     function handleTouchStartDolly() {
-      const dx = pointers[0].pageX - pointers[1].pageX;
-      const dy = pointers[0].pageY - pointers[1].pageY;
+      const dx = pointers[0].offsetX - pointers[1].offsetX;
+      const dy = pointers[0].offsetY - pointers[1].offsetY;
 
       const distance = Math.sqrt(dx * dx + dy * dy);
 
@@ -653,12 +653,12 @@ class OrbitControls extends EventDispatcher {
 
     function handleTouchMoveRotate(event) {
       if (pointers.length == 1) {
-        rotateEnd.set(event.pageX, event.pageY);
+        rotateEnd.set(event.offsetX, event.offsetY);
       } else {
         const position = getSecondPointerPosition(event);
 
-        const x = 0.5 * (event.pageX + position.x);
-        const y = 0.5 * (event.pageY + position.y);
+        const x = 0.5 * (event.offsetX + position.x);
+        const y = 0.5 * (event.offsetY + position.y);
 
         rotateEnd.set(x, y);
       }
@@ -688,9 +688,9 @@ class OrbitControls extends EventDispatcher {
       scope.update();
     }
 
-    function intersectUnitSphere(clientX, clientY) {
-      raycasterPointer.x = (clientX / scope.domElement.clientWidth) * 2 - 1;
-      raycasterPointer.y = -(clientY / scope.domElement.clientHeight) * 2 + 1;
+    function intersectUnitSphere(offsetX, offsetY) {
+      raycasterPointer.x = (offsetX / scope.domElement.clientWidth) * 2 - 1;
+      raycasterPointer.y = -(offsetY / scope.domElement.clientHeight) * 2 + 1;
       raycaster.setFromCamera(raycasterPointer, scope.object);
       const intersection = raycaster.intersectObject(unitSphere)[0];
       return intersection && intersection.point;
@@ -698,12 +698,12 @@ class OrbitControls extends EventDispatcher {
 
     function handleTouchMovePan(event) {
       if (pointers.length === 1) {
-        panEnd.set(event.pageX, event.pageY);
+        panEnd.set(event.offsetX, event.offsetY);
       } else {
         const position = getSecondPointerPosition(event);
 
-        const x = 0.5 * (event.pageX + position.x);
-        const y = 0.5 * (event.pageY + position.y);
+        const x = 0.5 * (event.offsetX + position.x);
+        const y = 0.5 * (event.offsetY + position.y);
 
         panEnd.set(x, y);
       }
@@ -718,8 +718,8 @@ class OrbitControls extends EventDispatcher {
     function handleTouchMoveDolly(event) {
       const position = getSecondPointerPosition(event);
 
-      const dx = event.pageX - position.x;
-      const dy = event.pageY - position.y;
+      const dx = event.offsetX - position.x;
+      const dy = event.offsetY - position.y;
 
       const distance = Math.sqrt(dx * dx + dy * dy);
 
@@ -873,8 +873,8 @@ class OrbitControls extends EventDispatcher {
 
     // Added to keep track of the currently hovered point on the globe surface
     function onMouseMove(event) {
-      raycasterPointer.x = (event.clientX / scope.domElement.clientWidth) * 2 - 1;
-      raycasterPointer.y = -(event.clientY / scope.domElement.clientHeight) * 2 + 1;
+      raycasterPointer.x = (event.offsetX / scope.domElement.clientWidth) * 2 - 1;
+      raycasterPointer.y = -(event.offsetY / scope.domElement.clientHeight) * 2 + 1;
       raycaster.setFromCamera(raycasterPointer, scope.object);
 
       const intersection = raycaster.intersectObject(unitSphere)[0];
@@ -1063,7 +1063,7 @@ class OrbitControls extends EventDispatcher {
         pointerPositions[event.pointerId] = position;
       }
 
-      position.set(event.pageX, event.pageY);
+      position.set(event.offsetX, event.offsetY);
     }
 
     function getSecondPointerPosition(event) {
