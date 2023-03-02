@@ -32,7 +32,16 @@
       .timeslider .controls {
         display: flex;
         flex-flow: row nowrap;
+        justify-content: space-between;
         gap: 0.5em;
+      }
+
+      .timeslider .controls button {
+        flex: 0 0 auto;
+      }
+
+      .timeslider .controls span {
+        font-family: monospace;
       }
     </style>
   </head>
@@ -40,11 +49,15 @@
     <div class="panel">
       <div class="timeslider">
         <div class="controls">
-          <button id='timestep-prev'>«</button>
-          <span>Timestep <span class="value-display">0</span></span>
-          <button id='timestep-next'>»</button>
+          <div class="controls__left">
+            <button id="timestep-prev">«</button>
+          </div>
+          <span>Timestep <span class="value-display">00</span></span>
+          <div class="controls__right">
+            <button id="play-pause">Play</button> <button id="timestep-next">»</button>
+          </div>
         </div>
-        <input id="timestep" type="range" min="0" max="21" step="1" value="0" />
+        <input id="timestep" type="range" min="0" max="13" step="1" value="0" />
       </div>
     </div>
     <script type="module" src="main.ts"></script>
