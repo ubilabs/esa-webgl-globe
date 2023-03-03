@@ -13,7 +13,7 @@ export interface LayerProps<TUrlParameters extends Record<string, string | numbe
   zIndex: number;
   type: TileType;
   maxZoom: number;
-  minZoom: number;
+  minZoom?: number;
   debug?: boolean;
   debugMode?: string;
 }

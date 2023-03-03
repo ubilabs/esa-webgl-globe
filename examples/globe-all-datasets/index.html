@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Example Layer</title>
+    <style>
+      body {
+        font-family: sans-serif;
+      }
+      .panel {
+        position: absolute;
+        z-index: 999;
+        bottom: 1em;
+        left: 50%;
+        translate: -50% 0;
+
+        padding: 1em;
+        width: 480px;
+        height: 40px;
+        background: rgb(255, 255, 255, 0.3);
+        border-radius: 4px;
+      }
+
+      .timeslider {
+        display: flex;
+        flex-flow: column nowrap;
+        gap: 0.5em;
+      }
+
+      .timeslider .controls {
+        display: flex;
+        flex-flow: row nowrap;
+        justify-content: space-between;
+        gap: 0.5em;
+      }
+
+      .timeslider .controls button {
+        flex: 0 0 auto;
+      }
+
+      .timeslider .controls span {
+        font-family: monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="panel">
+      <div class="timeslider">
+        <div class="controls">
+          <div class="controls__left">
+            <button id="timestep-prev">«</button>
+          </div>
+          <span>Timestep <span class="value-display">0</span></span>
+          <div class="controls__right">
+            <button id="play-pause">Play</button> <button id="timestep-next">»</button>
+          </div>
+        </div>
+        <input id="timestep" type="range" min="0" max="13" step="1" value="0" />
+      </div>
+    </div>
+    <script type="module" src="main.ts"></script>
+  </body>
+</html>
