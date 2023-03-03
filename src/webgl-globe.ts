@@ -1,9 +1,10 @@
+import {Vector2} from 'three';
 import RequestScheduler from './loader/request-sheduler';
 import {Layer} from './loader/layer';
 import {RenderTile} from './renderer/types/tile';
 import {TileSelector} from './tile-selector/tile-selector';
-import {Vector2} from 'three';
 import {Renderer} from './renderer/renderer';
+import {LayerLoadingState} from './loader/types/layer';
 
 import type {LngLatDist} from './renderer/types/lng-lat-dist';
 import type {LayerProps} from './loader/types/layer';
@@ -11,11 +12,15 @@ import type {MarkerProps} from './renderer/types/marker';
 
 const TILESELECTOR_FPS = 10;
 
-type WebGlGlobeOptions = Partial<{
+type WebGlGlobeProps = Partial<{
   layers: LayerProps<any>[];
   cameraView: LngLatDist;
   markers: MarkerProps[];
+
+  allowDownsampling?: boolean;
 }>;
+
+const DEFAULT_PROPS = {allowDownsampling: true};
 
 export class WebGlGlobe extends EventTarget {
   private layersById: Record<string, Layer> = {};
@@ -33,8 +38,9 @@ export class WebGlGlobe extends EventTarget {
 
   private tileSelectorIntervalId: number = 0;
   private tileUpdateRafId: number = 0;
+  private props!: WebGlGlobeProps;
 
-  constructor(container: HTMLElement, props: WebGlGlobeOptions = {}) {
+  constructor(container: HTMLElement, props: WebGlGlobeProps = {}) {
     super();
 
     this.scheduler = new RequestScheduler();
@@ -42,7 +48,7 @@ export class WebGlGlobe extends EventTarget {
     this.container = container;
     this.renderer = new Renderer({container});
 
-    this.setProps(props);
+    this.setProps({...DEFAULT_PROPS, ...props});
 
     this.tileSelector = new TileSelector();
     this.tileSelector.setCamera(this.renderer.camera);
@@ -53,7 +59,9 @@ export class WebGlGlobe extends EventTarget {
     this.startTileUpdateLoop();
   }
 
-  setProps(props: WebGlGlobeOptions) {
+  setProps(props: WebGlGlobeProps) {
+    this.props = props;
+
     if (props.layers) {
       this.setLayers(props.layers);
     }
@@ -77,7 +85,7 @@ export class WebGlGlobe extends EventTarget {
     cancelAnimationFrame(this.tileUpdateRafId);
   }
 
-  private setLayers(layers: LayerProps[]) {
+  setLayers(layers: LayerProps[]) {
     // remove layers that are no longer needeed
     const newLayerIds = layers.map(l => l.id);
     const toRemove = Object.keys(this.layersById).filter(id => !newLayerIds.includes(id));
@@ -96,8 +104,21 @@ export class WebGlGlobe extends EventTarget {
       }
 
       // otherwise create the layer
-      this.layersById[layer.id] = new Layer(this.scheduler, layer);
+      this.layersById[layer.id] = new Layer(this.scheduler, layer, this);
     }
+  }
+
+  /**
+   * Returns true if all layers can render with the current props.
+   *
+   * @param allowDownsampling If set, the method will only return true when all tiles are loaded.
+   */
+  canRender(allowDownsampling: boolean = true) {
+    for (let layer of Object.values(this.layersById)) {
+      if (!layer.canRender(allowDownsampling)) return false;
+    }
+
+    return true;
   }
 
   private setMarkers(markers: MarkerProps[]) {
@@ -127,7 +148,7 @@ export class WebGlGlobe extends EventTarget {
     const tiles = [];
 
     for (const layer of Object.values(this.layersById)) {
-      if (layer.canRender()) {
+      if (layer.canRender(this.props.allowDownsampling)) {
         const renderTiles = layer.getRenderTiles();
         this.previousRenderTiles.set(layer, renderTiles);
 
@@ -168,4 +189,32 @@ export class WebGlGlobe extends EventTarget {
     this.renderer.destroy();
     // FIXME: tile selector destroy?
   }
+}
+
+export interface WebGlGlobeEventMap {
+  cameraViewChanged: CustomEvent<LngLatDist>;
+  layerLoadingStateChanged: CustomEvent<{layer: LayerProps; state: LayerLoadingState}>;
+}
+
+export interface WebGlGlobe {
+  addEventListener<K extends keyof WebGlGlobeEventMap>(
+    type: K,
+    listener: (this: WebGlGlobe, ev: WebGlGlobeEventMap[K]) => any,
+    options?: boolean | AddEventListenerOptions
+  ): void;
+  addEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+    options?: boolean | AddEventListenerOptions
+  ): void;
+  removeEventListener<K extends keyof WebGlGlobeEventMap>(
+    type: K,
+    listener: (this: WebGlGlobe, ev: WebGlGlobeEventMap[K]) => any,
+    options?: boolean | EventListenerOptions
+  ): void;
+  removeEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+    options?: boolean | EventListenerOptions
+  ): void;
 }

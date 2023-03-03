@@ -1,26 +1,43 @@
 import LRU from 'lru-cache';
 import {getEmptyImageBitmap} from './lib/get-empty-imagebitmap';
 import {renderDebugInfo} from './lib/render-debug-info';
+import type {RenderTile} from '../renderer/types/tile';
 import {TileLoadingState} from '../renderer/types/tile';
-import {LayerDebugMode} from './types/layer';
+import type {LayerProps} from './types/layer';
+import {LayerDebugMode, LayerLoadingState} from './types/layer';
 import {TileId} from '../tile-id';
 
 import type RequestScheduler from './request-sheduler';
-import type {RenderTile} from '../renderer/types/tile';
-import type {LayerProps} from './types/layer';
+
+const DEFAULT_PROPS: Partial<LayerProps> = {
+  debug: false,
+  debugMode: LayerDebugMode.OVERLAY,
+  minZoom: 1,
+  maxZoom: 7,
+  type: 'tile'
+};
 
 export class Layer<TUrlParameters extends Record<string, string | number> = {}> {
   scheduler: RequestScheduler<RenderTile>;
   props: LayerProps<TUrlParameters>;
+  eventTarget: EventTarget;
+
+  loadingState: LayerLoadingState = LayerLoadingState.LOADING;
   visibleTileIds: Set<TileId> = new Set();
+  visibleMinZoomTileIds: Set<TileId> = new Set();
+  minZoomTileset: Set<TileId> | null = null;
+
   cache: LRU<string, RenderTile> = new LRU({max: 500});
   responseCache: LRU<string, Promise<ImageBitmap>> = new LRU({max: 1});
 
-  private minZoomTileset: Set<TileId> | null = null;
-
-  constructor(scheduler: RequestScheduler<RenderTile>, props: LayerProps<TUrlParameters>) {
+  constructor(
+    scheduler: RequestScheduler<RenderTile>,
+    props: LayerProps<TUrlParameters>,
+    eventTarget: EventTarget
+  ) {
     this.scheduler = scheduler;
-    this.props = props;
+    this.props = {...DEFAULT_PROPS, ...props};
+    this.eventTarget = eventTarget;
   }
 
   /**
@@ -30,17 +47,18 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
    */
   public setVisibleTileIds(tileIds: Set<TileId>) {
     const visibleTileIds = new Set<TileId>();
+    const visibleMinZoomTileIds = new Set<TileId>();
 
     // Use only the min zoom level for fullsize layers
     if (this.isFullsize()) {
-      this.visibleTileIds = this.getMinZoomTileset();
+      this.visibleTileIds = this.getMinZoomTileIds();
       this.updateQueue();
       return;
     }
 
     for (const tileId of tileIds) {
       const minZoomParent = tileId.getParentAtZoom(this.props.minZoom || 1);
-      if (minZoomParent) visibleTileIds.add(minZoomParent);
+      if (minZoomParent) visibleMinZoomTileIds.add(minZoomParent);
 
       // when maxZoom is configured, replace tiles with tiles at
       // higher zoom with tiles at max zoom.
@@ -56,6 +74,7 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
     }
 
     this.visibleTileIds = visibleTileIds;
+    this.visibleMinZoomTileIds = visibleMinZoomTileIds;
 
     this.updateQueue();
   }
@@ -69,7 +88,7 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
   public setProps(props: Partial<LayerProps<TUrlParameters>>) {
     // when switching to and from debug-mode, the cache needs to be cleared so tiles
     // will be fetched new.
-    if (props.debug !== this.props.debug) {
+    if (props.debug !== this.props.debug || this.props.debugMode !== this.props.debugMode) {
       this.cache.clear();
     }
 
@@ -79,14 +98,18 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
 
     this.props = {...this.props, ...props};
 
+    this.updateLoadingState();
     this.updateQueue();
   }
 
-  /** Returns true if the layer is ready to render a frame with the given parameters. */
-  public canRender() {
-    for (let tileId of this.getMinZoomTileset()) {
-      if (!this.visibleTileIds.has(tileId)) continue;
+  /**
+   * Returns true if the layer is ready to render a frame with the given parameters. This is the
+   * case when all visible tiles are ready to render.
+   */
+  public canRender(allowDownsampling: boolean = true) {
+    const tileIds = allowDownsampling ? this.visibleMinZoomTileIds : this.visibleTileIds;
 
+    for (let tileId of tileIds) {
       const renderTile = this.getRenderTile(tileId);
 
       if (renderTile.loadingState !== TileLoadingState.LOADED) return false;
@@ -103,12 +126,13 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
    */
   public getRenderTiles(): RenderTile[] {
     const renderTiles = new Map<TileId, RenderTile>();
+    const tileIds = new Set([...this.visibleTileIds, ...this.getMinZoomTileIds()]);
 
     let maxZoom = 0;
 
     // go through the requested tiles and see which ones can be rendered
     // or replaced with a parent
-    for (const tileId of this.visibleTileIds) {
+    for (const tileId of tileIds) {
       const renderTile = this.getRenderTile(tileId);
 
       maxZoom = Math.max(tileId.zoom, maxZoom);
@@ -126,6 +150,7 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
         const childRenderTile = this.getRenderTile(t, false);
         return childRenderTile && childRenderTile.loadingState === TileLoadingState.LOADED;
       });
+
       if (allChildrenLoaded) {
         for (let childId of tileId.children) {
           const childRenderTile = this.getRenderTile(childId);
@@ -203,7 +228,10 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
    */
   private updateQueue() {
     const pendingTiles: RenderTile[] = [];
-    const tileIdsToLoad = new Set([...this.visibleTileIds, ...this.getMinZoomTileset()]);
+
+    // regardless of visibility, the minZoomTileset should always be completely loaded
+    // (invisble parts with low priority)
+    const tileIdsToLoad = new Set([...this.visibleTileIds, ...this.getMinZoomTileIds()]);
 
     for (let tileId of tileIdsToLoad) {
       const renderTile = this.getRenderTile(tileId);
@@ -221,6 +249,10 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
     // fixme: this would be a place to reduce the zoomlevel when too many
     //  tiles are requested at the same time.
 
+    // no tiles pending means all tiles are loaded or scheduled for loading, in which
+    // case updateLoadingState will be called when the load completes.
+    if (pendingTiles.length === 0) return;
+
     pendingTiles.forEach(async renderTile => {
       // if it's a new, unique request, wait for a place in the queue...
       const request = await this.scheduler.scheduleRequest(renderTile, this.getTilePriority);
@@ -229,8 +261,30 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
 
       // ...and start the request
       await this.fetch(renderTile);
+
       request.done();
+
+      this.updateLoadingState();
     });
+
+    this.updateLoadingState();
+  }
+
+  private updateLoadingState(newLoadingState?: LayerLoadingState) {
+    if (!newLoadingState) {
+      if (!this.canRender()) newLoadingState = LayerLoadingState.LOADING;
+      else if (this.canRender(false)) newLoadingState = LayerLoadingState.IDLE;
+      else newLoadingState = LayerLoadingState.READY;
+    }
+
+    if (this.loadingState !== newLoadingState) {
+      this.loadingState = newLoadingState;
+      this.eventTarget.dispatchEvent(
+        new CustomEvent('layerLoadingStateChanged', {
+          detail: {layer: this.props, state: newLoadingState}
+        })
+      );
+    }
   }
 
   /**
@@ -296,12 +350,18 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
    * @returns Url
    */
   private getUrlForTileId(tileId: TileId) {
-    return this.props.getUrl({
+    let url = this.props.getUrl({
       x: tileId.x,
       y: tileId.y,
       zoom: tileId.zoom,
       ...this.props.urlParameters
     });
+
+    if (!this.props.debug) {
+      return url;
+    }
+
+    return url + (url.includes('?') ? '&' : '?') + 'debug=' + this.props.debugMode;
   }
 
   /**
@@ -362,7 +422,7 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
    * Creates a derived tileset that contains only tiles at minZoom (default 1) covering at least the
    * same area as the specified tiles.
    */
-  private getMinZoomTileset(): Set<TileId> {
+  private getMinZoomTileIds(): Set<TileId> {
     if (!this.minZoomTileset) {
       const minZoom = this.props.minZoom || 1;
       this.minZoomTileset = new Set([

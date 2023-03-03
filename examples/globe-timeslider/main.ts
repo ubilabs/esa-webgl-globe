@@ -1,13 +1,16 @@
 import '../style.css';
 
-import {WebGlGlobe} from '../../src/webgl-globe';
-import {LayerDebugMode} from '../../src/loader/types/layer';
-import type {LayerProps} from '../../src/loader/types/layer';
 import {Pane} from 'tweakpane';
+import {WebGlGlobe} from '../../src/webgl-globe';
+import {LayerLoadingState} from '../../src/loader/types/layer';
+
+import type {LayerProps} from '../../src/loader/types/layer';
 
 const panelSettings = {
   playback: {
-    speed: 1.5
+    speed: 1.5,
+    waitForFrames: true,
+    allowDownsampling: true
   },
   basemap: {
     debug: false
@@ -23,7 +26,9 @@ const panelSettings = {
 
 const panel = new Pane();
 const playbackFolder = panel.addFolder({title: 'Playback', expanded: true});
-playbackFolder.addInput(panelSettings.playback, 'speed', {min: 0, max: 3});
+playbackFolder.addInput(panelSettings.playback, 'speed', {min: 0.2, max: 3, label: 'speed (fps)'});
+playbackFolder.addInput(panelSettings.playback, 'waitForFrames');
+playbackFolder.addInput(panelSettings.playback, 'allowDownsampling');
 
 const basemapFolder = panel.addFolder({title: 'Basemap', expanded: true});
 basemapFolder.addInput(panelSettings.basemap, 'debug');
@@ -43,8 +48,6 @@ panel.on('change', () => {
 
 let basemapProps = {
   id: 'basemap',
-  // debug: true,
-  debugMode: LayerDebugMode.OVERLAY,
   zIndex: 0,
   minZoom: 1,
   maxZoom: 4,
@@ -53,10 +56,8 @@ let basemapProps = {
     `https://storage.googleapis.com/esa-cfs-tiles/1.9.1/basemaps/land/${zoom}/${x}/${y}.png`
 } as LayerProps;
 
-let permafrostProps = {
+let dataLayerProps = {
   id: 'permafrost.pfr',
-  // debug: true,
-  debugMode: LayerDebugMode.OVERLAY,
   urlParameters: {timestep: 0},
   zIndex: 1,
   minZoom: 1,
@@ -65,10 +66,45 @@ let permafrostProps = {
     `https://storage.googleapis.com/esa-cfs-tiles/1.6.5/permafrost.pfr/tiles/${timestep}/${zoom}/${x}/${y}.png`
 } as LayerProps<{timestep: number}>;
 
-let layers = [basemapProps, permafrostProps];
+let layers = [basemapProps, dataLayerProps];
 
-const globe = new WebGlGlobe(document.body, {layers: layers});
+const globe = new WebGlGlobe(document.body, {
+  layers: layers,
+  cameraView: {lat: 50, lng: 100, distance: 22e6}
+});
 
+const layerStates: Record<string, LayerLoadingState> = {};
+globe.addEventListener('layerLoadingStateChanged', ev => {
+  console.log('[%s] loadingStateChanged: %o', ev.detail.layer.id, ev.detail.state);
+
+  layerStates[ev.detail.layer.id] = ev.detail.state;
+});
+
+function checkState(layerState: LayerLoadingState, minState: LayerLoadingState): boolean {
+  if (minState === LayerLoadingState.READY)
+    return layerState === LayerLoadingState.READY || layerState === LayerLoadingState.IDLE;
+  if (minState === LayerLoadingState.IDLE) return layerState === LayerLoadingState.IDLE;
+
+  return minState === LayerLoadingState.LOADING;
+}
+
+function awaitLoadingState(layerId: string, state: LayerLoadingState): Promise<void> {
+  if (checkState(layerStates[layerId], state)) {
+    return Promise.resolve();
+  }
+
+  return new Promise(resolve => {
+    globe.addEventListener('layerLoadingStateChanged', function listener(ev) {
+      if (ev.detail.layer.id === layerId && checkState(ev.detail.state, state)) {
+        globe.removeEventListener('layerLoadingStateChanged', listener);
+        resolve();
+      }
+    });
+  });
+}
+function timeout(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 const timeslider = document.querySelector('.timeslider input') as HTMLInputElement;
 const valueDisplay = document.querySelector('.timeslider .value-display') as HTMLElement;
 const prevBtn = document.querySelector('#timestep-prev') as HTMLElement;
@@ -82,7 +118,7 @@ function updateProps() {
       debug: panelSettings.basemap.debug
     },
     {
-      ...permafrostProps,
+      ...dataLayerProps,
       debug: panelSettings.data.debug,
       urlParameters: {timestep: panelSettings.data.timestep}
     } as LayerProps<{timestep: number}>
@@ -93,7 +129,10 @@ function updateProps() {
     layers[1].maxZoom = panelSettings.data.maxZoom;
   }
 
-  globe.setProps({layers});
+  globe.setProps({
+    allowDownsampling: panelSettings.playback.allowDownsampling,
+    layers
+  });
 }
 
 function updateTimestep(timestep: number) {
@@ -105,30 +144,39 @@ function updateTimestep(timestep: number) {
   updateProps();
 }
 
-prevBtn.addEventListener('click', () => {
-  updateTimestep(Math.max(0, timeslider.valueAsNumber - 1));
-});
-
-nextBtn.addEventListener('click', () => {
-  updateTimestep(Math.min(Number(timeslider.max), timeslider.valueAsNumber + 1));
-});
-
 let isPlaying = false;
 let playbackTimeout = 0;
 
-function loop() {
+async function loop() {
+  const t0 = performance.now();
   const max = Number(timeslider.max);
   const curr = timeslider.valueAsNumber;
 
   const timestep = (curr + 1) % max;
+
+  if (panelSettings.playback.waitForFrames) {
+    await awaitLoadingState(
+      dataLayerProps.id,
+      panelSettings.playback.allowDownsampling ? LayerLoadingState.READY : LayerLoadingState.IDLE
+    );
+
+    await timeout(100);
+  }
+
   updateTimestep(timestep);
-  playbackTimeout = setTimeout(loop, 1000 / panelSettings.playback.speed);
+
+  if (isPlaying) {
+    const dt = performance.now() - t0;
+    const timeout = Math.max(300, 1000 / panelSettings.playback.speed - dt);
+
+    playbackTimeout = setTimeout(loop, timeout);
+  }
 }
 
 function play() {
   isPlaying = true;
   playBtn.textContent = 'Pause';
-  loop();
+  void loop();
 }
 
 function pause() {
@@ -137,6 +185,14 @@ function pause() {
   clearTimeout(playbackTimeout);
   playbackTimeout = 0;
 }
+
+prevBtn.addEventListener('click', () => {
+  updateTimestep(Math.max(0, timeslider.valueAsNumber - 1));
+});
+
+nextBtn.addEventListener('click', () => {
+  updateTimestep(Math.min(Number(timeslider.max), timeslider.valueAsNumber + 1));
+});
 
 playBtn.addEventListener('click', () => {
   if (isPlaying) {

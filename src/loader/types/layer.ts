@@ -13,7 +13,7 @@ export interface LayerProps<TUrlParameters extends Record<string, string | numbe
   zIndex: number;
   type: TileType;
   maxZoom: number;
-  minZoom?: number;
+  minZoom: number;
   debug?: boolean;
   debugMode?: string;
 }
@@ -21,4 +21,13 @@ export interface LayerProps<TUrlParameters extends Record<string, string | numbe
 export const enum LayerDebugMode {
   OVERLAY = 'overlay',
   REPLACE = 'replace'
+}
+
+export const enum LayerLoadingState {
+  /** The layer is currently loading and cannot render a full set of tiles. */
+  LOADING = 'loading',
+  /** The layer is ready to render a full set of tiles, but not yet the requested set. */
+  READY = 'ready',
+  /** The layer completed loading of all requested tiles */
+  IDLE = 'idle'
 }
