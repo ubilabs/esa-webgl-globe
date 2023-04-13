@@ -7,7 +7,7 @@ import type {TileProps} from './types/tile';
 import type {TileId} from '../tile-id';
 
 // precalulate all geometries on start
-const GEOMETRIES = precalcGeometries(ZOOM_SEGMENT_MAP);
+const GEOMETRIES = precalcGeometries(Object.values(ZOOM_SEGMENT_MAP));
 const MAX_ZOOM = 30; // just a high enough number
 
 export class Tile {
@@ -45,17 +45,9 @@ export class Tile {
   }
 
   private _getGeometry() {
-    let geometry: BufferGeometry = GEOMETRIES[this.segments].normal;
+    const geometryType = this.isNorthRow ? 'north' : this.isSouthRow ? 'south' : 'normal';
 
-    if (this.isNorthRow) {
-      geometry = GEOMETRIES[this.segments].north;
-    }
-
-    if (this.isSouthRow) {
-      geometry = GEOMETRIES[this.segments].south;
-    }
-
-    return geometry;
+    return GEOMETRIES[this.segments][geometryType];
   }
 
   private _getMaterial(texture: Texture, zIndex: number) {
@@ -76,7 +68,7 @@ export class Tile {
       : getTileMaterial(uniforms, zIndex);
   }
 
-  private _getMesh(geometry: THREE.BufferGeometry, material: THREE.Material) {
+  private _getMesh(geometry: BufferGeometry, material: Material) {
     const mesh = new Mesh(geometry, material);
 
     // ensure layers are rendered from zIndex 0 -> n

@@ -1,32 +1,22 @@
-import {PlaneGeometry} from 'three';
-
+import {BufferGeometry, PlaneGeometry} from 'three';
 import {getPoleGeometry} from './get-pole-geometry';
 
-/*
- * Precalc all possible geometries for zoom levels. Returns geometries map as {[segments]: {}}:
- * {
- *  0: {normal, north, south},
- *  2: {normal, north, outh},
- *  ...
- * }
- */
-export function precalcGeometries(ZOOM_SEGMENT_MAP: Record<number, number>) {
-  const segmentVariations = Object.values(ZOOM_SEGMENT_MAP);
-  const geometries = segmentVariations.map(segments => {
-    const normal = new PlaneGeometry(2, 2, segments, segments);
-    const north = getPoleGeometry(segments, true);
-    const south = getPoleGeometry(segments, false);
+export type GeometryType = 'normal' | 'north' | 'south';
 
-    return {
-      segments,
-      normal,
-      north,
-      south
+/** Precalculates all possible for the different zoom levels. */
+export function precalcGeometries(segmentCounts: number[]): {
+  [numSegments: number]: {
+    [key in GeometryType]: BufferGeometry;
+  };
+} {
+  const ret: ReturnType<typeof precalcGeometries> = {};
+  for (let numSegments of new Set(segmentCounts)) {
+    ret[numSegments] = {
+      normal: new PlaneGeometry(2, 2, numSegments, numSegments),
+      north: getPoleGeometry(numSegments, true),
+      south: getPoleGeometry(numSegments, false)
     };
-  });
+  }
 
-  return geometries.reduce((all, g) => ({...all, [g.segments]: g}), {}) as Record<
-    number,
-    (typeof geometries)[0]
-  >;
+  return ret;
 }
