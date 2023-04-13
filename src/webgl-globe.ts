@@ -85,7 +85,7 @@ export class WebGlGlobe extends EventTarget {
     cancelAnimationFrame(this.tileUpdateRafId);
   }
 
-  setLayers(layers: LayerProps[]) {
+  private setLayers(layers: LayerProps[]) {
     // remove layers that are no longer needeed
     const newLayerIds = layers.map(l => l.id);
     const toRemove = Object.keys(this.layersById).filter(id => !newLayerIds.includes(id));
@@ -106,19 +106,6 @@ export class WebGlGlobe extends EventTarget {
       // otherwise create the layer
       this.layersById[layer.id] = new Layer(this.scheduler, layer, this);
     }
-  }
-
-  /**
-   * Returns true if all layers can render with the current props.
-   *
-   * @param allowDownsampling If set, the method will only return true when all tiles are loaded.
-   */
-  canRender(allowDownsampling: boolean = true) {
-    for (let layer of Object.values(this.layersById)) {
-      if (!layer.canRender(allowDownsampling)) return false;
-    }
-
-    return true;
   }
 
   private setMarkers(markers: MarkerProps[]) {
