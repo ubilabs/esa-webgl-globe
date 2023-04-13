@@ -88,5 +88,5 @@ export class TileCollection {
 }
 
 function getUniqTileId(t: RenderTile) {
-  return `${t.tileId.id}-${t.zIndex}`;
+  return `${t.tileId.id}-${t.zIndex}-${t.type}`;
 }
