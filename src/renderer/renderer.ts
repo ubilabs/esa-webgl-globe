@@ -2,7 +2,7 @@ import {PerspectiveCamera, Scene, WebGLRenderer} from 'three';
 
 // @ts-ignore
 import {OrbitControls} from './vendor/orbit-controls.js';
-import {TileCollection} from './tile-collection';
+import {TileManager} from './tile-manager';
 import {MarkerHtml} from './marker-html';
 import {lngLatDistToWorldSpace, worldSpaceToLngLatDist} from './lib/convert-spaces';
 
@@ -12,71 +12,38 @@ import type {LngLatDist} from './types/lng-lat-dist';
 import type {MarkerProps} from './types/marker';
 
 export class Renderer extends EventTarget {
-  private container: HTMLElement;
-  camera!: PerspectiveCamera;
-  private scene!: Scene;
-  private webglRenderer!: WebGLRenderer;
-  private controls!: OrbitControls;
-  private tileCollection!: TileCollection;
+  private readonly container: HTMLElement;
+  private readonly webglRenderer: WebGLRenderer;
+  private readonly scene: Scene = new Scene();
+  readonly camera: PerspectiveCamera = new PerspectiveCamera();
+
+  private controls: OrbitControls;
+  private tileManager: TileManager;
   private cameraView?: LngLatDist;
   private skipViewUpdate: boolean = false;
   private markersById: Record<string, MarkerHtml> = {};
 
-  constructor(options: RendererProps = {}) {
+  constructor(props: RendererProps = {}) {
     super();
 
-    this.container = options.container || document.body;
-    this.initScene();
-    this._animate();
-  }
+    this.container = props.container || document.body;
 
-  private initScene() {
-    // camera
-    const {width, height} = this.container.getBoundingClientRect();
-    this.camera = new PerspectiveCamera(90, width / height, 0.001, 100);
-    this.camera.position.z = 5;
-    this.camera.position.y = 0;
-    this.camera.zoom = 3.5;
-    this.camera.updateProjectionMatrix();
+    const renderer = new WebGLRenderer({antialias: true});
+    renderer.setClearColor(0xffffff, 0);
+    renderer.setAnimationLoop(this.animationLoopUpdate.bind(this));
+    this.webglRenderer = renderer;
 
-    // scene
-    this.scene = new Scene();
-
-    // renderer
-    this.webglRenderer = new WebGLRenderer({antialias: true});
-    this.webglRenderer.setSize(width, height);
-    this.webglRenderer.setClearColor(0xffffff, 0);
-    this.webglRenderer.setAnimationLoop(this._animate.bind(this));
     this.container.appendChild(this.webglRenderer.domElement);
     this.container.style.position = 'relative';
     this.container.style.overflow = 'hidden';
 
-    // controls
-    this.controls = new OrbitControls(this.camera, this.webglRenderer.domElement);
-    this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.075;
-    this.controls.enablePan = false;
-    this.controls.enableZoom = true;
-    this.controls.rotateSpeed = 1;
-    this.controls.maxPolarAngle = Math.PI / 2 + Math.PI / 2;
-    this.controls.minPolarAngle = Math.PI / 2 - Math.PI / 2;
-    this.controls.minDistance = 1.05; // ~ zoom level 7
-    this.controls.addEventListener('change', () => {
-      const view = worldSpaceToLngLatDist(this.camera.position);
-      const event = new CustomEvent<LngLatDist>('cameraViewChanged', {detail: view});
-      this.dispatchEvent(event);
-    });
+    this.tileManager = new TileManager(this.scene);
 
-    // globe
-    this.tileCollection = new TileCollection({scene: this.scene});
-  }
+    this.initCamera();
+    this.initControls();
 
-  private _animate() {
-    this.skipViewUpdate = false;
-    this.webglRenderer.render(this.scene, this.camera);
-    this.controls.update();
-    const cameraDistance = this.camera.position.length() - 1;
-    this.controls.rotateSpeed = Math.max(0.05, Math.min(1.0, cameraDistance - 0.2));
+    const {width, height} = this.container.getBoundingClientRect();
+    this.resize(width, height);
   }
 
   resize(width: number, height: number) {
@@ -86,7 +53,7 @@ export class Renderer extends EventTarget {
   }
 
   updateTiles(tiles: RenderTile[]) {
-    this.tileCollection.updateTiles(tiles);
+    this.tileManager.updateTiles(tiles);
   }
 
   setCameraView(cameraView: LngLatDist) {
@@ -129,5 +96,45 @@ export class Renderer extends EventTarget {
 
   destroy() {
     // TODO threejs cleanup?
+  }
+
+  private initCamera() {
+    const {width, height} = this.container.getBoundingClientRect();
+    this.camera.fov = 35;
+    this.camera.aspect = width / height;
+    this.camera.near = 0.001;
+    this.camera.far = 100;
+    this.camera.zoom = 1;
+
+    this.camera.position.set(0, 0, 5);
+
+    this.camera.updateProjectionMatrix();
+  }
+
+  private initControls() {
+    this.controls = new OrbitControls(this.camera, this.webglRenderer.domElement);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.075;
+    this.controls.enablePan = false;
+    this.controls.enableZoom = true;
+    this.controls.rotateSpeed = 1;
+    this.controls.maxPolarAngle = Math.PI / 2 + Math.PI / 2;
+    this.controls.minPolarAngle = Math.PI / 2 - Math.PI / 2;
+    this.controls.minDistance = 1.05; // ~ zoom level 7
+    this.controls.addEventListener('change', () => {
+      const view = worldSpaceToLngLatDist(this.camera.position);
+      const event = new CustomEvent<LngLatDist>('cameraViewChanged', {detail: view});
+      this.dispatchEvent(event);
+    });
+  }
+
+  private animationLoopUpdate() {
+    this.skipViewUpdate = false;
+    this.webglRenderer.render(this.scene, this.camera);
+
+    this.controls.update();
+
+    const cameraDistance = this.camera.position.length() - 1;
+    this.controls.rotateSpeed = Math.max(0.05, Math.min(1.0, cameraDistance - 0.2));
   }
 }
