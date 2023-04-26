@@ -45,9 +45,7 @@ export class TileMesh extends Mesh<BufferGeometry, ShaderMaterial> {
     const isSouthRow = tileId.y === 0;
 
     const uniforms = {
-      x: {value: tileId.x},
-      y: {value: tileId.y},
-      zoom: {value: tileId.zoom},
+      tile: {value: [tileId.x, tileId.y, tileId.zoom]},
       texture0: {value: null},
       texture1: {value: null},
       textureFade: {value: 0},
