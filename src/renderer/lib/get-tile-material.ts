@@ -79,7 +79,7 @@ const vertexShader = `
     vec3 equirectangularPosition = vec3(2.0 * mapPosition, 0.0);
 
     // morph between spherical and equirectangular position
-    vec3 finalPos = mix(sphericalPosition, equirectangularPosition, 1.0);
+    vec3 finalPos = mix(sphericalPosition, equirectangularPosition, projection);
 
     gl_Position = projectionMatrix * modelViewMatrix * vec4(finalPos, 1.0);
   }

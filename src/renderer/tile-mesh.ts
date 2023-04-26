@@ -30,13 +30,7 @@ export class TileMesh extends Mesh<BufferGeometry, ShaderMaterial> {
   }
 
   private static createGeometry(tileId: TileId) {
-    const segments = ZOOM_SEGMENT_MAP[tileId.zoom];
-    const isNorthRow = tileId.y === (1 << tileId.zoom) - 1;
-    const isSouthRow = tileId.y === 0;
-
-    const geometryType = isNorthRow ? 'north' : isSouthRow ? 'south' : 'normal';
-
-    return GEOMETRIES[segments][geometryType];
+    return GEOMETRIES[ZOOM_SEGMENT_MAP[tileId.zoom]];
   }
 
   private static createMaterial(tileId: TileId, zIndex: number, isFullSize: boolean) {
