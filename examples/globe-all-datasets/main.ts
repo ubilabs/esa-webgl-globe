@@ -4,7 +4,7 @@ import {WebGlGlobe} from '../../src/webgl-globe';
 import {Pane} from 'tweakpane';
 
 import type {LayerProps} from '../../src/loader/types/layer';
-import {LayerLoadingState} from '../../src/loader/types/layer';
+import {LayerDebugMode, LayerLoadingState} from '../../src/loader/types/layer';
 
 const DATASET_BASE_URL = 'https://storage.googleapis.com/esa-cfs-tiles/1.9.1';
 const DATASET_INDEX_URL = `https://storage.googleapis.com/esa-cfs-storage/1.9.1/layers/layers-en.json`;
@@ -33,7 +33,8 @@ const settings = {
     allowDownsampling: true
   },
   basemap: {
-    debug: false
+    debug: false,
+    debugMode: LayerDebugMode.OVERLAY
   },
   data: {
     debug: false,
@@ -52,6 +53,9 @@ playbackFolder.addInput(settings.playback, 'allowDownsampling');
 
 const basemapFolder = panel.addFolder({title: 'Basemap', expanded: true});
 basemapFolder.addInput(settings.basemap, 'debug');
+basemapFolder.addInput(settings.basemap, 'debugMode', {
+  options: {replace: LayerDebugMode.REPLACE, overlay: LayerDebugMode.OVERLAY}
+});
 
 const dataFolder = panel.addFolder({title: 'Data Overlay', expanded: true});
 dataFolder.addInput(settings.data, 'debug');
@@ -73,6 +77,8 @@ let basemapProps: LayerProps = {
   zIndex: 0,
   minZoom: 1,
   maxZoom: 4,
+  debug: settings.basemap.debug,
+  debugMode: settings.basemap.debugMode,
   urlParameters: {},
   getUrl: ({x, y, zoom}) =>
     `https://storage.googleapis.com/esa-cfs-tiles/1.9.1/basemaps/colored/${zoom}/${x}/${y}.png`
@@ -84,6 +90,7 @@ let dataLayerProps: LayerProps<{timestep: number}> = {
   urlParameters: {timestep: 0},
   zIndex: 1,
   minZoom: 1,
+  debug: settings.data.debug,
   maxZoom: 4,
   getUrl: ({x, y, zoom, timestep}) =>
     `https://storage.googleapis.com/esa-cfs-tiles/1.6.5/permafrost.pfr/tiles/${timestep}/${zoom}/${x}/${y}.png`
@@ -209,7 +216,8 @@ function updateProps() {
   const layers: LayerProps<any>[] = [
     {
       ...basemapProps,
-      debug: settings.basemap.debug
+      debug: settings.basemap.debug,
+      debugMode: settings.basemap.debugMode
     }
   ];
 
