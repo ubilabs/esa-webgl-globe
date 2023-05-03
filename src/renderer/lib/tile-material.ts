@@ -212,6 +212,7 @@ export class TileMaterial extends RawShaderMaterial {
     }
   }
 
+  // static initializer to setup properties for uniforms on the prototype.
   static {
     // special handling for the 'tile' uniform
     Object.defineProperty(this.prototype, 'tile', {

@@ -118,8 +118,8 @@ export class Renderer extends EventTarget {
     this.controls.enablePan = false;
     this.controls.enableZoom = true;
     this.controls.rotateSpeed = 1;
-    this.controls.maxPolarAngle = Math.PI / 2 + Math.PI / 2;
-    this.controls.minPolarAngle = Math.PI / 2 - Math.PI / 2;
+    this.controls.maxPolarAngle = Math.PI;
+    this.controls.minPolarAngle = 0;
     this.controls.minDistance = 1.05; // ~ zoom level 7
     this.controls.addEventListener('change', () => {
       const view = worldSpaceToLngLatDist(this.camera.position);

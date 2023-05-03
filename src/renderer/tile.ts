@@ -24,19 +24,13 @@ export class Tile {
     this.texture = options.texture;
     this.type = options.type;
 
-    this.mesh = this._getMesh();
-    this.scene.add(this.mesh);
-  }
-
-  private _getMesh() {
-    const mesh = new TileMesh(this.tileId, this.zIndex, this.type === 'image');
-
+    this.mesh = new TileMesh(this.tileId, this.zIndex, this.type === 'image');
     // ensure layers are rendered from zIndex 0 -> n
     // and per layer higher zoom tiles are rendered first
-    mesh.renderOrder = this.zIndex * MAX_ZOOM + (MAX_ZOOM - this.tileId.zoom);
-    mesh.material.texture0 = this.texture;
+    this.mesh.renderOrder = this.zIndex * MAX_ZOOM + (MAX_ZOOM - this.tileId.zoom);
+    this.mesh.material.texture0 = this.texture;
 
-    return mesh;
+    this.scene.add(this.mesh);
   }
 
   private _fade(target: number, speed: number) {
