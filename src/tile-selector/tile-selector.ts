@@ -2,6 +2,7 @@ import {ITileSelectorImpl, TileSelectorImpl} from './tile-selector-impl';
 import {TileSelectorWorkerProxy} from './tile-selector-worker-proxy';
 import {PerspectiveCamera, Vector2} from 'three';
 import {TileId} from '../tile-id';
+import {RenderMode} from '../renderer/types/renderer';
 
 export type TileSelectorOptions = {
   debug: boolean;
@@ -25,13 +26,14 @@ const support = {
  * it will start the actual implementation (`TileSelectorImpl`) in a worker or in the same process.
  */
 export class TileSelector {
-  private options: TileSelectorOptions;
+  private readonly options: TileSelectorOptions;
   private impl?: ITileSelectorImpl;
 
   private camera?: PerspectiveCamera;
   private size = new Vector2();
 
   private initialized?: Promise<void>;
+  private renderMode: RenderMode = RenderMode.GLOBE;
 
   /**
    * Create the tile-selector frontend with the specified options.
@@ -84,7 +86,8 @@ export class TileSelector {
     const tileIds = await this.impl!.computeVisibleTiles(
       this.size.toArray(),
       this.camera.projectionMatrix.toArray(),
-      this.camera.matrix.toArray()
+      this.camera.matrix.toArray(),
+      this.renderMode
     );
 
     return new Set(tileIds.map(id => TileId.fromString(id)));
@@ -99,5 +102,9 @@ export class TileSelector {
     }
 
     await this.impl.setOptions(this.options);
+  }
+
+  setRenderMode(renderMode: RenderMode) {
+    this.renderMode = renderMode;
   }
 }

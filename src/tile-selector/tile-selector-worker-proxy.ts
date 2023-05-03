@@ -1,5 +1,6 @@
 import type {ITileSelectorImpl} from './tile-selector-impl';
 import type {TileSelectorOptions} from './tile-selector';
+import {RenderMode} from '../renderer/types/renderer';
 
 export class TileSelectorWorkerProxy implements ITileSelectorImpl {
   private worker!: Worker;
@@ -7,12 +8,14 @@ export class TileSelectorWorkerProxy implements ITileSelectorImpl {
   async computeVisibleTiles(
     size: number[],
     projectionMatrix: number[],
-    worldMatrix: number[]
+    worldMatrix: number[],
+    renderMode: RenderMode
   ): Promise<string[]> {
     const result = await this.callWorker('computeVisibleTiles', [
       size,
       projectionMatrix,
-      worldMatrix
+      worldMatrix,
+      renderMode
     ]);
 
     return result as string[];

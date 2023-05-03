@@ -1,6 +1,7 @@
 import {
   Mesh,
   PerspectiveCamera,
+  PlaneGeometry,
   Scene,
   SphereGeometry,
   WebGLRenderer,
@@ -14,17 +15,23 @@ import {FullScreenQuad} from '../webgl/full-screen-quad';
 import {readPixelsAsync} from '../webgl/read-pixels-async';
 
 import type {TileSelectorOptions} from './tile-selector';
+
 import {TileId} from '../tile-id';
+import {RenderMode} from '../renderer/types/renderer';
 
 const DEFAULT_WIDTH = 480;
 const DEFAULT_HEIGHT = 270;
+
+const GLOBE_LAYER = 1;
+const MAP_LAYER = 2;
 
 export interface ITileSelectorImpl {
   setOptions(options: TileSelectorOptions): Promise<void>;
   computeVisibleTiles(
     size: number[],
     projectionMatrix: number[],
-    worldMatrix: number[]
+    worldMatrix: number[],
+    renderMode: RenderMode
   ): Promise<string[]>;
 }
 
@@ -40,6 +47,7 @@ export class TileSelectorImpl implements ITileSelectorImpl {
   private readonly camera: PerspectiveCamera;
   private readonly tileSelectionMaterial: TileSelectionMaterial;
   private readonly sphere: Mesh<SphereGeometry, TileSelectionMaterial>;
+  private readonly plane: Mesh<PlaneGeometry, TileSelectionMaterial>;
 
   // debugging stuff
   private isDebugMode: boolean = false;
@@ -50,11 +58,16 @@ export class TileSelectorImpl implements ITileSelectorImpl {
     this.camera.matrixAutoUpdate = false;
 
     this.tileSelectionMaterial = new TileSelectionMaterial();
+
     this.sphere = new Mesh(new SphereGeometry(1, 90, 45), this.tileSelectionMaterial);
     this.sphere.geometry.rotateY(Math.PI / -2);
+    this.sphere.layers.set(GLOBE_LAYER);
+
+    this.plane = new Mesh(new PlaneGeometry(4, 2), this.tileSelectionMaterial);
+    this.plane.layers.set(MAP_LAYER);
 
     this.scene = new Scene();
-    this.scene.add(this.sphere);
+    this.scene.add(this.sphere, this.plane);
 
     // used only for debug rendering
     this.fsQuad = new FullScreenQuad(new TileSelectionDebugMaterial());
@@ -68,7 +81,8 @@ export class TileSelectorImpl implements ITileSelectorImpl {
   async computeVisibleTiles(
     size: number[],
     projectionMatrix: number[],
-    worldMatrix: number[]
+    worldMatrix: number[],
+    renderMode: RenderMode
   ): Promise<string[]> {
     if (!this.renderer) this.initRenderer();
 
@@ -78,7 +92,7 @@ export class TileSelectorImpl implements ITileSelectorImpl {
       this.setSize(w, h);
     }
 
-    this.render(projectionMatrix, worldMatrix);
+    this.render(projectionMatrix, worldMatrix, renderMode);
 
     const visibleTiles = await this.collectData();
 
@@ -98,7 +112,7 @@ export class TileSelectorImpl implements ITileSelectorImpl {
     this.renderTarget.setSize(width, height);
   }
 
-  private render(projectionMatrix: number[], worldMatrix: number[]) {
+  private render(projectionMatrix: number[], worldMatrix: number[], renderMode: RenderMode) {
     const renderer = this.renderer;
 
     this.camera.projectionMatrix.fromArray(projectionMatrix);
@@ -107,6 +121,8 @@ export class TileSelectorImpl implements ITileSelectorImpl {
 
     this.tileSelectionMaterial.uniforms.renderScale.value = 0.25;
     this.tileSelectionMaterial.uniforms.subsamplingFactor.value = 1.2;
+
+    this.camera.layers.set(renderMode === RenderMode.GLOBE ? GLOBE_LAYER : MAP_LAYER);
 
     renderer.setClearColor(0, 0);
     renderer.setRenderTarget(this.renderTarget);
@@ -199,7 +215,7 @@ export class TileSelectorImpl implements ITileSelectorImpl {
       c.style.cssText = `
         position: absolute; 
         z-index: 99; 
-        top: 0; right: 0; 
+        top: 0; left: 0; 
         width: 25vw; height: 25vh; 
         border: 1px solid white; 
         background: repeating-conic-gradient(#808080 0% 25%, white 0% 50%) 

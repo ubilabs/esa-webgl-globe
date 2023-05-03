@@ -10,6 +10,7 @@ import type {RenderTile} from './types/tile';
 import type {RendererProps} from './types/renderer';
 import type {LngLatDist} from './types/lng-lat-dist';
 import type {MarkerProps} from './types/marker';
+import {RenderMode} from './types/renderer';
 
 export class Renderer extends EventTarget {
   private readonly container: HTMLElement;
@@ -17,7 +18,7 @@ export class Renderer extends EventTarget {
   private readonly scene: Scene = new Scene();
   readonly camera: PerspectiveCamera = new PerspectiveCamera();
 
-  private controls: OrbitControls;
+  private orbitControls: OrbitControls;
   private tileManager: TileManager;
   private cameraView?: LngLatDist;
   private skipViewUpdate: boolean = false;
@@ -63,7 +64,7 @@ export class Renderer extends EventTarget {
 
     lngLatDistToWorldSpace(cameraView, this.camera.position);
     this.skipViewUpdate = true;
-    this.controls.update();
+    this.orbitControls.update();
     this.cameraView = cameraView;
   }
 
@@ -112,16 +113,16 @@ export class Renderer extends EventTarget {
   }
 
   private initControls() {
-    this.controls = new OrbitControls(this.camera, this.webglRenderer.domElement);
-    this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.075;
-    this.controls.enablePan = false;
-    this.controls.enableZoom = true;
-    this.controls.rotateSpeed = 1;
-    this.controls.maxPolarAngle = Math.PI;
-    this.controls.minPolarAngle = 0;
-    this.controls.minDistance = 1.05; // ~ zoom level 7
-    this.controls.addEventListener('change', () => {
+    this.orbitControls = new OrbitControls(this.camera, this.webglRenderer.domElement);
+    this.orbitControls.enableDamping = true;
+    this.orbitControls.dampingFactor = 0.075;
+    this.orbitControls.enablePan = false;
+    this.orbitControls.enableZoom = true;
+    this.orbitControls.rotateSpeed = 1;
+    this.orbitControls.maxPolarAngle = Math.PI;
+    this.orbitControls.minPolarAngle = 0;
+    this.orbitControls.minDistance = 1.05; // ~ zoom level 7
+    this.orbitControls.addEventListener('change', () => {
       const view = worldSpaceToLngLatDist(this.camera.position);
       const event = new CustomEvent<LngLatDist>('cameraViewChanged', {detail: view});
       this.dispatchEvent(event);
@@ -130,11 +131,15 @@ export class Renderer extends EventTarget {
 
   private animationLoopUpdate() {
     this.skipViewUpdate = false;
+
+    this.orbitControls.update();
     this.webglRenderer.render(this.scene, this.camera);
 
-    this.controls.update();
-
     const cameraDistance = this.camera.position.length() - 1;
-    this.controls.rotateSpeed = Math.max(0.05, Math.min(1.0, cameraDistance - 0.2));
+    this.orbitControls.rotateSpeed = Math.max(0.05, Math.min(1.0, cameraDistance - 0.2));
+  }
+
+  setRenderMode(renderMode: RenderMode) {
+    this.tileManager.setRenderMode(renderMode);
   }
 }

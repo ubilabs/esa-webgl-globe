@@ -3,6 +3,7 @@ import {TileMesh} from './tile-mesh';
 
 import type {TileProps, TileType} from './types/tile';
 import type {TileId} from '../tile-id';
+import {RenderMode} from './types/renderer';
 
 const MAX_ZOOM = 30; // could be any number larger than max zoom-level
 
@@ -16,19 +17,20 @@ export class Tile {
   private readonly mesh: TileMesh;
   private readonly type: TileType;
 
-  constructor(options: TileProps) {
-    this.tileId = options.tileId;
-    this.zIndex = options.zIndex;
-    this.url = options.url;
-    this.scene = options.scene;
-    this.texture = options.texture;
-    this.type = options.type;
+  constructor(props: TileProps) {
+    this.tileId = props.tileId;
+    this.zIndex = props.zIndex;
+    this.url = props.url;
+    this.scene = props.scene;
+    this.texture = props.texture;
+    this.type = props.type;
 
     this.mesh = new TileMesh(this.tileId, this.zIndex, this.type === 'image');
     // ensure layers are rendered from zIndex 0 -> n
     // and per layer higher zoom tiles are rendered first
     this.mesh.renderOrder = this.zIndex * MAX_ZOOM + (MAX_ZOOM - this.tileId.zoom);
     this.mesh.material.texture0 = this.texture;
+    this.setRenderMode(props.renderMode);
 
     this.scene.add(this.mesh);
   }
@@ -42,6 +44,10 @@ export class Tile {
     } else {
       this.mesh.material.textureFade = target;
     }
+  }
+
+  setRenderMode(renderMode: RenderMode) {
+    this.mesh.material.projection = renderMode === RenderMode.GLOBE ? 0.0 : 1.0;
   }
 
   switchTexture(texture: Texture, fade: boolean, speed = 0.045) {

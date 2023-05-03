@@ -3,12 +3,15 @@ import {CanvasTexture, NearestFilter, NearestMipmapNearestFilter, RGBAFormat, Sc
 
 import {Tile} from './tile';
 import type {RenderTile} from './types/tile';
+import {RenderMode} from './types/renderer';
 
 export class TileManager {
   readonly scene: Scene;
   tiles: Record<string, Tile>;
   // optimisation for image textures to prevent multiple GPU uploads for same image data
   textureCache: LRU<string, CanvasTexture> = new LRU({max: 1});
+
+  private renderMode: RenderMode = RenderMode.GLOBE;
 
   constructor(scene: Scene) {
     this.scene = scene;
@@ -85,7 +88,8 @@ export class TileManager {
       url: renderTile.url,
       scene: this.scene,
       texture,
-      type: renderTile.type ?? 'tile'
+      type: renderTile.type ?? 'tile',
+      renderMode: this.renderMode
     });
   }
 
@@ -115,6 +119,18 @@ export class TileManager {
     this.textureCache.set(renderTile.url, texture);
 
     return texture;
+  }
+
+  setRenderMode(renderMode: RenderMode) {
+    if (renderMode === this.renderMode) {
+      return;
+    }
+
+    for (let tile of Object.values(this.tiles)) {
+      tile.setRenderMode(renderMode);
+    }
+
+    this.renderMode = renderMode;
   }
 }
 

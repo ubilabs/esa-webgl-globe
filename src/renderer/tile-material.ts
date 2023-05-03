@@ -9,8 +9,8 @@ import {
   Texture,
   IUniform
 } from 'three';
-import {TileId} from '../../tile-id';
-import {ZOOM_SEGMENT_MAP} from '../config';
+import {TileId} from '../tile-id';
+import {ZOOM_SEGMENT_MAP} from './config';
 
 type TileMaterialUniforms = {
   tile: IUniform<[x: number, y: number, zoom: number]>;

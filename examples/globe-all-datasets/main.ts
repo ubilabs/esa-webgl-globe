@@ -5,6 +5,7 @@ import {Pane} from 'tweakpane';
 
 import type {LayerProps} from '../../src/loader/types/layer';
 import {LayerDebugMode, LayerLoadingState} from '../../src/loader/types/layer';
+import {RenderMode} from '../../src/renderer/types/renderer';
 
 const DATASET_BASE_URL = 'https://storage.googleapis.com/esa-cfs-tiles/1.9.1';
 const DATASET_INDEX_URL = `https://storage.googleapis.com/esa-cfs-storage/1.9.1/layers/layers-en.json`;
@@ -41,7 +42,8 @@ const settings = {
     limitZoom: false,
     minZoom: 1,
     maxZoom: 2
-  }
+  },
+  renderer: {renderMode: RenderMode.GLOBE}
 };
 
 const panel = new Pane();
@@ -50,6 +52,11 @@ const playbackFolder = panel.addFolder({title: 'Playback', expanded: true});
 playbackFolder.addInput(settings.playback, 'speed', {min: 0.2, max: 3, label: 'speed (fps)'});
 playbackFolder.addInput(settings.playback, 'waitForFrames');
 playbackFolder.addInput(settings.playback, 'allowDownsampling');
+
+const rendererFolder = panel.addFolder({title: 'Renderer', expanded: true});
+rendererFolder.addInput(settings.renderer, 'renderMode', {
+  options: {globe: RenderMode.GLOBE, map: RenderMode.MAP}
+});
 
 const basemapFolder = panel.addFolder({title: 'Basemap', expanded: true});
 basemapFolder.addInput(settings.basemap, 'debug');
@@ -237,6 +244,7 @@ function updateProps() {
 
   globe.setProps({
     allowDownsampling: settings.playback.allowDownsampling,
+    renderMode: settings.renderer.renderMode,
     layers
   });
 

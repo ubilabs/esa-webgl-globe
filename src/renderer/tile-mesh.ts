@@ -1,7 +1,7 @@
 import {BufferGeometry, Mesh} from 'three';
 
 import {precalcGeometries} from './lib/precalc-geometries';
-import {TileMaterial} from './lib/tile-material';
+import {TileMaterial} from './tile-material';
 import {ZOOM_SEGMENT_MAP} from './config';
 import type {TileId} from '../tile-id';
 

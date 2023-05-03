@@ -9,15 +9,16 @@ import {LayerLoadingState} from './loader/types/layer';
 import type {LngLatDist} from './renderer/types/lng-lat-dist';
 import type {LayerProps} from './loader/types/layer';
 import type {MarkerProps} from './renderer/types/marker';
+import {RenderMode} from './renderer/types/renderer';
 
-const TILESELECTOR_FPS = 10;
+const TILESELECTOR_FPS = 5;
 
-type WebGlGlobeProps = Partial<{
+export type WebGlGlobeProps = Partial<{
   layers: LayerProps<any>[];
+  renderMode: RenderMode;
   cameraView: LngLatDist;
   markers: MarkerProps[];
-
-  allowDownsampling?: boolean;
+  allowDownsampling: boolean;
 }>;
 
 const DEFAULT_PROPS = {allowDownsampling: true};
@@ -50,7 +51,7 @@ export class WebGlGlobe extends EventTarget {
 
     this.setProps({...DEFAULT_PROPS, ...props});
 
-    this.tileSelector = new TileSelector();
+    this.tileSelector = new TileSelector({debug: true});
     this.tileSelector.setCamera(this.renderer.camera);
 
     this.resize();
@@ -60,7 +61,7 @@ export class WebGlGlobe extends EventTarget {
   }
 
   setProps(props: WebGlGlobeProps) {
-    this.props = props;
+    this.props = {...this.props, ...props};
 
     if (props.layers) {
       this.setLayers(props.layers);
@@ -72,6 +73,11 @@ export class WebGlGlobe extends EventTarget {
 
     if (props.markers) {
       this.setMarkers(props.markers);
+    }
+
+    if (props.renderMode) {
+      this.renderer.setRenderMode(props.renderMode);
+      this.tileSelector.setRenderMode(props.renderMode);
     }
   }
 
