@@ -11,7 +11,7 @@ import type {LayerProps} from './loader/types/layer';
 import type {MarkerProps} from './renderer/types/marker';
 import {RenderMode} from './renderer/types/renderer';
 
-const TILESELECTOR_FPS = 5;
+const TILESELECTOR_FPS = 15;
 
 export type WebGlGlobeProps = Partial<{
   layers: LayerProps<any>[];
@@ -48,11 +48,9 @@ export class WebGlGlobe extends EventTarget {
 
     this.container = container;
     this.renderer = new Renderer({container});
+    this.tileSelector = new TileSelector();
 
     this.setProps({...DEFAULT_PROPS, ...props});
-
-    this.tileSelector = new TileSelector({debug: true});
-    this.tileSelector.setCamera(this.renderer.camera);
 
     this.resize();
     this.attachEventListeners();
@@ -120,6 +118,7 @@ export class WebGlGlobe extends EventTarget {
 
   private startTileSelectorLoop() {
     this.tileSelectorIntervalId = setInterval(async () => {
+      this.tileSelector.setCamera(this.renderer.getCamera());
       const visibleTiles = await this.tileSelector.getVisibleTiles();
 
       for (const layer of Object.values(this.layersById)) {

@@ -1,6 +1,6 @@
 import {ITileSelectorImpl, TileSelectorImpl} from './tile-selector-impl';
 import {TileSelectorWorkerProxy} from './tile-selector-worker-proxy';
-import {PerspectiveCamera, Vector2} from 'three';
+import {PerspectiveCamera, OrthographicCamera, Vector2} from 'three';
 import {TileId} from '../tile-id';
 import {RenderMode} from '../renderer/types/renderer';
 
@@ -29,7 +29,7 @@ export class TileSelector {
   private readonly options: TileSelectorOptions;
   private impl?: ITileSelectorImpl;
 
-  private camera?: PerspectiveCamera;
+  private camera?: PerspectiveCamera | OrthographicCamera;
   private size = new Vector2();
 
   private initialized?: Promise<void>;
@@ -64,7 +64,7 @@ export class TileSelector {
    *
    * @param camera
    */
-  setCamera(camera: PerspectiveCamera): void {
+  setCamera(camera: PerspectiveCamera | OrthographicCamera): void {
     this.camera = camera;
   }
 

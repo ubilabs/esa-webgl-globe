@@ -169,18 +169,18 @@ export class TileMaterial extends RawShaderMaterial {
       float poleDistance = min(vGlobalUv.y, 1.0 - vGlobalUv.y) * numTiles.y;
       float poleDistanceSegments = poleDistance * numSegments;
   
-      if (tile.y == 0.0 || tile.y == numTiles.y - 1.0) {
-        // this only applies to the last segment
-        if (poleDistance < threshold) {
-          // - poleScale is 0.5 for normal tiles and a tile-dependent offset for full-size tiles. 
-          //   This is essentially the uv-reference for the tile along the x-axis (it's the middle 
-          //   of the tile at current zoom referenced into the texture).
-          // - vUv.x is the _actual_ texture-coordinate to use (could be either within a fullSize
-          //   image or a tile). 
-          vx = poleScale + (vUv.x - poleScale) / poleDistanceSegments;
-        }
-      }
-  
+//      if (tile.y == 0.0 || tile.y == numTiles.y - 1.0) {
+//        // this only applies to the last segment
+//        if (poleDistance < threshold) {
+//          // - poleScale is 0.5 for normal tiles and a tile-dependent offset for full-size tiles. 
+//          //   This is essentially the uv-reference for the tile along the x-axis (it's the middle 
+//          //   of the tile at current zoom referenced into the texture).
+//          // - vUv.x is the _actual_ texture-coordinate to use (could be either within a fullSize
+//          //   image or a tile). 
+//          vx = poleScale + (vUv.x - poleScale) / poleDistanceSegments;
+//        }
+//      }
+//  
       vec4 tex0 = texture2D(texture0, vec2(vx, vUv.y));
       vec4 tex1 = texture2D(texture1, vec2(vx, vUv.y));
   

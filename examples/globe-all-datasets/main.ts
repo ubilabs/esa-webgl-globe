@@ -34,7 +34,7 @@ const settings = {
     allowDownsampling: true
   },
   basemap: {
-    debug: false,
+    debug: true,
     debugMode: LayerDebugMode.OVERLAY
   },
   data: {
@@ -43,7 +43,7 @@ const settings = {
     minZoom: 1,
     maxZoom: 2
   },
-  renderer: {renderMode: RenderMode.GLOBE}
+  renderer: {renderMode: RenderMode.MAP}
 };
 
 const panel = new Pane();
@@ -178,7 +178,8 @@ let layers = [basemapProps];
 
 const globe = new WebGlGlobe(document.body, {
   layers: layers,
-  cameraView: {lat: 22, lng: 0, distance: 22e6}
+  cameraView: {lat: 22, lng: 0, distance: 22e6},
+  renderMode: settings.renderer.renderMode
 });
 
 const layerStates: Record<string, LayerLoadingState> = {};

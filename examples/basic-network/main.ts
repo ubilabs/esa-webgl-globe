@@ -10,7 +10,7 @@ const selector = new TileSelector({
   useWorker: true
 });
 
-selector.setCamera(renderer.camera);
+selector.setCamera(renderer.getCamera());
 selector.setSize(new Vector2(window.innerWidth, window.innerHeight).multiplyScalar(0.25).round());
 
 async function animate() {

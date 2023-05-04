@@ -1,4 +1,5 @@
 import {
+  Camera,
   Mesh,
   PerspectiveCamera,
   PlaneGeometry,
@@ -44,7 +45,9 @@ export class TileSelectorImpl implements ITileSelectorImpl {
   private rgbaArray?: Uint8Array;
 
   private readonly scene: Scene;
-  private readonly camera: PerspectiveCamera;
+  // note the projection-matrix could be either a perspective or orthographic
+  // camera, so we only use the common interface
+  private readonly camera: Camera;
   private readonly tileSelectionMaterial: TileSelectionMaterial;
   private readonly sphere: Mesh<SphereGeometry, TileSelectionMaterial>;
   private readonly plane: Mesh<PlaneGeometry, TileSelectionMaterial>;

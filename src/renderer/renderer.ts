@@ -1,28 +1,34 @@
-import {PerspectiveCamera, Scene, WebGLRenderer} from 'three';
+import {OrthographicCamera, PerspectiveCamera, Scene, WebGLRenderer} from 'three';
 
 // @ts-ignore
 import {OrbitControls} from './vendor/orbit-controls.js';
+import {MapControls} from 'three/examples/jsm/controls/MapControls';
 import {TileManager} from './tile-manager';
 import {MarkerHtml} from './marker-html';
 import {lngLatDistToWorldSpace, worldSpaceToLngLatDist} from './lib/convert-spaces';
+import type {RendererProps} from './types/renderer';
+import {RenderMode} from './types/renderer';
 
 import type {RenderTile} from './types/tile';
-import type {RendererProps} from './types/renderer';
 import type {LngLatDist} from './types/lng-lat-dist';
 import type {MarkerProps} from './types/marker';
-import {RenderMode} from './types/renderer';
+import {MAP_HEIGHT, MAP_WIDTH} from './config';
 
 export class Renderer extends EventTarget {
   private readonly container: HTMLElement;
   private readonly webglRenderer: WebGLRenderer;
   private readonly scene: Scene = new Scene();
-  readonly camera: PerspectiveCamera = new PerspectiveCamera();
+  private readonly globeCamera: PerspectiveCamera = new PerspectiveCamera();
+  private readonly mapCamera: OrthographicCamera = new OrthographicCamera();
 
-  private orbitControls: OrbitControls;
+  private globeControls: OrbitControls;
+  private mapControls: MapControls;
+
   private tileManager: TileManager;
   private cameraView?: LngLatDist;
   private skipViewUpdate: boolean = false;
   private markersById: Record<string, MarkerHtml> = {};
+  private renderMode: RenderMode = RenderMode.GLOBE;
 
   constructor(props: RendererProps = {}) {
     super();
@@ -40,21 +46,48 @@ export class Renderer extends EventTarget {
 
     this.tileManager = new TileManager(this.scene);
 
-    this.initCamera();
-    this.initControls();
+    this.configureCameras();
+
+    this.globeControls = new OrbitControls(this.globeCamera, this.webglRenderer.domElement);
+    this.mapControls = new MapControls(this.mapCamera, this.webglRenderer.domElement);
+
+    this.configureControls();
 
     const {width, height} = this.container.getBoundingClientRect();
     this.resize(width, height);
   }
 
+  setRenderMode(renderMode: RenderMode) {
+    this.renderMode = renderMode;
+
+    // switch to appropriate controls
+    this.globeControls.enabled = this.renderMode === RenderMode.GLOBE;
+    this.mapControls.enabled = this.renderMode === RenderMode.MAP;
+
+    this.tileManager.setRenderMode(renderMode);
+  }
+
   resize(width: number, height: number) {
     this.webglRenderer.setSize(width, height);
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
+
+    const aspectRatio = width / height;
+
+    this.globeCamera.aspect = aspectRatio;
+    this.globeCamera.updateProjectionMatrix();
+
+    const halfWidth = MAP_WIDTH / 2;
+    this.mapCamera.top = halfWidth / aspectRatio;
+    this.mapCamera.bottom = -halfWidth / aspectRatio;
   }
 
   updateTiles(tiles: RenderTile[]) {
     this.tileManager.updateTiles(tiles);
+  }
+
+  getCamera() {
+    if (this.renderMode === RenderMode.GLOBE) return this.globeCamera;
+
+    return this.mapCamera;
   }
 
   setCameraView(cameraView: LngLatDist) {
@@ -62,9 +95,9 @@ export class Renderer extends EventTarget {
       return;
     }
 
-    lngLatDistToWorldSpace(cameraView, this.camera.position);
+    lngLatDistToWorldSpace(cameraView, this.globeCamera.position);
     this.skipViewUpdate = true;
-    this.orbitControls.update();
+    this.globeControls.update();
     this.cameraView = cameraView;
   }
 
@@ -89,7 +122,7 @@ export class Renderer extends EventTarget {
       // otherwise create the marker
       this.markersById[props.id] = new MarkerHtml({
         props,
-        camera: this.camera,
+        camera: this.globeCamera,
         container: this.container
       });
     }
@@ -99,47 +132,89 @@ export class Renderer extends EventTarget {
     // TODO threejs cleanup?
   }
 
-  private initCamera() {
+  private configureCameras() {
     const {width, height} = this.container.getBoundingClientRect();
-    this.camera.fov = 35;
-    this.camera.aspect = width / height;
-    this.camera.near = 0.001;
-    this.camera.far = 100;
-    this.camera.zoom = 1;
+    const aspectRatio = width / height;
+    this.globeCamera.fov = 35;
+    this.globeCamera.aspect = aspectRatio;
+    this.globeCamera.near = 0.001;
+    this.globeCamera.far = 100;
+    this.globeCamera.zoom = 1;
+    this.globeCamera.position.set(0, 0, 5);
+    this.globeCamera.updateProjectionMatrix();
 
-    this.camera.position.set(0, 0, 5);
-
-    this.camera.updateProjectionMatrix();
+    const halfWidth = MAP_WIDTH / 2;
+    this.mapCamera.left = -halfWidth;
+    this.mapCamera.right = halfWidth;
+    this.mapCamera.top = halfWidth / aspectRatio;
+    this.mapCamera.bottom = -halfWidth / aspectRatio;
+    this.mapCamera.near = 0.1;
+    this.mapCamera.far = 2;
+    this.mapCamera.position.set(0, 0, 1);
+    this.mapCamera.updateProjectionMatrix();
   }
 
-  private initControls() {
-    this.orbitControls = new OrbitControls(this.camera, this.webglRenderer.domElement);
-    this.orbitControls.enableDamping = true;
-    this.orbitControls.dampingFactor = 0.075;
-    this.orbitControls.enablePan = false;
-    this.orbitControls.enableZoom = true;
-    this.orbitControls.rotateSpeed = 1;
-    this.orbitControls.maxPolarAngle = Math.PI;
-    this.orbitControls.minPolarAngle = 0;
-    this.orbitControls.minDistance = 1.05; // ~ zoom level 7
-    this.orbitControls.addEventListener('change', () => {
-      const view = worldSpaceToLngLatDist(this.camera.position);
+  private configureControls() {
+    this.globeControls.enableDamping = true;
+    this.globeControls.dampingFactor = 0.1;
+    this.globeControls.enablePan = false;
+    this.globeControls.enableZoom = true;
+    this.globeControls.rotateSpeed = 1;
+    this.globeControls.maxPolarAngle = Math.PI;
+    this.globeControls.minPolarAngle = 0;
+    this.globeControls.minDistance = 1.05; // ~ zoom level 7
+    this.globeControls.addEventListener('change', () => {
+      const view = worldSpaceToLngLatDist(this.globeCamera.position);
       const event = new CustomEvent<LngLatDist>('cameraViewChanged', {detail: view});
       this.dispatchEvent(event);
     });
+
+    this.mapControls.enableRotate = false;
+    this.mapControls.enablePan = true;
+    this.mapControls.enableZoom = true;
+    this.mapControls.screenSpacePanning = true;
+    this.mapControls.minZoom = 1;
+    this.mapControls.maxZoom = 20;
+
+    const origUpdate = this.mapControls.update.bind(this.mapControls);
+
+    // override the update-function to implement bounds-limiting
+    this.mapControls.update = () => {
+      origUpdate();
+
+      const camera = this.mapCamera;
+      const controls = this.mapControls;
+
+      const dx = (camera.right - camera.left) / (2 * camera.zoom);
+      const dy = (camera.top - camera.bottom) / (2 * camera.zoom);
+
+      const xMax = Math.max(0, MAP_WIDTH / 2 - dx);
+      const yMax = Math.max(0, MAP_HEIGHT / 2 - dy);
+
+      const x = Math.max(-xMax, Math.min(xMax, camera.position.x));
+      const y = Math.max(-yMax, Math.min(yMax, camera.position.y));
+
+      camera.position.x = controls.target.x = x;
+      camera.position.y = controls.target.y = y;
+
+      return true;
+    };
+
+    this.globeControls.enabled = this.renderMode === RenderMode.GLOBE;
+    this.mapControls.enabled = this.renderMode === RenderMode.MAP;
   }
 
   private animationLoopUpdate() {
     this.skipViewUpdate = false;
 
-    this.orbitControls.update();
-    this.webglRenderer.render(this.scene, this.camera);
+    if (this.globeControls.enabled) {
+      this.globeControls.update();
+      const cameraDistance = this.globeCamera.position.length() - 1;
+      this.globeControls.rotateSpeed = Math.max(0.05, Math.min(1.0, cameraDistance - 0.2));
+    } else if (this.mapControls.enabled) {
+      this.mapControls.update();
+    }
 
-    const cameraDistance = this.camera.position.length() - 1;
-    this.orbitControls.rotateSpeed = Math.max(0.05, Math.min(1.0, cameraDistance - 0.2));
-  }
-
-  setRenderMode(renderMode: RenderMode) {
-    this.tileManager.setRenderMode(renderMode);
+    this.webglRenderer.render(this.scene, this.getCamera());
   }
 }

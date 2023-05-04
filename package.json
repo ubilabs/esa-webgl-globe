@@ -11,14 +11,14 @@
     "deploy:examples": "npm run build && gsutil -m -h 'Cache-Control: no-cache' cp -r dist/examples/* gs://ubilabs-webgl-globe/examples/"
   },
   "dependencies": {
-    "@probe.gl/stats": "^3.6.0",
+    "@probe.gl/stats": "^4.0.3",
     "@tweakpane/core": "^1.1.4",
     "lru-cache": "^7.14.1",
-    "three": "^0.148.0",
+    "three": "^0.151.3",
     "tweakpane": "^3.1.4"
   },
   "devDependencies": {
-    "@types/three": "^0.147.1",
+    "@types/three": "^0.151.0",
     "glob": "^8.0.3",
     "prettier": "^2.8.2",
     "prettier-plugin-jsdoc": "^0.4.2",
