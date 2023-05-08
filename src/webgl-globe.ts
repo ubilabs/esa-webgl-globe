@@ -41,6 +41,9 @@ export class WebGlGlobe extends EventTarget {
   private tileUpdateRafId: number = 0;
   private props!: WebGlGlobeProps;
 
+  private static tileSelectorWorkerUrl: string =
+    new URL(import.meta.url).origin + '/tile-selector-worker.js';
+
   constructor(container: HTMLElement, props: WebGlGlobeProps = {}) {
     super();
 
@@ -48,7 +51,9 @@ export class WebGlGlobe extends EventTarget {
 
     this.container = container;
     this.renderer = new Renderer({container});
-    this.tileSelector = new TileSelector();
+    this.tileSelector = new TileSelector({
+      workerUrl: WebGlGlobe.tileSelectorWorkerUrl
+    });
 
     this.setProps({...DEFAULT_PROPS, ...props});
 
@@ -117,7 +122,7 @@ export class WebGlGlobe extends EventTarget {
   }
 
   private startTileSelectorLoop() {
-    this.tileSelectorIntervalId = setInterval(async () => {
+    this.tileSelectorIntervalId = window.setInterval(async () => {
       this.tileSelector.setCamera(this.renderer.getCamera());
       const visibleTiles = await this.tileSelector.getVisibleTiles();
 
@@ -180,6 +185,14 @@ export class WebGlGlobe extends EventTarget {
     window.removeEventListener('resize', this.resize);
     this.renderer.destroy();
     // FIXME: tile selector destroy?
+  }
+
+  static getTileSelectorWorkerUrl() {
+    console.log(this.tileSelectorWorkerUrl);
+    return this.tileSelectorWorkerUrl;
+  }
+  static setTileSelectorWorkerUrl(url: string) {
+    this.tileSelectorWorkerUrl = url;
   }
 }
 

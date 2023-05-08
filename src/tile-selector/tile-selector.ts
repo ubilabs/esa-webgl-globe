@@ -8,12 +8,14 @@ export type TileSelectorOptions = {
   debug: boolean;
   useOffscreenCanvas: boolean;
   useWorker: boolean;
+  workerUrl: string;
 };
 
 const DEFAULT_OPTIONS: TileSelectorOptions = {
   debug: false,
   useOffscreenCanvas: true,
-  useWorker: true
+  useWorker: true,
+  workerUrl: ''
 };
 
 const support = {
@@ -96,7 +98,7 @@ export class TileSelector {
   /** One-time initialization that is started when retrieving tiles for the first time. */
   private async initialize() {
     if (this.options.useWorker) {
-      this.impl = new TileSelectorWorkerProxy();
+      this.impl = new TileSelectorWorkerProxy(this.options.workerUrl);
     } else {
       this.impl = new TileSelectorImpl();
     }

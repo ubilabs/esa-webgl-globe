@@ -8,7 +8,7 @@ import {
   WebGLRenderer,
   WebGLRenderTarget
 } from 'three';
-import {WebGLUtils} from 'three/src/renderers/webgl/WebGLUtils';
+import {WebGLUtils} from 'three/src/renderers/webgl/WebGLUtils.js';
 
 import {TileSelectionMaterial} from './tile-selector-material';
 import {TileSelectionDebugMaterial} from './tile-selector-debug-material';
