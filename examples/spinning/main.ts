@@ -1,7 +1,6 @@
 import '../style.css';
 
-import {WebGlGlobe} from '../../src/webgl-globe';
-import {LayerProps} from '../../src/loader/layer';
+import {WebGlGlobe, LayerProps} from '../../src';
 
 const distance = 20_000_000;
 

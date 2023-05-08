@@ -1,14 +1,14 @@
 import '../style.css';
 
-import {WebGlGlobe} from '../../src/webgl-globe';
+import {WebGlGlobe} from '../../src';
 import {getMarkerHtml} from './get-marker-html';
-import type {LayerProps} from '../../src/loader/types/layer';
-import type {MarkerProps} from '../../src/renderer/types/marker';
+import type {LayerProps, MarkerProps} from '../../src';
 
 const globe = new WebGlGlobe(document.body, {
   layers: [
     {
       id: 'basemap',
+      type: 'tile',
       urlParameters: {timestep: 0},
       zIndex: 0,
       maxZoom: 4,

@@ -1,8 +1,8 @@
 import '../style.css';
 
-import {WebGlGlobe} from '../../src/webgl-globe';
-import {LayerDebugMode} from '../../src/loader/types/layer';
-import type {LayerProps} from '../../src/loader/types/layer';
+import {WebGlGlobe} from '../../src/';
+import {LayerDebugMode} from '../../src';
+import type {LayerProps} from '../../src';
 
 const globe = new WebGlGlobe(document.body, {
   layers: [

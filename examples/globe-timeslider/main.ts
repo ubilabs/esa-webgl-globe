@@ -1,10 +1,10 @@
 import '../style.css';
 
 import {Pane} from 'tweakpane';
-import {WebGlGlobe} from '../../src/webgl-globe';
-import {LayerLoadingState} from '../../src/loader/types/layer';
+import {WebGlGlobe} from '../../src';
+import {LayerLoadingState} from '../../src';
 
-import type {LayerProps} from '../../src/loader/types/layer';
+import type {LayerProps} from '../../src';
 
 const panelSettings = {
   playback: {
@@ -169,7 +169,7 @@ async function loop() {
     const dt = performance.now() - t0;
     const timeout = Math.max(300, 1000 / panelSettings.playback.speed - dt);
 
-    playbackTimeout = setTimeout(loop, timeout);
+    playbackTimeout = window.setTimeout(loop, timeout);
   }
 }
 

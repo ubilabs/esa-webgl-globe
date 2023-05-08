@@ -1,6 +1,6 @@
 import '../style.css';
 import {Vector2} from 'three';
-import {Layer, Renderer, TileSelector} from '../../src/main';
+import {Layer, Renderer, TileSelector} from '../../src';
 import type {RenderTile} from '../../src/renderer/types/tile';
 import RequestScheduler from '../../src/loader/request-sheduler';
 

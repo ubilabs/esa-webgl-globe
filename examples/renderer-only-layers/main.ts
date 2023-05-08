@@ -1,5 +1,5 @@
 import '../style.css';
-import {Renderer} from '../../src/main';
+import {Renderer} from '../../src';
 import {getDebugTexture} from '../../src/renderer/lib/debug-texture';
 import {TileId} from '../../src/tile-id';
 import type {RenderTile} from '../../src/renderer/types/tile';
@@ -9,7 +9,7 @@ const columns = Math.pow(2, zoom + 1);
 const rows = Math.pow(2, zoom);
 const tileCount = columns * rows;
 
-const COLOR_MAP = {
+const COLOR_MAP: Record<number, string> = {
   0: 'red',
   1: 'green',
   2: 'blue'

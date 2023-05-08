@@ -1,6 +1,6 @@
 import '../style.css';
 import {Vector2} from 'three';
-import {Renderer, TileSelector} from '../../src/main';
+import {Renderer, TileSelector} from '../../src';
 import type {RenderTile} from '../../src/renderer/types/tile';
 
 const renderer = new Renderer();

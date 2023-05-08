@@ -1,7 +1,7 @@
 import '../style.css';
-import {WebGlGlobe} from '../../src/webgl-globe';
+import {WebGlGlobe} from '../../src';
 import {getMarkerHtml} from '../marker/get-marker-html';
-import type {LayerProps} from '../../src/loader/types/layer';
+import type {LayerProps} from '../../src';
 
 const globe = new WebGlGlobe(document.getElementById('container')!, {
   layers: [

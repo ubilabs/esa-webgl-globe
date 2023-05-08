@@ -1,6 +1,6 @@
 import '../style.css';
 import {Vector2} from 'three';
-import {Renderer, TileSelector} from '../../src/main';
+import {Renderer, TileSelector} from '../../src';
 import {getDebugTexture} from '../../src/renderer/lib/debug-texture';
 import type {RenderTile} from '../../src/renderer/types/tile';
 

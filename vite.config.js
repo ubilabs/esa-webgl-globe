@@ -1,6 +1,6 @@
 import {resolve, dirname} from 'node:path';
 import {defineConfig} from 'vite';
-import glob from 'glob';
+import {glob} from 'glob';
 
 const exampleFiles = glob.sync(resolve(__dirname, 'examples/**/index.html'));
 const index = resolve(__dirname, 'index.html');

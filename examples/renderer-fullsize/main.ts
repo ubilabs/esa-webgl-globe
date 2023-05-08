@@ -1,5 +1,5 @@
 import '../style.css';
-import {Renderer} from '../../src/main';
+import {Renderer} from '../../src';
 import {TileId} from '../../src/tile-id';
 import type {RenderTile} from '../../src/renderer/types/tile';
 

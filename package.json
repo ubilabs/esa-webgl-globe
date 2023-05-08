@@ -23,8 +23,8 @@
   ],
   "scripts": {
     "start": "vite",
-    "prepack": "rm -rf ./dist && npm run build:lib",
-    "build": "tsc && npm run build:lib && npm run build:examples",
+    "prepack": "npm run build:lib",
+    "build": "tsc && rm -rf ./dist && npm run build:lib && npm run build:examples",
     "build:lib": "rm -rf ./dist ; rollup -c",
     "build:examples": "vite build",
     "deploy:examples": "npm run build && gsutil -m -h 'Cache-Control: no-cache' cp -r dist/examples/* gs://ubilabs-webgl-globe/examples/"
@@ -34,7 +34,7 @@
     "@tweakpane/core": "^1.1.4",
     "lru-cache": "^7.14.1",
     "rollup": "^3.21.5",
-    "three": "^0.151.3",
+    "three": "^0.152.2",
     "tweakpane": "^3.1.4"
   },
   "devDependencies": {
@@ -45,12 +45,13 @@
     "@rollup/plugin-replace": "^5.0.2",
     "@rollup/plugin-terser": "^0.4.1",
     "@rollup/plugin-typescript": "^11.1.0",
-    "@types/three": "^0.151.0",
-    "glob": "^8.0.3",
+    "@types/three": "^0.152.0",
+    "glob": "^10.2.2",
     "prettier": "^2.8.2",
     "prettier-plugin-jsdoc": "^0.4.2",
     "rollup-plugin-dts": "^5.3.0",
-    "typescript": "^4.9.3",
+    "tslib": "^2.5.0",
+    "typescript": "^5.0.4",
     "vite": "^4.0.0"
   },
   "browserslist": [

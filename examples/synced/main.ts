@@ -1,13 +1,13 @@
 import '../style.css';
 
-import {WebGlGlobe} from '../../src/webgl-globe';
-import type {LayerProps} from '../../src/loader/types/layer';
+import {WebGlGlobe} from '../../src';
+import type {LayerProps} from '../../src';
 
 const globes: WebGlGlobe[] = [];
 
 (async function () {
   const layers = (await fetchLayersList()).filter(
-    ({id}) => !['ozone.ozone_profile', 'greenland_ice.sec'].includes(id)
+    ({id}: {id: string}) => !['ozone.ozone_profile', 'greenland_ice.sec'].includes(id)
   );
 
   for (const layer of layers.slice(0, 16)) {
