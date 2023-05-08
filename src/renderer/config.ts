@@ -11,3 +11,6 @@ export const ZOOM_SEGMENT_MAP: Record<number, number> = {
   8: 1,
   9: 1
 };
+
+export const MAP_WIDTH = 4;
+export const MAP_HEIGHT = 2;

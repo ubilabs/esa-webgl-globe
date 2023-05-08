@@ -4,7 +4,8 @@ import {WebGlGlobe} from '../../src/webgl-globe';
 import {Pane} from 'tweakpane';
 
 import type {LayerProps} from '../../src/loader/types/layer';
-import {LayerLoadingState} from '../../src/loader/types/layer';
+import {LayerDebugMode, LayerLoadingState} from '../../src/loader/types/layer';
+import {RenderMode} from '../../src/renderer/types/renderer';
 
 const DATASET_BASE_URL = 'https://storage.googleapis.com/esa-cfs-tiles/1.9.1';
 const DATASET_INDEX_URL = `https://storage.googleapis.com/esa-cfs-storage/1.9.1/layers/layers-en.json`;
@@ -33,14 +34,16 @@ const settings = {
     allowDownsampling: true
   },
   basemap: {
-    debug: false
+    debug: true,
+    debugMode: LayerDebugMode.OVERLAY
   },
   data: {
     debug: false,
     limitZoom: false,
     minZoom: 1,
     maxZoom: 2
-  }
+  },
+  renderer: {renderMode: RenderMode.MAP}
 };
 
 const panel = new Pane();
@@ -50,8 +53,16 @@ playbackFolder.addInput(settings.playback, 'speed', {min: 0.2, max: 3, label: 's
 playbackFolder.addInput(settings.playback, 'waitForFrames');
 playbackFolder.addInput(settings.playback, 'allowDownsampling');
 
+const rendererFolder = panel.addFolder({title: 'Renderer', expanded: true});
+rendererFolder.addInput(settings.renderer, 'renderMode', {
+  options: {globe: RenderMode.GLOBE, map: RenderMode.MAP}
+});
+
 const basemapFolder = panel.addFolder({title: 'Basemap', expanded: true});
 basemapFolder.addInput(settings.basemap, 'debug');
+basemapFolder.addInput(settings.basemap, 'debugMode', {
+  options: {replace: LayerDebugMode.REPLACE, overlay: LayerDebugMode.OVERLAY}
+});
 
 const dataFolder = panel.addFolder({title: 'Data Overlay', expanded: true});
 dataFolder.addInput(settings.data, 'debug');
@@ -73,6 +84,8 @@ let basemapProps: LayerProps = {
   zIndex: 0,
   minZoom: 1,
   maxZoom: 4,
+  debug: settings.basemap.debug,
+  debugMode: settings.basemap.debugMode,
   urlParameters: {},
   getUrl: ({x, y, zoom}) =>
     `https://storage.googleapis.com/esa-cfs-tiles/1.9.1/basemaps/colored/${zoom}/${x}/${y}.png`
@@ -84,6 +97,7 @@ let dataLayerProps: LayerProps<{timestep: number}> = {
   urlParameters: {timestep: 0},
   zIndex: 1,
   minZoom: 1,
+  debug: settings.data.debug,
   maxZoom: 4,
   getUrl: ({x, y, zoom, timestep}) =>
     `https://storage.googleapis.com/esa-cfs-tiles/1.6.5/permafrost.pfr/tiles/${timestep}/${zoom}/${x}/${y}.png`
@@ -164,7 +178,8 @@ let layers = [basemapProps];
 
 const globe = new WebGlGlobe(document.body, {
   layers: layers,
-  cameraView: {lat: 22, lng: 0, distance: 22e6}
+  cameraView: {lat: 22, lng: 0, distance: 22e6},
+  renderMode: settings.renderer.renderMode
 });
 
 const layerStates: Record<string, LayerLoadingState> = {};
@@ -209,7 +224,8 @@ function updateProps() {
   const layers: LayerProps<any>[] = [
     {
       ...basemapProps,
-      debug: settings.basemap.debug
+      debug: settings.basemap.debug,
+      debugMode: settings.basemap.debugMode
     }
   ];
 
@@ -229,6 +245,7 @@ function updateProps() {
 
   globe.setProps({
     allowDownsampling: settings.playback.allowDownsampling,
+    renderMode: settings.renderer.renderMode,
     layers
   });
 

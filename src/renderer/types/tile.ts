@@ -1,5 +1,6 @@
 import type {Scene, Texture} from 'three';
 import type {TileId} from '../../tile-id';
+import {RenderMode} from './renderer';
 
 export type TileType = 'tile' | 'image';
 
@@ -10,6 +11,7 @@ export interface TileProps {
   texture: Texture;
   scene: Scene;
   type: TileType;
+  renderMode: RenderMode;
 }
 
 export const enum TileLoadingState {

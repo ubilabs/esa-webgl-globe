@@ -16,18 +16,23 @@ const selector = new TileSelector({
   useOffscreenCanvas: true,
   useWorker: true
 });
-selector.setCamera(renderer.camera);
+selector.setCamera(renderer.getCamera());
 selector.setSize(new Vector2(window.innerWidth, window.innerHeight).multiplyScalar(0.25).round());
 
-const layer = new Layer<{timestep: number}>(scheduler, {
-  id: 'layer',
-  urlParameters: {timestep: 0},
-  zIndex: 0,
-  maxZoom: 7,
-  getUrl: ({x, y, zoom, timestep}) =>
-    // `https://storage.googleapis.com/esa-cfs-tiles/1.9.0/basemaps/colored/${zoom}/${x}/${y}.png`
-    `https://storage.googleapis.com/esa-cfs-tiles/1.9.0/biomass.agb/tiles/${timestep}/${zoom}/${x}/${y}.png`
-});
+const layer = new Layer<{timestep: number}>(
+  scheduler,
+  {
+    id: 'layer',
+    type: 'tile',
+    urlParameters: {timestep: 0},
+    zIndex: 0,
+    maxZoom: 7,
+    getUrl: ({x, y, zoom, timestep}) =>
+      // `https://storage.googleapis.com/esa-cfs-tiles/1.9.0/basemaps/colored/${zoom}/${x}/${y}.png`
+      `https://storage.googleapis.com/esa-cfs-tiles/1.9.0/biomass.agb/tiles/${timestep}/${zoom}/${x}/${y}.png`
+  },
+  document.body
+);
 
 async function animate() {
   // selector

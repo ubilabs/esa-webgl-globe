@@ -1,4 +1,4 @@
-import {resolve, dirname} from 'path';
+import {resolve, dirname} from 'node:path';
 import {defineConfig} from 'vite';
 import glob from 'glob';
 
@@ -16,6 +16,9 @@ const input = exampleFiles.reduce(
 export default defineConfig({
   base: './',
   resolve: {alias: {'~': resolve(__dirname, 'src')}},
+  define: {
+    __IS_VITE_BUILD__: 'true'
+  },
   build: {
     outDir: 'dist/examples',
     emptyOutDir: true,

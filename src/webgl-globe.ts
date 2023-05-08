@@ -9,15 +9,16 @@ import {LayerLoadingState} from './loader/types/layer';
 import type {LngLatDist} from './renderer/types/lng-lat-dist';
 import type {LayerProps} from './loader/types/layer';
 import type {MarkerProps} from './renderer/types/marker';
+import {RenderMode} from './renderer/types/renderer';
 
-const TILESELECTOR_FPS = 10;
+const TILESELECTOR_FPS = 15;
 
-type WebGlGlobeProps = Partial<{
+export type WebGlGlobeProps = Partial<{
   layers: LayerProps<any>[];
+  renderMode: RenderMode;
   cameraView: LngLatDist;
   markers: MarkerProps[];
-
-  allowDownsampling?: boolean;
+  allowDownsampling: boolean;
 }>;
 
 const DEFAULT_PROPS = {allowDownsampling: true};
@@ -40,6 +41,9 @@ export class WebGlGlobe extends EventTarget {
   private tileUpdateRafId: number = 0;
   private props!: WebGlGlobeProps;
 
+  private static tileSelectorWorkerUrl: string =
+    new URL(import.meta.url).origin + '/tile-selector-worker.js';
+
   constructor(container: HTMLElement, props: WebGlGlobeProps = {}) {
     super();
 
@@ -47,11 +51,11 @@ export class WebGlGlobe extends EventTarget {
 
     this.container = container;
     this.renderer = new Renderer({container});
+    this.tileSelector = new TileSelector({
+      workerUrl: WebGlGlobe.tileSelectorWorkerUrl
+    });
 
     this.setProps({...DEFAULT_PROPS, ...props});
-
-    this.tileSelector = new TileSelector();
-    this.tileSelector.setCamera(this.renderer.camera);
 
     this.resize();
     this.attachEventListeners();
@@ -60,7 +64,7 @@ export class WebGlGlobe extends EventTarget {
   }
 
   setProps(props: WebGlGlobeProps) {
-    this.props = props;
+    this.props = {...this.props, ...props};
 
     if (props.layers) {
       this.setLayers(props.layers);
@@ -72,6 +76,11 @@ export class WebGlGlobe extends EventTarget {
 
     if (props.markers) {
       this.setMarkers(props.markers);
+    }
+
+    if (props.renderMode) {
+      this.renderer.setRenderMode(props.renderMode);
+      this.tileSelector.setRenderMode(props.renderMode);
     }
   }
 
@@ -85,7 +94,7 @@ export class WebGlGlobe extends EventTarget {
     cancelAnimationFrame(this.tileUpdateRafId);
   }
 
-  setLayers(layers: LayerProps[]) {
+  private setLayers(layers: LayerProps[]) {
     // remove layers that are no longer needeed
     const newLayerIds = layers.map(l => l.id);
     const toRemove = Object.keys(this.layersById).filter(id => !newLayerIds.includes(id));
@@ -108,25 +117,13 @@ export class WebGlGlobe extends EventTarget {
     }
   }
 
-  /**
-   * Returns true if all layers can render with the current props.
-   *
-   * @param allowDownsampling If set, the method will only return true when all tiles are loaded.
-   */
-  canRender(allowDownsampling: boolean = true) {
-    for (let layer of Object.values(this.layersById)) {
-      if (!layer.canRender(allowDownsampling)) return false;
-    }
-
-    return true;
-  }
-
   private setMarkers(markers: MarkerProps[]) {
     this.renderer.setMarkers(markers);
   }
 
   private startTileSelectorLoop() {
-    this.tileSelectorIntervalId = setInterval(async () => {
+    this.tileSelectorIntervalId = window.setInterval(async () => {
+      this.tileSelector.setCamera(this.renderer.getCamera());
       const visibleTiles = await this.tileSelector.getVisibleTiles();
 
       for (const layer of Object.values(this.layersById)) {
@@ -188,6 +185,14 @@ export class WebGlGlobe extends EventTarget {
     window.removeEventListener('resize', this.resize);
     this.renderer.destroy();
     // FIXME: tile selector destroy?
+  }
+
+  static getTileSelectorWorkerUrl() {
+    console.log(this.tileSelectorWorkerUrl);
+    return this.tileSelectorWorkerUrl;
+  }
+  static setTileSelectorWorkerUrl(url: string) {
+    this.tileSelectorWorkerUrl = url;
   }
 }
 
