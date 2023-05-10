@@ -1,6 +1,6 @@
 {
   "name": "@ubilabs/esa-webgl-globe",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "source": "./src/index.ts",
   "module": "./dist/esa-webgl-globe.esm.js",
