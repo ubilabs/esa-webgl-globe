@@ -62,12 +62,12 @@ export default [
 
   // create single .d.ts files for both entrypoints
   {
-    input: './dist/types/index.d.ts',
+    input: './dist/types/src/index.d.ts',
     output: [{file: 'dist/esa-webgl-globe.d.ts', format: 'es'}],
     plugins: [dts()]
   },
   {
-    input: './dist/types/tile-selector/tile-selector-worker.d.ts',
+    input: './dist/types/src/tile-selector/tile-selector-worker.d.ts',
     output: [{file: 'dist/tile-selector-worker.d.ts', format: 'es'}],
     plugins: [dts()]
   }
