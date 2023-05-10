@@ -129,7 +129,9 @@ export class Renderer extends EventTarget {
   }
 
   destroy() {
-    // TODO threejs cleanup?
+    this.webglRenderer.dispose();
+    this.webglRenderer.setAnimationLoop(null);
+    this.webglRenderer.domElement.remove();
   }
 
   private configureCameras() {

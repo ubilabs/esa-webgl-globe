@@ -5,6 +5,7 @@
   "source": "./src/index.ts",
   "module": "./dist/esa-webgl-globe.esm.js",
   "types": "./dist/esa-webgl-globe.d.ts",
+  "license": "MIT",
   "exports": {
     ".": {
       "import": "./dist/esa-webgl-globe.esm.js",
