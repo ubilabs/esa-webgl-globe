@@ -30,7 +30,18 @@ export class TileSelectorWorkerProxy implements ITileSelectorImpl {
     await this.callWorker('setOptions', [options]);
   }
 
-  private async callWorker(type: string, args: any[], transfer?: Transferable[]): Promise<unknown> {
+  async destroy() {
+    await this.callWorker('destroy');
+
+    const worker = await this.getWorker();
+    worker.terminate();
+  }
+
+  private async callWorker(
+    type: string,
+    args: any[] = [],
+    transfer?: Transferable[]
+  ): Promise<unknown> {
     const worker = await this.getWorker();
     const messageId = Math.random().toString(36).slice(2);
 

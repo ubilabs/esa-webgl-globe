@@ -184,7 +184,7 @@ export class WebGlGlobe extends EventTarget {
   destroy() {
     window.removeEventListener('resize', this.resize);
     this.renderer.destroy();
-    // FIXME: tile selector destroy?
+    void this.tileSelector.destroy();
   }
 
   static getTileSelectorWorkerUrl() {

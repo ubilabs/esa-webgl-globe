@@ -109,4 +109,8 @@ export class TileSelector {
   setRenderMode(renderMode: RenderMode) {
     this.renderMode = renderMode;
   }
+
+  async destroy() {
+    this.impl?.destroy();
+  }
 }

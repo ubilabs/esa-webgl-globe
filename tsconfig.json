@@ -1,9 +1,9 @@
 {
   "compilerOptions": {
-    "target": "ESNext",
+    "target": "ES2022",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "lib": ["ESNext", "DOM"],
+    "lib": ["ES2022", "DOM"],
     "moduleResolution": "Node",
     "typeRoots": ["./types", "./node_modules/@types"],
     "strict": true,
@@ -18,6 +18,6 @@
     "noImplicitReturns": true,
     "skipLibCheck": true
   },
-  "include": ["./types/*", "./src/**/*"],
+  "include": ["./types/*", "./src/**/*ts", "./examples/**/*ts"],
   "exclude": ["node_modules", "./dist"]
 }

@@ -34,6 +34,7 @@ export interface ITileSelectorImpl {
     worldMatrix: number[],
     renderMode: RenderMode
   ): Promise<string[]>;
+  destroy(): Promise<void>;
 }
 
 export class TileSelectorImpl implements ITileSelectorImpl {
@@ -104,6 +105,15 @@ export class TileSelectorImpl implements ITileSelectorImpl {
     }
 
     return visibleTiles;
+  }
+
+  async destroy() {
+    this.renderer.dispose();
+    this.renderTarget.dispose();
+
+    if (this.canvas instanceof HTMLCanvasElement) {
+      this.canvas.remove();
+    }
   }
 
   private setSize(width: number, height: number) {
