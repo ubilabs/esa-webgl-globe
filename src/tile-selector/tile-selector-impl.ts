@@ -111,7 +111,7 @@ export class TileSelectorImpl implements ITileSelectorImpl {
     this.renderer.dispose();
     this.renderTarget.dispose();
 
-    if (this.canvas instanceof HTMLCanvasElement) {
+    if ('remove' in this.canvas) {
       this.canvas.remove();
     }
   }
