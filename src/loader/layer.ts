@@ -51,7 +51,7 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
 
     // Use only the min zoom level for fullsize layers
     if (this.isFullsize()) {
-      this.visibleTileIds = this.getMinZoomTileIds();
+      this.visibleTileIds = this.visibleMinZoomTileIds = this.getMinZoomTileIds();
       this.updateQueue();
       return;
     }
@@ -88,11 +88,15 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
   public setProps(props: Partial<LayerProps<TUrlParameters>>) {
     // when switching to and from debug-mode, the cache needs to be cleared so tiles
     // will be fetched new.
-    if (props.debug !== this.props.debug || this.props.debugMode !== this.props.debugMode) {
+    if (
+      (props.debug && props.debug !== this.props.debug) ||
+      (props.debugMode && props.debugMode !== this.props.debugMode)
+    ) {
       this.cache.clear();
     }
 
-    if (props.minZoom !== this.props.minZoom) {
+    // the minZoomTileset has to be rebuilt when minZoom changes (will be rebuilt on access)
+    if (props.minZoom && props.minZoom !== this.props.minZoom) {
       this.minZoomTileset = null;
     }
 
@@ -107,6 +111,12 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
    * case when all visible tiles are ready to render.
    */
   public canRender(allowDownsampling: boolean = true) {
+    // canRender could be called in the tile-update loop before the
+    // tile-selector loop came around
+    if (this.visibleTileIds.size === 0) {
+      return false;
+    }
+
     const tileIds = allowDownsampling ? this.visibleMinZoomTileIds : this.visibleTileIds;
 
     for (let tileId of tileIds) {
