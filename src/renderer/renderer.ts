@@ -50,8 +50,8 @@ export class Renderer extends EventTarget {
 
     this.configureCameras();
 
-    this.globeControls = new OrbitControls(this.globeCamera, this.webglRenderer.domElement);
-    this.mapControls = new MapControls(this.mapCamera, this.webglRenderer.domElement);
+    this.globeControls = new OrbitControls(this.globeCamera, this.container);
+    this.mapControls = new MapControls(this.mapCamera, this.container);
 
     this.configureControls();
 
