@@ -70,7 +70,7 @@ let layers = [basemapProps, dataLayerProps];
 
 const globe = new WebGlGlobe(document.body, {
   layers: layers,
-  cameraView: {lat: 50, lng: 100, distance: 22e6}
+  cameraView: {lat: 50, lng: 100, altitude: 22e6}
 });
 
 const layerStates: Record<string, LayerLoadingState> = {};

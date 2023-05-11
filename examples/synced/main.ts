@@ -47,7 +47,7 @@ const globes: WebGlGlobe[] = [];
     globes.push(
       new WebGlGlobe(container, {
         layers: globeLayers,
-        cameraView: {lng: 0, lat: 0, distance: 20_000_000}
+        cameraView: {lng: 0, lat: 0, altitude: 20_000_000}
       })
     );
   }

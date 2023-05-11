@@ -1,10 +1,12 @@
 import {Vector3} from 'three';
-import type {LngLatDist} from '../types/lng-lat-dist';
+
+import {RenderMode} from '../types/renderer';
+import type {CameraView, LatLngAltitude} from '../types/camera-view';
 
 const EARTH_RADIUS = 6_371_000; // in meter
 
-export function lngLatDistToWorldSpace(lngLatDist: LngLatDist, target: Vector3) {
-  const {lng, lat, distance} = lngLatDist;
+export function latLngAltitudeToGlobePosition(pos: LatLngAltitude, target: Vector3) {
+  const {lng, lat, altitude} = pos;
   const lngR = (lng * Math.PI) / 90;
   const latR = (lat * Math.PI) / 180;
   const py = Math.sin(latR);
@@ -13,10 +15,14 @@ export function lngLatDistToWorldSpace(lngLatDist: LngLatDist, target: Vector3) 
   const y = py;
   const z = Math.cos(lngR / 2) * cf;
 
-  target.set(x, y, z).multiplyScalar(distance / EARTH_RADIUS + 1);
+  target.set(x, y, z).multiplyScalar(altitude / EARTH_RADIUS + 1);
 }
 
-export function worldSpaceToLngLatDist(position: Vector3): LngLatDist {
+export function cameraViewToGlobePosition(view: CameraView, target: Vector3) {
+  latLngAltitudeToGlobePosition(view, target);
+}
+
+export function globePositionToCameraView(position: Vector3): CameraView {
   const pos = position.clone().normalize();
   const lat = Math.asin(pos.y) * (180 / Math.PI);
   const lng =
@@ -26,8 +32,10 @@ export function worldSpaceToLngLatDist(position: Vector3): LngLatDist {
   const distance = (position.length() - 1) * EARTH_RADIUS;
 
   return {
+    renderMode: RenderMode.GLOBE,
     lng: lngSign * lng,
     lat,
-    distance
+    altitude: distance,
+    zoom: 0
   };
 }

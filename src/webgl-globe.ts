@@ -4,19 +4,19 @@ import {Layer} from './loader/layer';
 import {RenderTile} from './renderer/types/tile';
 import {TileSelector} from './tile-selector/tile-selector';
 import {Renderer} from './renderer/renderer';
+import {RenderMode} from './renderer/types/renderer';
 import {LayerLoadingState} from './loader/types/layer';
 
-import type {LngLatDist} from './renderer/types/lng-lat-dist';
+import type {CameraView} from './renderer/types/camera-view';
 import type {LayerProps} from './loader/types/layer';
 import type {MarkerProps} from './renderer/types/marker';
-import {RenderMode} from './renderer/types/renderer';
 
 const TILESELECTOR_FPS = 15;
 
 export type WebGlGlobeProps = Partial<{
   layers: LayerProps<any>[];
   renderMode: RenderMode;
-  cameraView: LngLatDist;
+  cameraView: Partial<CameraView>;
   markers: MarkerProps[];
   allowDownsampling: boolean;
 }>;
@@ -50,7 +50,7 @@ export class WebGlGlobe extends EventTarget {
     this.scheduler = new RequestScheduler();
 
     this.container = container;
-    this.renderer = new Renderer({container});
+    this.renderer = new Renderer(container);
     this.tileSelector = new TileSelector({
       workerUrl: WebGlGlobe.tileSelectorWorkerUrl
     });
@@ -71,7 +71,15 @@ export class WebGlGlobe extends EventTarget {
     }
 
     if (props.cameraView) {
-      this.renderer.setCameraView(props.cameraView);
+      this.renderer.setCameraView({
+        renderMode: RenderMode.GLOBE,
+        lat: 0,
+        lng: 0,
+        zoom: 0,
+        altitude: 0,
+
+        ...props.cameraView
+      });
     }
 
     if (props.markers) {
@@ -174,9 +182,9 @@ export class WebGlGlobe extends EventTarget {
     window.addEventListener('resize', this.resize);
 
     // Dispatch camera view changed event
-    this.renderer.addEventListener('cameraViewChanged', (event: CustomEventInit<LngLatDist>) => {
+    this.renderer.addEventListener('cameraViewChanged', (event: CustomEventInit<CameraView>) => {
       // create a new event since we cannot dispatch the same event twice
-      const newEvent = new CustomEvent<LngLatDist>('cameraViewChanged', {detail: event.detail});
+      const newEvent = new CustomEvent<CameraView>('cameraViewChanged', {detail: event.detail});
       this.dispatchEvent(newEvent);
     });
   }
@@ -197,7 +205,7 @@ export class WebGlGlobe extends EventTarget {
 }
 
 export interface WebGlGlobeEventMap {
-  cameraViewChanged: CustomEvent<LngLatDist>;
+  cameraViewChanged: CustomEvent<CameraView>;
   layerLoadingStateChanged: CustomEvent<{layer: LayerProps; state: LayerLoadingState}>;
 }
 

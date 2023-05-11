@@ -178,7 +178,7 @@ let layers = [basemapProps];
 
 const globe = new WebGlGlobe(document.body, {
   layers: layers,
-  cameraView: {lat: 22, lng: 0, distance: 22e6},
+  cameraView: {lat: 22, lng: 0, altitude: 22e6},
   renderMode: settings.renderer.renderMode
 });
 

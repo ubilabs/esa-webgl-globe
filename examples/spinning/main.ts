@@ -15,7 +15,7 @@ const globe = new WebGlGlobe(document.body, {
         `https://storage.googleapis.com/esa-cfs-tiles/1.9.0/basemaps/colored/${zoom}/${x}/${y}.png`
     } as LayerProps<{}>
   ],
-  cameraView: {lng: 0, lat: 0, distance}
+  cameraView: {lng: 0, lat: 0, altitude: distance}
 });
 
 let rot = 180;
@@ -24,7 +24,7 @@ let spinning = true;
 (function spin() {
   rot += 0.1;
   const lng = (rot % 360) - 180;
-  globe.setProps({cameraView: {lng, lat: 10, distance}});
+  globe.setProps({cameraView: {lng, lat: 10, altitude: distance}});
 
   if (spinning) {
     requestAnimationFrame(spin);

@@ -1,8 +1,9 @@
 import {Vector3} from 'three';
-import {lngLatDistToWorldSpace} from './lib/convert-spaces';
-import type {MarkerProps} from './types/marker';
+import {latLngAltitudeToGlobePosition} from './lib/convert-spaces';
 import {Renderer} from './renderer';
 import {RenderMode} from './types/renderer';
+
+import type {MarkerProps} from './types/marker';
 
 const v3 = new Vector3();
 
@@ -67,7 +68,7 @@ export class MarkerHtml {
     this.markerEl.innerHTML = this.props.html;
 
     let {lat, lng} = this.props;
-    lngLatDistToWorldSpace({lng, lat, distance: 1}, this.globePosition);
+    latLngAltitudeToGlobePosition({lng, lat, altitude: 1}, this.globePosition);
 
     this.mapPosition.set(lng / 90, lat / 90, 0);
 

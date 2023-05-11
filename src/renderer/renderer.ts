@@ -5,12 +5,11 @@ import {OrbitControls} from './vendor/orbit-controls.js';
 import {MapControls} from 'three/examples/jsm/controls/MapControls';
 import {TileManager} from './tile-manager';
 import {MarkerHtml} from './marker-html';
-import {lngLatDistToWorldSpace, worldSpaceToLngLatDist} from './lib/convert-spaces';
-import type {RendererProps} from './types/renderer';
+import {cameraViewToGlobePosition, globePositionToCameraView} from './lib/convert-spaces';
 import {RenderMode} from './types/renderer';
 
 import type {RenderTile} from './types/tile';
-import type {LngLatDist} from './types/lng-lat-dist';
+import type {CameraView} from './types/camera-view';
 import type {MarkerProps} from './types/marker';
 import {MAP_HEIGHT, MAP_WIDTH} from './config';
 
@@ -26,16 +25,15 @@ export class Renderer extends EventTarget {
   private mapControls: MapControls;
 
   private tileManager: TileManager;
-  private cameraView?: LngLatDist;
-  private skipViewUpdate: boolean = false;
+  private cameraView?: CameraView;
   private markersById: Record<string, MarkerHtml> = {};
   private renderMode: RenderMode = RenderMode.GLOBE;
   private rendererSize: Vector2 = new Vector2();
 
-  constructor(props: RendererProps = {}) {
+  constructor(container?: HTMLElement) {
     super();
 
-    this.container = props.container || document.body;
+    this.container = container || document.body;
 
     const renderer = new WebGLRenderer({antialias: true});
     renderer.setClearColor(0xffffff, 0);
@@ -101,15 +99,24 @@ export class Renderer extends EventTarget {
     return this.mapCamera;
   }
 
-  setCameraView(cameraView: LngLatDist) {
-    if (cameraView === this.cameraView || this.skipViewUpdate) {
+  setCameraView(cameraView: CameraView) {
+    if (cameraView === this.cameraView) {
       return;
     }
 
-    lngLatDistToWorldSpace(cameraView, this.globeCamera.position);
-    this.skipViewUpdate = true;
-    this.globeControls.update();
-    this.cameraView = cameraView;
+    if (cameraView.renderMode !== this.renderMode) {
+      this.setRenderMode(cameraView.renderMode);
+    }
+
+    if (this.renderMode === RenderMode.GLOBE) {
+      cameraViewToGlobePosition(cameraView, this.globeCamera.position);
+      this.cameraView = cameraView;
+    } else if (this.renderMode === RenderMode.MAP) {
+      this.mapCamera.position.x = cameraView.lng / 90;
+      this.mapCamera.position.y = cameraView.lat / 90;
+      this.mapCamera.zoom = cameraView.zoom;
+      this.mapControls.target.copy(this.mapCamera.position);
+    }
   }
 
   setMarkers(markerProps: MarkerProps[]) {
@@ -173,8 +180,9 @@ export class Renderer extends EventTarget {
     this.globeControls.minPolarAngle = 0;
     this.globeControls.minDistance = 1.05; // ~ zoom level 7
     this.globeControls.addEventListener('change', () => {
-      const view = worldSpaceToLngLatDist(this.globeCamera.position);
-      const event = new CustomEvent<LngLatDist>('cameraViewChanged', {detail: view});
+      const event = new CustomEvent<CameraView>('cameraViewChanged', {
+        detail: globePositionToCameraView(this.globeCamera.position)
+      });
       this.dispatchEvent(event);
     });
 
@@ -184,6 +192,16 @@ export class Renderer extends EventTarget {
     this.mapControls.screenSpacePanning = true;
     this.mapControls.minZoom = 1;
     this.mapControls.maxZoom = 20;
+    this.mapControls.addEventListener('change', () => {
+      // camera-position is x [-2..2] and y [-1..1]
+      const lng = this.mapCamera.position.x * 90;
+      const lat = this.mapCamera.position.y * 90;
+      const zoom = this.mapCamera.zoom;
+
+      const view: CameraView = {renderMode: RenderMode.MAP, lat, lng, zoom, altitude: 0};
+      const event = new CustomEvent<CameraView>('cameraViewChanged', {detail: view});
+      this.dispatchEvent(event);
+    });
 
     const origUpdate = this.mapControls.update.bind(this.mapControls);
 
@@ -214,8 +232,6 @@ export class Renderer extends EventTarget {
   }
 
   private animationLoopUpdate() {
-    this.skipViewUpdate = false;
-
     if (this.globeControls.enabled) {
       this.globeControls.update();
       const cameraDistance = this.globeCamera.position.length() - 1;
@@ -226,4 +242,31 @@ export class Renderer extends EventTarget {
 
     this.webglRenderer.render(this.scene, this.getCamera());
   }
+}
+
+export interface RendererEventMap {
+  cameraViewChanged: CustomEvent<CameraView>;
+}
+
+export interface Renderer {
+  addEventListener<K extends keyof RendererEventMap>(
+    type: K,
+    listener: (this: Renderer, ev: RendererEventMap[K]) => any,
+    options?: boolean | AddEventListenerOptions
+  ): void;
+  addEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+    options?: boolean | AddEventListenerOptions
+  ): void;
+  removeEventListener<K extends keyof RendererEventMap>(
+    type: K,
+    listener: (this: Renderer, ev: RendererEventMap[K]) => any,
+    options?: boolean | EventListenerOptions
+  ): void;
+  removeEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+    options?: boolean | EventListenerOptions
+  ): void;
 }
