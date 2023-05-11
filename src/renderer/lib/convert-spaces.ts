@@ -3,7 +3,7 @@ import type {LngLatDist} from '../types/lng-lat-dist';
 
 const EARTH_RADIUS = 6_371_000; // in meter
 
-export function lngLatDistToWorldSpace(lngLatDist: LngLatDist, out: Vector3) {
+export function lngLatDistToWorldSpace(lngLatDist: LngLatDist, target: Vector3) {
   const {lng, lat, distance} = lngLatDist;
   const lngR = (lng * Math.PI) / 90;
   const latR = (lat * Math.PI) / 180;
@@ -12,7 +12,8 @@ export function lngLatDistToWorldSpace(lngLatDist: LngLatDist, out: Vector3) {
   const x = Math.sin(lngR / 2) * cf;
   const y = py;
   const z = Math.cos(lngR / 2) * cf;
-  out.set(x, y, z).multiplyScalar(distance / EARTH_RADIUS + 1);
+
+  target.set(x, y, z).multiplyScalar(distance / EARTH_RADIUS + 1);
 }
 
 export function worldSpaceToLngLatDist(position: Vector3): LngLatDist {

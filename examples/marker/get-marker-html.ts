@@ -37,9 +37,8 @@ export function getMarkerHtml(title: string): string {
           <div style="display: flex; margin-top: 3px">
               <svg
               style="z-index: 1"
-              height="49"
-              viewBox="0 0 8 49"
-              version="1.1"
+              height="24"
+              viewBox="0 0 8 24"
               xmlns="http://www.w3.org/2000/svg"
               >
               <g transform="matrix(1,0,0,1,-5.58325,-4)">
@@ -67,7 +66,7 @@ export function getMarkerHtml(title: string): string {
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
-                box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.14), 0px 3px 4px rgba(0, 0, 0, 0.12), 0px 1px 5px rgba(0, 0, 0, 0.2);"
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.14), 0 3px 4px rgba(0, 0, 0, 0.12), 0 1px 5px rgba(0, 0, 0, 0.2);"
             >
               ${title}
             </div>

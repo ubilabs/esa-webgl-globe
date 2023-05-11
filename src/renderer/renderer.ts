@@ -1,4 +1,4 @@
-import {OrthographicCamera, PerspectiveCamera, Scene, WebGLRenderer} from 'three';
+import {OrthographicCamera, PerspectiveCamera, Scene, Vector2, WebGLRenderer} from 'three';
 
 // @ts-ignore
 import {OrbitControls} from './vendor/orbit-controls.js';
@@ -15,7 +15,8 @@ import type {MarkerProps} from './types/marker';
 import {MAP_HEIGHT, MAP_WIDTH} from './config';
 
 export class Renderer extends EventTarget {
-  private readonly container: HTMLElement;
+  readonly container: HTMLElement;
+
   private readonly webglRenderer: WebGLRenderer;
   private readonly scene: Scene = new Scene();
   private readonly globeCamera: PerspectiveCamera = new PerspectiveCamera();
@@ -29,6 +30,7 @@ export class Renderer extends EventTarget {
   private skipViewUpdate: boolean = false;
   private markersById: Record<string, MarkerHtml> = {};
   private renderMode: RenderMode = RenderMode.GLOBE;
+  private rendererSize: Vector2 = new Vector2();
 
   constructor(props: RendererProps = {}) {
     super();
@@ -57,6 +59,10 @@ export class Renderer extends EventTarget {
     this.resize(width, height);
   }
 
+  getRenderMode() {
+    return this.renderMode;
+  }
+
   setRenderMode(renderMode: RenderMode) {
     this.renderMode = renderMode;
 
@@ -68,6 +74,7 @@ export class Renderer extends EventTarget {
   }
 
   resize(width: number, height: number) {
+    this.rendererSize.set(width, height);
     this.webglRenderer.setSize(width, height);
 
     const aspectRatio = width / height;
@@ -78,6 +85,10 @@ export class Renderer extends EventTarget {
     const halfWidth = MAP_WIDTH / 2;
     this.mapCamera.top = halfWidth / aspectRatio;
     this.mapCamera.bottom = -halfWidth / aspectRatio;
+  }
+
+  getRendererSize() {
+    return this.rendererSize;
   }
 
   updateTiles(tiles: RenderTile[]) {
@@ -120,11 +131,7 @@ export class Renderer extends EventTarget {
       }
 
       // otherwise create the marker
-      this.markersById[props.id] = new MarkerHtml({
-        props,
-        camera: this.globeCamera,
-        container: this.container
-      });
+      this.markersById[props.id] = new MarkerHtml(this, props);
     }
   }
 

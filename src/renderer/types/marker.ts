@@ -3,6 +3,5 @@ export interface MarkerProps {
   html: string;
   lng: number;
   lat: number;
-  offset: [number, number];
-  onClick: (id: string) => void;
+  onClick?: (id: string) => void;
 }
