@@ -6,9 +6,9 @@ import {WebGlGlobe, WebGlGlobeEventMap} from './webgl-globe';
 import {RenderMode} from './renderer/types/renderer';
 import {LayerDebugMode, LayerLoadingState, LayerProps} from './loader/types/layer';
 import type {MarkerProps} from './renderer/types/marker';
-
+import type {CameraView} from './renderer/types/camera-view';
 // these exports are just for now
 // in the end components should be merged here into one Globe API
 export {Renderer, Layer, TileSelector, MarkerHtml, WebGlGlobe};
 export {RenderMode, LayerLoadingState, LayerDebugMode};
-export type {LayerProps, MarkerProps, WebGlGlobeEventMap};
+export type {CameraView, LayerProps, MarkerProps, WebGlGlobeEventMap};
