@@ -37,4 +37,8 @@ const markers: MarkerProps[] = [
   {id: 'singapore', html: getMarkerHtml('Singapore'), lng: 103.85, lat: 1.29}
 ];
 
+markers.forEach(marker => {
+  marker.onClick = id => console.log('clicked:', id);
+});
+
 globe.setProps({markers});

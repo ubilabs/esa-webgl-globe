@@ -4,4 +4,5 @@ export interface MarkerProps {
   lng: number;
   lat: number;
   onClick?: (id: string) => void;
+  offset?: [number, number];
 }
