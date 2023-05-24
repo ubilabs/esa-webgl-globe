@@ -31,7 +31,8 @@ export class MarkerHtml {
     `;
     renderer.container.appendChild(this.markerEl);
 
-    this.markerEl.addEventListener('click', this.handleMarkerClick);
+    // TODO: find out why the 'click' event is not handled properly
+    this.markerEl.addEventListener('pointerdown', this.handleMarkerClick);
 
     this.setProps(this.props);
 
