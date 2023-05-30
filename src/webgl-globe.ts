@@ -33,6 +33,8 @@ export class WebGlGlobe extends EventTarget {
   private previousRenderTiles: WeakMap<Layer, RenderTile[]> = new WeakMap();
 
   private container: HTMLElement;
+  private resizeObserver: ResizeObserver;
+
   private readonly scheduler: RequestScheduler<RenderTile>;
   private readonly renderer: Renderer;
   private readonly tileSelector: TileSelector;
@@ -46,6 +48,10 @@ export class WebGlGlobe extends EventTarget {
 
   constructor(container: HTMLElement, props: WebGlGlobeProps = {}) {
     super();
+
+    this.resizeObserver = new ResizeObserver(() => {
+      this.resize();
+    });
 
     this.scheduler = new RequestScheduler();
 
@@ -177,9 +183,8 @@ export class WebGlGlobe extends EventTarget {
   }
 
   private attachEventListeners() {
-    // Window Resize
-    this.resize = this.resize.bind(this);
-    window.addEventListener('resize', this.resize);
+    // Observe resize of our container
+    this.resizeObserver.observe(this.container);
 
     // Dispatch camera view changed event
     this.renderer.addEventListener('cameraViewChanged', (event: CustomEventInit<CameraView>) => {
@@ -190,7 +195,7 @@ export class WebGlGlobe extends EventTarget {
   }
 
   destroy() {
-    window.removeEventListener('resize', this.resize);
+    this.resizeObserver.unobserve(this.container);
     this.renderer.destroy();
     void this.tileSelector.destroy();
   }
