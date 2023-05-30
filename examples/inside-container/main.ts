@@ -23,7 +23,6 @@ globe.setProps({
       html: getMarkerHtml(`Sicilia`),
       lng: 14.111089,
       lat: 37.585256,
-      offset: [-16, -16],
       onClick: id => alert(id)
     }
   ]
