@@ -4,7 +4,7 @@ import type {LayerProps, MarkerProps} from '../../src';
 import {RenderMode, WebGlGlobe} from '../../src';
 import {getMarkerHtml} from './get-marker-html';
 
-const globe = new WebGlGlobe(document.body, {
+const globe = new WebGlGlobe(document.querySelector('#globe')!, {
   renderMode: RenderMode.GLOBE,
   layers: [
     {

@@ -9,6 +9,13 @@
       body {
         font-family: sans-serif;
       }
+
+      #globe {
+        position: absolute;
+        width: 100vw;
+        height: 100vh;
+      }
+
       .panel {
         position: absolute;
         z-index: 999;
@@ -46,6 +53,7 @@
     </style>
   </head>
   <body>
+    <div id="globe"></div>
     <div class="panel">
       <div class="timeslider">
         <div class="controls">
@@ -60,6 +68,7 @@
         <input id="timestep" type="range" min="0" max="13" step="1" value="0" />
       </div>
     </div>
+
     <script type="module" src="main.ts"></script>
   </body>
 </html>
