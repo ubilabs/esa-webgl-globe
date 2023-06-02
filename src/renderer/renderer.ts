@@ -172,7 +172,7 @@ export class Renderer extends EventTarget {
 
   private configureControls() {
     this.globeControls.enableDamping = true;
-    this.globeControls.dampingFactor = 0.1;
+    this.globeControls.dampingFactor = 0.2;
     this.globeControls.enablePan = false;
     this.globeControls.enableZoom = true;
     this.globeControls.rotateSpeed = 1;
@@ -205,7 +205,7 @@ export class Renderer extends EventTarget {
 
     const origUpdate = this.mapControls.update.bind(this.mapControls);
 
-    // override the update-function to implement bounds-limiting
+    // override the update-function to limit map bounds
     this.mapControls.update = () => {
       origUpdate();
 
