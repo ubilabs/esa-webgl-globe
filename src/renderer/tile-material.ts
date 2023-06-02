@@ -139,50 +139,13 @@ export class TileMaterial extends RawShaderMaterial {
     varying vec2 vTileUv;
     varying vec2 vGlobalUv;
   
-    uniform vec3 tile;
-    uniform vec2 numTiles;
-    uniform float numSegments;
     uniform sampler2D texture0;
     uniform sampler2D texture1;
     uniform float textureFade;
   
-    uniform float isFullSize;
-  
     void main() {
-      // pole = 1 for north pole and 0 for south
-  
-      float vx = vUv.x;
-      float k = 0.0;
-  
-      // tile.x is the west to east tile index, 's = (x + 0.5) / n' is the center of 
-      // the tile in x-direction (at e.g. zoom 1 this would be 0.125, 0.375, 0.625 and 0.875), 
-      // or the u-position of the center into a global texture.
-      // This value is used as 'poleScale' for fullsize images.
-      float s = (tile.x + 0.5) / numTiles.x;
-  
-      float poleScale = mix(0.5, s, isFullSize);
-  
-      float threshold = 1.0 / numSegments;
-  
-      // the pole distance in tileUv scale (so 0.5 means half a tile away from the pole) and 
-      // segment-count scale (meaning, distance from the pole in number of segments).
-      float poleDistance = min(vGlobalUv.y, 1.0 - vGlobalUv.y) * numTiles.y;
-      float poleDistanceSegments = poleDistance * numSegments;
-  
-//      if (tile.y == 0.0 || tile.y == numTiles.y - 1.0) {
-//        // this only applies to the last segment
-//        if (poleDistance < threshold) {
-//          // - poleScale is 0.5 for normal tiles and a tile-dependent offset for full-size tiles. 
-//          //   This is essentially the uv-reference for the tile along the x-axis (it's the middle 
-//          //   of the tile at current zoom referenced into the texture).
-//          // - vUv.x is the _actual_ texture-coordinate to use (could be either within a fullSize
-//          //   image or a tile). 
-//          vx = poleScale + (vUv.x - poleScale) / poleDistanceSegments;
-//        }
-//      }
-//  
-      vec4 tex0 = texture2D(texture0, vec2(vx, vUv.y));
-      vec4 tex1 = texture2D(texture1, vec2(vx, vUv.y));
+      vec4 tex0 = texture2D(texture0, vUv);
+      vec4 tex1 = texture2D(texture1, vUv);
   
       gl_FragColor = mix(tex0, tex1, textureFade);
     }
