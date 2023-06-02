@@ -22,7 +22,7 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
   props: LayerProps<TUrlParameters>;
   eventTarget: EventTarget;
 
-  loadingState: LayerLoadingState = LayerLoadingState.LOADING;
+  loadingState?: LayerLoadingState;
   visibleTileIds: Set<TileId> = new Set();
   visibleMinZoomTileIds: Set<TileId> = new Set();
   minZoomTileset: Set<TileId> | null = null;
@@ -38,6 +38,9 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
     this.scheduler = scheduler;
     this.props = {...DEFAULT_PROPS, ...props};
     this.eventTarget = eventTarget;
+
+    // make sure to initially dispatch the loading-state-change event
+    this.updateLoadingState(LayerLoadingState.LOADING);
   }
 
   /**
