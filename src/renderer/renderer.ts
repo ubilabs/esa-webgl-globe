@@ -35,7 +35,11 @@ export class Renderer extends EventTarget {
 
     this.container = container || document.body;
 
-    const renderer = new WebGLRenderer({antialias: true});
+    const renderer = new WebGLRenderer({
+      antialias: true,
+      alpha: true,
+      preserveDrawingBuffer: true
+    });
     renderer.setClearColor(0xffffff, 0);
     renderer.setAnimationLoop(this.animationLoopUpdate.bind(this));
     this.webglRenderer = renderer;
