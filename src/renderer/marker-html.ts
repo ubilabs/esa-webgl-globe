@@ -31,7 +31,17 @@ export class MarkerHtml {
     `;
     renderer.container.appendChild(this.markerEl);
 
-    this.markerEl.addEventListener('click', this.handleMarkerClick);
+    this.markerEl.addEventListener('pointerdown', ev => {
+      this.markerEl.setPointerCapture(ev.pointerId);
+      this.markerEl.addEventListener('pointerup', () => this.handleMarkerClick(), {once: true});
+
+      // need to stop propagation here, otherwise the OrbitControls will
+      // pick up the event and prevent any other event from coming through
+      // via setPointerCapture().
+      ev.stopPropagation();
+    });
+
+    // this.markerEl.addEventListener('click', this.handleMarkerClick);
 
     this.setProps(this.props);
 
