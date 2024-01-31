@@ -19,7 +19,7 @@ const globe = new WebGlGlobe(document.querySelector('#globe')!, {
   ]
 });
 
-const markers: MarkerProps[] = [
+const markerProps: MarkerProps[] = [
   {id: 'ny', html: getMarkerHtml('New York'), lng: -73.97, lat: 40.78},
   {id: 'london', html: getMarkerHtml('London'), lng: -0.12, lat: 51.5},
   {id: 'tokyo', html: getMarkerHtml('Tokyo'), lng: 139.69, lat: 35.69},
@@ -37,8 +37,8 @@ const markers: MarkerProps[] = [
   {id: 'singapore', html: getMarkerHtml('Singapore'), lng: 103.85, lat: 1.29}
 ];
 
-markers.forEach(marker => {
-  marker.onClick = id => console.log('clicked:', id);
+markerProps.forEach(m => {
+  m.onClick = id => console.log('clicked:', id);
 });
 
-globe.setProps({markers});
+globe.setProps({markers: markerProps});
