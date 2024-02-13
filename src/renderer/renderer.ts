@@ -130,6 +130,7 @@ export class Renderer extends EventTarget {
 
     for (const markerId of toRemove) {
       this.markersById[markerId].destroy();
+      delete this.markersById[markerId];
     }
 
     for (let props of markerProps) {
