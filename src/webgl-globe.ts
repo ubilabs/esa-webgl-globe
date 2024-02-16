@@ -105,7 +105,7 @@ export class WebGlGlobe extends EventTarget {
       this.tileSelector.setRenderMode(props.renderMode);
     }
 
-    this.renderer.setRenderOptions(props.renderOptions || {});
+    if (props.renderOptions) this.renderer.setRenderOptions(props.renderOptions);
   }
 
   start() {
