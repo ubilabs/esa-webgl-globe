@@ -13,13 +13,23 @@ import type {MarkerProps} from './renderer/types/marker';
 
 const TILESELECTOR_FPS = 15;
 
+export type RenderOptions = Partial<{
+  atmosphereEnabled: boolean;
+  atmosphereColor: number[];
+  atmosphereStrength: number;
+  shadingEnabled: boolean;
+}>;
+
 export type WebGlGlobeProps = Partial<{
   layers: LayerProps<any>[];
   renderMode: RenderMode;
   cameraView: Partial<CameraView>;
   markers: MarkerProps[];
   allowDownsampling: boolean;
+  renderOptions: RenderOptions;
 }>;
+
+export type TextureUrls = {shading?: string; atmosphere?: string};
 
 const DEFAULT_PROPS = {allowDownsampling: true};
 
@@ -45,6 +55,11 @@ export class WebGlGlobe extends EventTarget {
 
   private static tileSelectorWorkerUrl: string =
     new URL(import.meta.url).origin + '/tile-selector-worker.js';
+
+  private static textureUrls: TextureUrls = {
+    atmosphere: new URL(import.meta.url).origin + '/textures/atmosphere.png',
+    shading: new URL(import.meta.url).origin + '/textures/shading.png'
+  };
 
   constructor(container: HTMLElement, props: WebGlGlobeProps = {}) {
     super();
@@ -96,6 +111,8 @@ export class WebGlGlobe extends EventTarget {
       this.renderer.setRenderMode(props.renderMode);
       this.tileSelector.setRenderMode(props.renderMode);
     }
+
+    this.renderer.setRenderOptions(props.renderOptions || {});
   }
 
   start() {
@@ -201,11 +218,18 @@ export class WebGlGlobe extends EventTarget {
   }
 
   static getTileSelectorWorkerUrl() {
-    console.log(this.tileSelectorWorkerUrl);
     return this.tileSelectorWorkerUrl;
   }
   static setTileSelectorWorkerUrl(url: string) {
     this.tileSelectorWorkerUrl = url;
+  }
+
+  static getTextureUrls(): TextureUrls {
+    return this.textureUrls;
+  }
+
+  static setTextureUrls(value: TextureUrls) {
+    this.textureUrls = value;
   }
 }
 
