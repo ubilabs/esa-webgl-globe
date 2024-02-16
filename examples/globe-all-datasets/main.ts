@@ -43,7 +43,12 @@ const settings = {
     minZoom: 1,
     maxZoom: 2
   },
-  renderer: {renderMode: RenderMode.GLOBE}
+  renderer: {
+    renderMode: RenderMode.GLOBE,
+    atmosphere: false,
+    atmosphereColor: {r: 255, g: 255, b: 255, a: 1},
+    shading: false
+  }
 };
 
 const panel = new Pane();
@@ -57,6 +62,12 @@ const rendererFolder = panel.addFolder({title: 'Renderer', expanded: true});
 rendererFolder.addInput(settings.renderer, 'renderMode', {
   options: {globe: RenderMode.GLOBE, map: RenderMode.MAP}
 });
+rendererFolder.addInput(settings.renderer, 'atmosphere');
+rendererFolder.addInput(settings.renderer, 'atmosphereColor', {
+  label: 'atm. color',
+  color: {alpha: true}
+});
+rendererFolder.addInput(settings.renderer, 'shading');
 
 const basemapFolder = panel.addFolder({title: 'Basemap', expanded: true});
 basemapFolder.addInput(settings.basemap, 'debug');
@@ -243,9 +254,18 @@ function updateProps() {
     layers[1].maxZoom = settings.data.maxZoom;
   }
 
+  const {r, g, b} = settings.renderer.atmosphereColor;
+
   globe.setProps({
     allowDownsampling: settings.playback.allowDownsampling,
     renderMode: settings.renderer.renderMode,
+    renderOptions: {
+      atmosphereEnabled: settings.renderer.atmosphere,
+      atmosphereStrength: settings.renderer.atmosphereColor.a,
+      atmosphereColor: [r / 255, g / 255, b / 255],
+      shadingEnabled: settings.renderer.shading
+    },
+
     layers
   });
 
