@@ -6,12 +6,14 @@ import {MapControls} from 'three/examples/jsm/controls/MapControls';
 import {TileManager} from './tile-manager';
 import {MarkerHtml} from './marker-html';
 import {cameraViewToGlobePosition, globePositionToCameraView} from './lib/convert-spaces';
-import {RenderMode} from './types/renderer';
+import {RenderMode, RenderOptions} from './types/renderer';
 
 import type {RenderTile} from './types/tile';
 import type {CameraView} from './types/camera-view';
 import type {MarkerProps} from './types/marker';
 import {MAP_HEIGHT, MAP_WIDTH} from './config';
+
+import {Atmosphere} from './atmosphere';
 
 export class Renderer extends EventTarget {
   readonly container: HTMLElement;
@@ -28,7 +30,9 @@ export class Renderer extends EventTarget {
   private cameraView?: CameraView;
   private markersById: Record<string, MarkerHtml> = {};
   private renderMode: RenderMode = RenderMode.GLOBE;
+
   private rendererSize: Vector2 = new Vector2();
+  private atmosphere: Atmosphere = new Atmosphere();
 
   constructor(container?: HTMLElement) {
     super();
@@ -55,6 +59,8 @@ export class Renderer extends EventTarget {
     this.globeControls = new OrbitControls(this.globeCamera, this.container);
     this.mapControls = new MapControls(this.mapCamera, this.container);
 
+    this.scene.add(this.atmosphere);
+
     this.configureControls();
 
     const {width, height} = this.container.getBoundingClientRect();
@@ -71,6 +77,7 @@ export class Renderer extends EventTarget {
     // switch to appropriate controls
     this.globeControls.enabled = this.renderMode === RenderMode.GLOBE;
     this.mapControls.enabled = this.renderMode === RenderMode.MAP;
+    this.atmosphere.visible = this.renderMode === RenderMode.GLOBE;
 
     this.tileManager.setRenderMode(renderMode);
   }
@@ -246,6 +253,10 @@ export class Renderer extends EventTarget {
     }
 
     this.webglRenderer.render(this.scene, this.getCamera());
+  }
+
+  setRenderOptions(renderOptions: RenderOptions) {
+    this.atmosphere.setRenderOptions(renderOptions);
   }
 }
 
