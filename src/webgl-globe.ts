@@ -29,7 +29,7 @@ export type WebGlGlobeProps = Partial<{
   renderOptions: RenderOptions;
 }>;
 
-export type TextureUrls = {shading?: string; atmosphere?: string};
+export type TextureUrls = {shading: string; atmosphere: string};
 
 const DEFAULT_PROPS = {allowDownsampling: true};
 
