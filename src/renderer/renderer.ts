@@ -6,7 +6,7 @@ import {MapControls} from 'three/examples/jsm/controls/MapControls';
 import {TileManager} from './tile-manager';
 import {MarkerHtml} from './marker-html';
 import {cameraViewToGlobePosition, globePositionToCameraView} from './lib/convert-spaces';
-import {RenderMode} from './types/renderer';
+import {RenderMode, RenderOptions} from './types/renderer';
 
 import type {RenderTile} from './types/tile';
 import type {CameraView} from './types/camera-view';
@@ -14,7 +14,6 @@ import type {MarkerProps} from './types/marker';
 import {MAP_HEIGHT, MAP_WIDTH} from './config';
 
 import {Atmosphere} from './atmosphere';
-import {RenderOptions} from '../webgl-globe';
 
 export class Renderer extends EventTarget {
   readonly container: HTMLElement;

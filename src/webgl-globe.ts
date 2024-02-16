@@ -4,7 +4,7 @@ import {Layer} from './loader/layer';
 import {RenderTile} from './renderer/types/tile';
 import {TileSelector} from './tile-selector/tile-selector';
 import {Renderer} from './renderer/renderer';
-import {RenderMode} from './renderer/types/renderer';
+import {RenderMode, RenderOptions} from './renderer/types/renderer';
 import {LayerLoadingState} from './loader/types/layer';
 
 import type {CameraView} from './renderer/types/camera-view';
@@ -12,13 +12,6 @@ import type {LayerProps} from './loader/types/layer';
 import type {MarkerProps} from './renderer/types/marker';
 
 const TILESELECTOR_FPS = 15;
-
-export type RenderOptions = Partial<{
-  atmosphereEnabled: boolean;
-  atmosphereColor: number[];
-  atmosphereStrength: number;
-  shadingEnabled: boolean;
-}>;
 
 export type WebGlGlobeProps = Partial<{
   layers: LayerProps<any>[];
@@ -57,8 +50,8 @@ export class WebGlGlobe extends EventTarget {
     new URL(import.meta.url).origin + '/tile-selector-worker.js';
 
   private static textureUrls: TextureUrls = {
-    atmosphere: new URL(import.meta.url).origin + '/textures/atmosphere.png',
-    shading: new URL(import.meta.url).origin + '/textures/shading.png'
+    atmosphere: new URL('/textures/atmosphere.png', import.meta.url).href,
+    shading: new URL('/textures/shading.png', import.meta.url).href
   };
 
   constructor(container: HTMLElement, props: WebGlGlobeProps = {}) {

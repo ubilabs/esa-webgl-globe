@@ -7,7 +7,9 @@ import {
   SpriteMaterial,
   TextureLoader
 } from 'three';
-import {RenderOptions, WebGlGlobe} from '../webgl-globe';
+
+import {WebGlGlobe} from '../webgl-globe';
+import type {RenderOptions} from './types/renderer';
 
 // The textures are 2048x2048px, but the full earth is only part of that total
 // size (1997px for atmosphere.png and 2000px for shading.png) is earth. These scaling
