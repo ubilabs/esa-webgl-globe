@@ -19,6 +19,7 @@
   },
   "files": [
     "./src",
+    "./dist/textures",
     "./dist/esa-webgl-globe.*",
     "./dist/tile-selector-worker.*"
   ],
@@ -26,7 +27,7 @@
     "start": "vite",
     "prepack": "npm run build:lib",
     "build": "tsc && rm -rf ./dist && npm run build:lib && npm run build:examples",
-    "build:lib": "rm -rf ./dist ; rollup -c",
+    "build:lib": "rm -rf ./dist ; rollup -c ; cp -r public/textures dist/textures",
     "build:examples": "vite build",
     "deploy:examples": "npm run build && gsutil -m -h 'Cache-Control: no-cache' cp -r dist/examples/* gs://ubilabs-webgl-globe/examples/"
   },
