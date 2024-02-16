@@ -15,7 +15,8 @@
     "./worker": {
       "default": "./dist/tile-selector-worker.js",
       "types": "./dist/types/tile-selector/tile-selector-worker.d.ts"
-    }
+    },
+    "./textures/": "./dist/textures/"
   },
   "files": [
     "./src",
