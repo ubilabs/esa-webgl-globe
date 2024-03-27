@@ -188,9 +188,11 @@ export class Renderer extends EventTarget {
     this.globeControls.enablePan = false;
     this.globeControls.enableZoom = true;
     this.globeControls.rotateSpeed = 1;
+    this.globeControls.zoomSpeed = 2.5;
+
     this.globeControls.maxPolarAngle = Math.PI;
     this.globeControls.minPolarAngle = 0;
-    this.globeControls.minDistance = 1.05; // ~ zoom level 7
+    this.globeControls.minDistance = 1.01; // ~ zoom level 11
     this.globeControls.addEventListener('change', () => {
       const event = new CustomEvent<CameraView>('cameraViewChanged', {
         detail: globePositionToCameraView(this.globeCamera.position)
