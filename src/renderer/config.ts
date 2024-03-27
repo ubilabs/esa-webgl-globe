@@ -9,7 +9,9 @@ export const ZOOM_SEGMENT_MAP: Record<number, number> = {
   6: 2,
   7: 1,
   8: 1,
-  9: 1
+  9: 1,
+  10: 1,
+  11: 1
 };
 
 export const MAP_WIDTH = 4;

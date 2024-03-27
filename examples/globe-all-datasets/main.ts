@@ -7,8 +7,8 @@ import type {LayerProps} from '../../src/loader/types/layer';
 import {LayerDebugMode, LayerLoadingState} from '../../src/loader/types/layer';
 import {RenderMode} from '../../src/renderer/types/renderer';
 
-const DATASET_BASE_URL = 'https://storage.googleapis.com/esa-cfs-tiles/1.9.1';
-const DATASET_INDEX_URL = `https://storage.googleapis.com/esa-cfs-storage/1.9.1/layers/layers-en.json`;
+const DATASET_BASE_URL = 'https://storage.googleapis.com/esa-cfs-tiles/1.15.1';
+const DATASET_INDEX_URL = `https://storage.googleapis.com/esa-cfs-storage/1.15.1/layers/layers-en.json`;
 const DEFAULT_BASEMAP = 'land';
 
 const BASEMAP_MAX_ZOOM = {
@@ -39,6 +39,7 @@ const settings = {
   },
   data: {
     debug: false,
+    debugMode: LayerDebugMode.OVERLAY,
     limitZoom: false,
     minZoom: 1,
     maxZoom: 2
@@ -77,6 +78,10 @@ basemapFolder.addInput(settings.basemap, 'debugMode', {
 
 const dataFolder = panel.addFolder({title: 'Data Overlay', expanded: true});
 dataFolder.addInput(settings.data, 'debug');
+dataFolder.addInput(settings.data, 'debugMode', {
+  options: {replace: LayerDebugMode.REPLACE, overlay: LayerDebugMode.OVERLAY}
+});
+
 dataFolder.addInput(settings.data, 'limitZoom', {label: 'limit zoom'});
 dataFolder.addInput(settings.data, 'minZoom', {min: 1, max: 7, step: 1});
 dataFolder.addInput(settings.data, 'maxZoom', {min: 1, max: 7, step: 1});
@@ -109,6 +114,7 @@ let dataLayerProps: LayerProps<{timestep: number}> = {
   zIndex: 1,
   minZoom: 1,
   debug: settings.data.debug,
+  debugMode: settings.data.debugMode,
   maxZoom: 4,
   getUrl: ({x, y, zoom, timestep}) =>
     `https://storage.googleapis.com/esa-cfs-tiles/1.6.5/permafrost.pfr/tiles/${timestep}/${zoom}/${x}/${y}.png`
@@ -245,6 +251,7 @@ function updateProps() {
     layers.push({
       ...dataLayerProps,
       debug: settings.data.debug,
+      debugMode: settings.data.debugMode,
       urlParameters: {timestep: timestep}
     } as LayerProps<{timestep: number}>);
   }

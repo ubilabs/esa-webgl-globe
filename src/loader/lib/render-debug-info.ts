@@ -1,11 +1,16 @@
 import {RenderTile, TileLoadingState} from '../../renderer/types/tile';
 
 const DEBUG_COLORS = [
-  [12, 10, 62],
-  [123, 30, 122],
-  [179, 63, 98],
-  [249, 86, 79],
-  [243, 198, 119]
+  [39, 105, 176],
+  [101, 87, 238],
+  [156, 68, 240],
+  [196, 43, 239],
+  [220, 39, 222],
+  [244, 36, 204],
+  [250, 75, 174],
+  [252, 105, 142],
+  [254, 128, 106],
+  [255, 149, 0]
 ];
 
 export async function renderDebugInfo(renderTile: RenderTile): Promise<ImageBitmap> {

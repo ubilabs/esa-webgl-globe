@@ -49,10 +49,11 @@ export class TileSelectionMaterial extends ShaderMaterial {
 
     varying vec2 vUV;
 
-    // the maximum zoomlevel we can reliably encode in the 8bit tile-index
-    const float maxZoomLevel = 7.0;
+    // the maximum zoomlevel we can reliably encode in 12bit
+    const float maxZoomLevel = 11.0;
 
     void main() {
+      // the extent of the map in y-direction (x is double that)
       float extent = tilesize * exp2(maxZoomLevel);
 
       // pixel coordinates within a virtual texture assumed to be covering the whole 
@@ -74,21 +75,37 @@ export class TileSelectionMaterial extends ShaderMaterial {
       float numTilesX = exp2(zoom + 1.0);
       float numTilesY = exp2(zoom);
 
-      float tileX = floor(vUV.x * numTilesX);
-      float tileY = floor(vUV.y * numTilesY);
+      uint tileX = uint(vUV.x * numTilesX);
+      uint tileY = uint(vUV.y * numTilesY);
 
+      uint flags = 0x8u;
+        
+      // 4 upper bytes of tileX and tileY
+      uint tileXmsb = uint(tileX / 256u);
+      uint tileYmsb = uint(tileY / 256u);
+      // bitsquash them together
+      uint tileXYmsb = (tileXmsb & 0x0fu) * 16u | (tileYmsb & 0x0fu);
+
+      // fixme: could add x/y overflow flags
+      
+      uint tileXlsb = tileX % 256u;
+      uint tileYlsb = tileY % 256u;
+
+      uint zoomFlags = uint(zoom) + flags * 16u;
+        
+      // 4 8bit output-channels:
+      //  - r: xxxx yyyy   tile coordinate MSB (x and y combined, allows up to zoomlevel 11)
+      //  - g: xxxx xxxx   tile coordinate LSB
+      //  - b: yyyy yyyy   tile coordinate LSB
+      //  - a: 1000 zzzz   tile zoomlevel
       gl_FragColor = vec4(
-        tileX / 255.0,
-        tileY / 255.0,
-        zoom / 255.0,
-        1.0
+        float(tileXYmsb) / 255.0,
+        float(tileXlsb) / 255.0,
+        float(tileYlsb) / 255.0,
+        float(zoomFlags) / 255.0
       );
 
-      // 4 8bit output-channels: 
-      //  - r: x tile coordinate (up to zoom 8)
-      //  - g: y tile coordinate (up to zoom 8)
-      //  - b: tile zoomlevel
-      //  - a: indicate if there is data here
+      
     }
   `;
 }
