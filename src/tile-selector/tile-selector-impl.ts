@@ -184,14 +184,18 @@ export class TileSelectorImpl implements ITileSelectorImpl {
     for (let i = 0; i < u8Tiles.length; i += 4) {
       if (u8Tiles[i + 3] === 0) continue;
 
-      const [msbXY, lsbX, lsbY, flagsZoom] = u8Tiles.subarray(i, i + 4);
+      const [zoom_yMSB, yLSB, flags_xMSB, xLSB] = u8Tiles.subarray(i, i + 4);
 
-      const x = ((msbXY >> 4) << 8) | lsbX;
-      const y = ((msbXY & 0x0f) << 8) | lsbY;
-      const flags = flagsZoom >> 4;
-      const zoom = flagsZoom & 0x0f;
+      const x = ((flags_xMSB & 0x1f) << 8) | xLSB;
+      const y = ((zoom_yMSB & 0x0f) << 8) | yLSB;
+      const flags = flags_xMSB >> 5;
+      const zoom = zoom_yMSB >> 4;
 
-      if (flags !== 0x8) {
+      const ok = !!(flags & 0b100);
+      const xOverflow = !!(flags & 0b010);
+      const yOverflow = !!(flags & 0b001);
+
+      if (!ok || xOverflow || yOverflow) {
         console.error('flags: ', flags.toString(2));
       }
 

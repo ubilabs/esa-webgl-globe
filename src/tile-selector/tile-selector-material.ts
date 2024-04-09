@@ -49,8 +49,8 @@ export class TileSelectionMaterial extends ShaderMaterial {
 
     varying vec2 vUV;
 
-    // the maximum zoomlevel we can reliably encode in 12bit
-    const float maxZoomLevel = 11.0;
+    // the maximum zoomlevel we can reliably encode in 13bit x and 12bit y
+    const float maxZoomLevel = 12.0;
 
     void main() {
       // the extent of the map in y-direction (x is double that)
@@ -78,34 +78,36 @@ export class TileSelectionMaterial extends ShaderMaterial {
       uint tileX = uint(vUV.x * numTilesX);
       uint tileY = uint(vUV.y * numTilesY);
 
-      uint flags = 0x8u;
-        
-      // 4 upper bytes of tileX and tileY
-      uint tileXmsb = uint(tileX / 256u);
-      uint tileYmsb = uint(tileY / 256u);
-      // bitsquash them together
-      uint tileXYmsb = (tileXmsb & 0x0fu) * 16u | (tileYmsb & 0x0fu);
-
-      // fixme: could add x/y overflow flags
+      // split MSB/LSB of tileX and tileY
+      uint xMSB = uint(tileX / 256u);
+      uint xLSB = tileX % 256u;
       
-      uint tileXlsb = tileX % 256u;
-      uint tileYlsb = tileY % 256u;
+      uint yMSB = uint(tileY / 256u);
+      uint yLSB = tileY % 256u;
 
-      uint zoomFlags = uint(zoom) + flags * 16u;
+      // setup flags (result, x overflow, y overflow)
+      uint flags = 0x08u;
+      if (xMSB > 0x1fu) 
+          flags = flags | 0x04u;
+      if (yMSB > 0x0fu)
+          flags = flags | 0x02u;
+        
+      // bitsquash zoom and yMSB / flags and xMSB 
+      // (using '* 16' instead of '<< 4' since bitshifting isn't implemented in GLSL)
+      uint zoom_yMSB = (uint(zoom) & 0x0fu) * 16u | (yMSB & 0x0fu);
+      uint flags_xMSB = (flags & 0x0eu) * 16u | (xMSB & 0x1fu);
         
       // 4 8bit output-channels:
-      //  - r: xxxx yyyy   tile coordinate MSB (x and y combined, allows up to zoomlevel 11)
-      //  - g: xxxx xxxx   tile coordinate LSB
-      //  - b: yyyy yyyy   tile coordinate LSB
-      //  - a: 1000 zzzz   tile zoomlevel
+      // - r: zzzz yyyy   zoomlevel and yMSB
+      // - g: yyyy yyyy   yLSB
+      // - b: fffx xxxx   flags (result|xOverflow|yOverflow) and xMSB
+      // - a: xxxx xxxx   xLSB
       gl_FragColor = vec4(
-        float(tileXYmsb) / 255.0,
-        float(tileXlsb) / 255.0,
-        float(tileYlsb) / 255.0,
-        float(zoomFlags) / 255.0
+        float(zoom_yMSB) / 255.0,
+        float(yLSB) / 255.0,
+        float(flags_xMSB) / 255.0,
+        float(xLSB) / 255.0
       );
-
-      
     }
   `;
 }
