@@ -215,11 +215,7 @@ export class TileSelectorImpl implements ITileSelectorImpl {
       generateMipmaps: false
     });
 
-    this.rendererUtils = new WebGLUtils(
-      this.renderer.getContext(),
-      this.renderer.extensions,
-      this.renderer.capabilities
-    );
+    this.rendererUtils = new WebGLUtils(this.renderer.getContext(), this.renderer.extensions);
   }
 
   private createCanvas() {
