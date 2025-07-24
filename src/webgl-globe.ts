@@ -118,6 +118,58 @@ export class WebGlGlobe extends EventTarget {
     cancelAnimationFrame(this.tileUpdateRafId);
   }
 
+  private spinInteractionHandler: (() => void) | null = null;
+
+  private spinRequestAnimationFrameId: number = 0;
+
+  /**
+   * Starts an automatic spinning of the globe.
+   *
+   * @param {number} [speed=0.1] - The speed of the spinning, where positive values spin clockwise.
+   *   Default value is 0.1.
+   *
+   *   If the spin is already active, this method does nothing. The spinning updates the longitude of
+   *   the camera view continuously. Default is `0.1`
+   */
+  public startAutoSpin(speed: number = 0.1) {
+    if (this.spinRequestAnimationFrameId) {
+      return;
+    }
+
+    this.spinInteractionHandler = () => this.stopAutoSpin();
+
+    let rot = 180;
+
+    const cameraView = this.renderer.getCameraView();
+    const spin = () => {
+      rot += speed;
+      const lng = (rot % 360) - 180;
+      console.log('Spinning to longitude:', lng);
+      console.log('Camera view:', cameraView);
+      this.setProps({cameraView: {...cameraView, lng}});
+      this.spinRequestAnimationFrameId = requestAnimationFrame(spin);
+    };
+    this.spinRequestAnimationFrameId = requestAnimationFrame(spin);
+    spin();
+  }
+
+  public stopAutoSpin() {
+    if (!this.spinRequestAnimationFrameId) {
+      return;
+    }
+
+    console.log('Stopping auto spin');
+    cancelAnimationFrame(this.spinRequestAnimationFrameId);
+    this.spinRequestAnimationFrameId = 0;
+
+    if (this.spinInteractionHandler) {
+      this.container.removeEventListener('mousedown', this.spinInteractionHandler);
+      this.container.removeEventListener('wheel', this.spinInteractionHandler);
+      this.container.removeEventListener('touchstart', this.spinInteractionHandler);
+      this.spinInteractionHandler = null;
+    }
+  }
+
   private setLayers(layers: LayerProps[]) {
     // remove layers that are no longer needeed
     const newLayerIds = layers.map(l => l.id);
@@ -205,6 +257,7 @@ export class WebGlGlobe extends EventTarget {
   }
 
   destroy() {
+    this.stopAutoSpin();
     this.resizeObserver.unobserve(this.container);
     this.renderer.destroy();
     void this.tileSelector.destroy();

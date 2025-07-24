@@ -18,18 +18,6 @@ const globe = new WebGlGlobe(document.body, {
   cameraView: {lng: 0, lat: 0, altitude: distance}
 });
 
-let rot = 180;
-let spinning = true;
+globe.startAutoSpin(0.01);
 
-(function spin() {
-  rot += 0.1;
-  const lng = (rot % 360) - 180;
-  globe.setProps({cameraView: {lng, lat: 10, altitude: distance}});
-
-  if (spinning) {
-    requestAnimationFrame(spin);
-  }
-})();
-
-document.body.addEventListener('mousedown', () => (spinning = false));
-document.body.addEventListener('mousewheel', () => (spinning = false));
+setTimeout(() => {globe.stopAutoSpin()}, 1000);

@@ -46,6 +46,8 @@ export class Renderer extends EventTarget {
     });
     renderer.setClearColor(0xffffff, 0);
     renderer.setAnimationLoop(this.animationLoopUpdate.bind(this));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
     this.webglRenderer = renderer;
 
     this.container.appendChild(this.webglRenderer.domElement);
@@ -108,6 +110,21 @@ export class Renderer extends EventTarget {
     if (this.renderMode === RenderMode.GLOBE) return this.globeCamera;
 
     return this.mapCamera;
+  }
+
+  getCameraView(): CameraView | undefined {
+    if (this.renderMode === RenderMode.GLOBE) {
+      return globePositionToCameraView(this.globeCamera.position);
+    } else if (this.renderMode === RenderMode.MAP) {
+      return {
+        renderMode: RenderMode.MAP,
+        lat: this.mapCamera.position.y * 90,
+        lng: this.mapCamera.position.x * 90,
+        zoom: this.mapCamera.zoom,
+        altitude: 0
+      };
+    }
+    return undefined;
   }
 
   setCameraView(cameraView: CameraView) {
