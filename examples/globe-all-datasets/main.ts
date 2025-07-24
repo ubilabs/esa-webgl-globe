@@ -55,36 +55,37 @@ const settings = {
 const panel = new Pane();
 const datasetsFolder = panel.addFolder({title: 'datasets', expanded: true});
 const playbackFolder = panel.addFolder({title: 'Playback', expanded: true});
-playbackFolder.addInput(settings.playback, 'speed', {min: 0.2, max: 3, label: 'speed (fps)'});
-playbackFolder.addInput(settings.playback, 'waitForFrames');
-playbackFolder.addInput(settings.playback, 'allowDownsampling');
+
+playbackFolder.addBinding(settings.playback, 'speed', {min: 0.2, max: 3, label: 'speed (fps)'});
+playbackFolder.addBinding(settings.playback, 'waitForFrames');
+playbackFolder.addBinding(settings.playback, 'allowDownsampling');
 
 const rendererFolder = panel.addFolder({title: 'Renderer', expanded: true});
-rendererFolder.addInput(settings.renderer, 'renderMode', {
+rendererFolder.addBinding(settings.renderer, 'renderMode', {
   options: {globe: RenderMode.GLOBE, map: RenderMode.MAP}
 });
-rendererFolder.addInput(settings.renderer, 'atmosphere');
-rendererFolder.addInput(settings.renderer, 'atmosphereColor', {
+rendererFolder.addBinding(settings.renderer, 'atmosphere');
+rendererFolder.addBinding(settings.renderer, 'atmosphereColor', {
   label: 'atm. color',
   color: {alpha: true}
 });
-rendererFolder.addInput(settings.renderer, 'shading');
+rendererFolder.addBinding(settings.renderer, 'shading');
 
 const basemapFolder = panel.addFolder({title: 'Basemap', expanded: true});
-basemapFolder.addInput(settings.basemap, 'debug');
-basemapFolder.addInput(settings.basemap, 'debugMode', {
+basemapFolder.addBinding(settings.basemap, 'debug');
+basemapFolder.addBinding(settings.basemap, 'debugMode', {
   options: {replace: LayerDebugMode.REPLACE, overlay: LayerDebugMode.OVERLAY}
 });
 
 const dataFolder = panel.addFolder({title: 'Data Overlay', expanded: true});
-dataFolder.addInput(settings.data, 'debug');
-dataFolder.addInput(settings.data, 'debugMode', {
+dataFolder.addBinding(settings.data, 'debug');
+dataFolder.addBinding(settings.data, 'debugMode', {
   options: {replace: LayerDebugMode.REPLACE, overlay: LayerDebugMode.OVERLAY}
 });
 
-dataFolder.addInput(settings.data, 'limitZoom', {label: 'limit zoom'});
-dataFolder.addInput(settings.data, 'minZoom', {min: 1, max: 7, step: 1});
-dataFolder.addInput(settings.data, 'maxZoom', {min: 1, max: 7, step: 1});
+dataFolder.addBinding(settings.data, 'limitZoom', {label: 'limit zoom'});
+dataFolder.addBinding(settings.data, 'minZoom', {min: 1, max: 7, step: 1});
+dataFolder.addBinding(settings.data, 'maxZoom', {min: 1, max: 7, step: 1});
 
 // @ts-ignore
 panel.containerElem_.style.zIndex = '999';
@@ -144,7 +145,7 @@ async function initDatasets() {
     options[dataset.shortName] = dataset.id;
   }
 
-  const datasetInput = datasetsFolder.addInput(settings.dataset, 'datasetId', {options});
+  const datasetInput = datasetsFolder.addBinding(settings.dataset, 'datasetId', {options});
   datasetInput.on('change', async ev => {
     const dataset = await fetchDataset(ev.value);
     console.log(dataset);
