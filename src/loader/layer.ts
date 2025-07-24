@@ -1,11 +1,11 @@
-import LRU from 'lru-cache';
-import {getEmptyImageBitmap} from './lib/get-empty-imagebitmap';
-import {renderDebugInfo} from './lib/render-debug-info';
-import type {RenderTile} from '../renderer/types/tile';
-import {TileLoadingState} from '../renderer/types/tile';
-import type {LayerProps} from './types/layer';
-import {LayerDebugMode, LayerLoadingState} from './types/layer';
-import {TileId} from '../tile-id';
+import { LRUCache } from 'lru-cache';
+import { getEmptyImageBitmap } from './lib/get-empty-imagebitmap';
+import { renderDebugInfo } from './lib/render-debug-info';
+import type { RenderTile } from '../renderer/types/tile';
+import { TileLoadingState } from '../renderer/types/tile';
+import type { LayerProps } from './types/layer';
+import { LayerDebugMode, LayerLoadingState } from './types/layer';
+import { TileId } from '../tile-id';
 
 import type RequestScheduler from './request-sheduler';
 
@@ -27,8 +27,8 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
   visibleMinZoomTileIds: Set<TileId> = new Set();
   minZoomTileset: Set<TileId> | null = null;
 
-  cache: LRU<string, RenderTile> = new LRU({max: 500});
-  responseCache: LRU<string, Promise<ImageBitmap>> = new LRU({max: 1});
+  cache: LRUCache<string, RenderTile> = new LRUCache({ max: 500 });
+  responseCache: LRUCache<string, Promise<ImageBitmap>> = new LRUCache({ max: 1 });
 
   constructor(
     scheduler: RequestScheduler<RenderTile>,
@@ -36,7 +36,7 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
     eventTarget: EventTarget
   ) {
     this.scheduler = scheduler;
-    this.props = {...DEFAULT_PROPS, ...props};
+    this.props = { ...DEFAULT_PROPS, ...props };
     this.eventTarget = eventTarget;
 
     // make sure to initially dispatch the loading-state-change event
@@ -103,7 +103,7 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
       this.minZoomTileset = null;
     }
 
-    this.props = {...this.props, ...props};
+    this.props = { ...this.props, ...props };
 
     this.updateLoadingState();
     this.updateQueue();
@@ -294,7 +294,7 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
       this.loadingState = newLoadingState;
       this.eventTarget.dispatchEvent(
         new CustomEvent('layerLoadingStateChanged', {
-          detail: {layer: this.props, state: newLoadingState}
+          detail: { layer: this.props, state: newLoadingState }
         })
       );
     }
@@ -387,7 +387,7 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
    * @param renderTile The render tile
    */
   private async fetch(renderTile: RenderTile) {
-    const {url} = renderTile;
+    const { url } = renderTile;
 
     renderTile.loadingState = TileLoadingState.LOADING;
 
@@ -412,7 +412,7 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
       if (!response) {
         response = fetch(url)
           .then(res => res.blob())
-          .then(blob => createImageBitmap(blob, {imageOrientation: 'flipY'}));
+          .then(blob => createImageBitmap(blob, { imageOrientation: 'flipY' }));
 
         this.responseCache.set(url, response);
       }
