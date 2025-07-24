@@ -32,6 +32,7 @@ export class WebGlGlobe extends EventTarget {
   private readonly scheduler: RequestScheduler<RenderTile>;
   private readonly renderer: Renderer;
   private readonly tileSelector: TileSelector;
+  private abortController: AbortController;
 
   private layersById: Record<string, Layer> = {};
 
@@ -60,6 +61,7 @@ export class WebGlGlobe extends EventTarget {
     this.resizeObserver = new ResizeObserver(() => {
       this.resize();
     });
+    this.abortController = new AbortController();
 
     this.scheduler = new RequestScheduler();
 
@@ -118,25 +120,26 @@ export class WebGlGlobe extends EventTarget {
     cancelAnimationFrame(this.tileUpdateRafId);
   }
 
-  private spinInteractionHandler: (() => void) | null = null;
+  private spinAbortController: AbortController | null = null;
 
   private spinRequestAnimationFrameId: number = 0;
 
-  /**
-   * Starts an automatic spinning of the globe.
-   *
-   * @param {number} [speed=0.1] - The speed of the spinning, where positive values spin clockwise.
-   *   Default value is 0.1.
-   *
-   *   If the spin is already active, this method does nothing. The spinning updates the longitude of
-   *   the camera view continuously. Default is `0.1`
-   */
-  public startAutoSpin(speed: number = 0.1) {
+  public startAutoSpin(speed: number = 0.1, enableInteraction: boolean = false) {
     if (this.spinRequestAnimationFrameId) {
       return;
     }
 
-    this.spinInteractionHandler = () => this.stopAutoSpin();
+    this.spinAbortController = new AbortController();
+    const stopAutoSpin = () => this.stopAutoSpin();
+
+    if (enableInteraction) {
+      const options = { once: true, signal: this.spinAbortController.signal };
+      this.container.addEventListener('mousedown', stopAutoSpin, options);
+      this.container.addEventListener('wheel', stopAutoSpin, options);
+      this.container.addEventListener('touchstart', stopAutoSpin, options);
+    } else {
+      this.renderer.setcontrolsinteractionenabled(false);
+    }
 
     let rot = 180;
 
@@ -144,13 +147,10 @@ export class WebGlGlobe extends EventTarget {
     const spin = () => {
       rot += speed;
       const lng = (rot % 360) - 180;
-      console.log('Spinning to longitude:', lng);
-      console.log('Camera view:', cameraView);
-      this.setProps({cameraView: {...cameraView, lng}});
+      this.setProps({ cameraView: { ...cameraView, lng } });
       this.spinRequestAnimationFrameId = requestAnimationFrame(spin);
     };
     this.spinRequestAnimationFrameId = requestAnimationFrame(spin);
-    spin();
   }
 
   public stopAutoSpin() {
@@ -158,15 +158,15 @@ export class WebGlGlobe extends EventTarget {
       return;
     }
 
-    console.log('Stopping auto spin');
     cancelAnimationFrame(this.spinRequestAnimationFrameId);
+
+    // make sure controls are enabled
+    this.renderer.setcontrolsinteractionenabled(true);
     this.spinRequestAnimationFrameId = 0;
 
-    if (this.spinInteractionHandler) {
-      this.container.removeEventListener('mousedown', this.spinInteractionHandler);
-      this.container.removeEventListener('wheel', this.spinInteractionHandler);
-      this.container.removeEventListener('touchstart', this.spinInteractionHandler);
-      this.spinInteractionHandler = null;
+    if (this.spinAbortController) {
+      this.spinAbortController.abort();
+      this.spinAbortController = null;
     }
   }
 
@@ -249,16 +249,22 @@ export class WebGlGlobe extends EventTarget {
     this.resizeObserver.observe(this.container);
 
     // Dispatch camera view changed event
-    this.renderer.addEventListener('cameraViewChanged', (event: CustomEventInit<CameraView>) => {
-      // create a new event since we cannot dispatch the same event twice
-      const newEvent = new CustomEvent<CameraView>('cameraViewChanged', {detail: event.detail});
-      this.dispatchEvent(newEvent);
-    });
+    this.renderer.addEventListener(
+      'cameraViewChanged',
+      (event: CustomEventInit<CameraView>) => {
+        const newEvent = new CustomEvent<CameraView>('cameraViewChanged', {
+          detail: event.detail
+        });
+        this.dispatchEvent(newEvent);
+      },
+      { signal: this.abortController.signal }
+    );
   }
 
   destroy() {
     this.stopAutoSpin();
     this.resizeObserver.unobserve(this.container);
+    this.abortController.abort();
     this.renderer.destroy();
     void this.tileSelector.destroy();
   }
@@ -281,7 +287,7 @@ export class WebGlGlobe extends EventTarget {
 
 export interface WebGlGlobeEventMap {
   cameraViewChanged: CustomEvent<CameraView>;
-  layerLoadingStateChanged: CustomEvent<{layer: LayerProps; state: LayerLoadingState}>;
+  layerLoadingStateChanged: CustomEvent<{ layer: LayerProps; state: LayerLoadingState }>;
 }
 
 export interface WebGlGlobe {

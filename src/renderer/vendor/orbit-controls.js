@@ -96,6 +96,9 @@ class OrbitControls extends EventDispatcher {
     // the target DOM element for key events
     this._domElementKeyEvents = null;
 
+    // track if listeners have been attached
+    this._listenersAttached = false;
+
     //
     // public methods
     //
@@ -261,12 +264,29 @@ class OrbitControls extends EventDispatcher {
       };
     })();
 
-    this.dispose = function () {
+    this.connect = function() {
+      if (scope._listenersAttached === true) return;
+
+      scope.domElement.addEventListener('contextmenu', onContextMenu);
+      scope.domElement.addEventListener('pointerdown', onPointerDown);
+      scope.domElement.addEventListener('pointercancel', onPointerCancel);
+      scope.domElement.addEventListener('wheel', onMouseWheel, { passive: false });
+      scope.domElement.addEventListener('pointermove', onMouseMove);
+
+      if (scope._domElementKeyEvents !== null) {
+        scope._domElementKeyEvents.addEventListener('keydown', onKeyDown);
+      }
+
+      scope._listenersAttached = true;
+    };
+
+    this.dispose = function() {
       scope.domElement.removeEventListener('contextmenu', onContextMenu);
 
       scope.domElement.removeEventListener('pointerdown', onPointerDown);
       scope.domElement.removeEventListener('pointercancel', onPointerCancel);
       scope.domElement.removeEventListener('wheel', onMouseWheel);
+      scope.domElement.removeEventListener('pointermove', onMouseMove);
 
       scope.domElement.removeEventListener('pointermove', onPointerMove);
       scope.domElement.removeEventListener('pointerup', onPointerUp);
@@ -275,6 +295,7 @@ class OrbitControls extends EventDispatcher {
         scope._domElementKeyEvents.removeEventListener('keydown', onKeyDown);
       }
 
+      scope._listenersAttached = false;
       //scope.dispatchEvent( { type: 'dispose' } ); // should this be added here?
     };
 

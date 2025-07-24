@@ -1,4 +1,4 @@
-import {OrthographicCamera, PerspectiveCamera, Scene, Vector2, WebGLRenderer} from 'three';
+import { OrthographicCamera, PerspectiveCamera, Scene, Vector2, WebGLRenderer } from 'three';
 
 // @ts-ignore
 import {OrbitControls} from './vendor/orbit-controls.js';
@@ -33,6 +33,7 @@ export class Renderer extends EventTarget {
 
   private rendererSize: Vector2 = new Vector2();
   private atmosphere: Atmosphere = new Atmosphere();
+  private controlsInteractionEnabled = true;
 
   constructor(container?: HTMLElement) {
     super();
@@ -46,6 +47,8 @@ export class Renderer extends EventTarget {
     });
     renderer.setClearColor(0xffffff, 0);
     renderer.setAnimationLoop(this.animationLoopUpdate.bind(this));
+
+    // Set the pixel ratio to the minimum of the device's pixel ratio or 2, for optimal rendering performance
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
     this.webglRenderer = renderer;
@@ -170,6 +173,10 @@ export class Renderer extends EventTarget {
       this.markersById[props.id] = new MarkerHtml(this, props);
     }
   }
+  setcontrolsinteractionenabled(enabled: boolean) {
+    this.controlsInteractionEnabled = enabled;
+    this.updateControlsEnabled();
+  }
 
   destroy() {
     this.webglRenderer.dispose();
@@ -234,6 +241,7 @@ export class Renderer extends EventTarget {
       this.dispatchEvent(event);
     });
 
+
     const origUpdate = this.mapControls.update.bind(this.mapControls);
 
     // override the update-function to limit map bounds
@@ -260,6 +268,14 @@ export class Renderer extends EventTarget {
 
     this.globeControls.enabled = this.renderMode === RenderMode.GLOBE;
     this.mapControls.enabled = this.renderMode === RenderMode.MAP;
+  }
+
+  private updateControlsEnabled() {
+    if (this.controlsInteractionEnabled) {
+      this.globeControls.connect();
+    } else {
+      this.globeControls.dispose();
+    }
   }
 
   private animationLoopUpdate() {
