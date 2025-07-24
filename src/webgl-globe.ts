@@ -1,15 +1,15 @@
-import { Vector2 } from 'three';
+import {Vector2} from 'three';
 import RequestScheduler from './loader/request-sheduler';
-import { Layer } from './loader/layer';
-import { RenderTile } from './renderer/types/tile';
-import { TileSelector } from './tile-selector/tile-selector';
-import { Renderer } from './renderer/renderer';
-import { RenderMode, RenderOptions } from './renderer/types/renderer';
-import { LayerLoadingState } from './loader/types/layer';
+import {Layer} from './loader/layer';
+import {RenderTile} from './renderer/types/tile';
+import {TileSelector} from './tile-selector/tile-selector';
+import {Renderer} from './renderer/renderer';
+import {RenderMode, RenderOptions} from './renderer/types/renderer';
+import {LayerLoadingState} from './loader/types/layer';
 
-import type { CameraView } from './renderer/types/camera-view';
-import type { LayerProps } from './loader/types/layer';
-import type { MarkerProps } from './renderer/types/marker';
+import type {CameraView} from './renderer/types/camera-view';
+import type {LayerProps} from './loader/types/layer';
+import type {MarkerProps} from './renderer/types/marker';
 
 const TILESELECTOR_FPS = 15;
 
@@ -22,9 +22,9 @@ export type WebGlGlobeProps = Partial<{
   renderOptions: RenderOptions;
 }>;
 
-export type TextureUrls = { shading: string; atmosphere: string };
+export type TextureUrls = {shading: string; atmosphere: string};
 
-const DEFAULT_PROPS = { allowDownsampling: true };
+const DEFAULT_PROPS = {allowDownsampling: true};
 
 export class WebGlGlobe extends EventTarget {
   private readonly resizeObserver: ResizeObserver;
@@ -69,7 +69,7 @@ export class WebGlGlobe extends EventTarget {
       workerUrl: WebGlGlobe.tileSelectorWorkerUrl
     });
 
-    this.setProps({ ...DEFAULT_PROPS, ...props });
+    this.setProps({...DEFAULT_PROPS, ...props});
 
     this.resize();
     this.attachEventListeners();
@@ -78,7 +78,7 @@ export class WebGlGlobe extends EventTarget {
   }
 
   setProps(props: WebGlGlobeProps) {
-    this.props = { ...this.props, ...props };
+    this.props = {...this.props, ...props};
 
     if (props.layers) {
       this.setLayers(props.layers);
@@ -183,7 +183,7 @@ export class WebGlGlobe extends EventTarget {
   }
 
   private resize() {
-    const { width, height } = this.container.getBoundingClientRect();
+    const {width, height} = this.container.getBoundingClientRect();
 
     // Resize tile selector size
     this.tileSelector.setSize(new Vector2(width, height).multiplyScalar(0.25).round());
@@ -199,7 +199,7 @@ export class WebGlGlobe extends EventTarget {
     // Dispatch camera view changed event
     this.renderer.addEventListener('cameraViewChanged', (event: CustomEventInit<CameraView>) => {
       // create a new event since we cannot dispatch the same event twice
-      const newEvent = new CustomEvent<CameraView>('cameraViewChanged', { detail: event.detail });
+      const newEvent = new CustomEvent<CameraView>('cameraViewChanged', {detail: event.detail});
       this.dispatchEvent(newEvent);
     });
   }
@@ -228,7 +228,7 @@ export class WebGlGlobe extends EventTarget {
 
 export interface WebGlGlobeEventMap {
   cameraViewChanged: CustomEvent<CameraView>;
-  layerLoadingStateChanged: CustomEvent<{ layer: LayerProps; state: LayerLoadingState }>;
+  layerLoadingStateChanged: CustomEvent<{layer: LayerProps; state: LayerLoadingState}>;
 }
 
 export interface WebGlGlobe {
