@@ -29,7 +29,10 @@ flyToButton.addEventListener('click', () => {
       lat: Math.random() * 180 - 90,
       altitude: Math.random() * 20_000_000 + 2_000_000,
       duration: 2000,
-      onAfterFly: () => {console.log('Fly to completed');}
+      onAfterFly: () => {
+        globe.startAutoSpin(0.1, false);
+        console.log('Fly to completed');
+      }
     }
   });
 });
