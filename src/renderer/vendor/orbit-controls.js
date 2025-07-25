@@ -264,13 +264,13 @@ class OrbitControls extends EventDispatcher {
       };
     })();
 
-    this.connect = function() {
+    this.connect = function () {
       if (scope._listenersAttached === true) return;
 
       scope.domElement.addEventListener('contextmenu', onContextMenu);
       scope.domElement.addEventListener('pointerdown', onPointerDown);
       scope.domElement.addEventListener('pointercancel', onPointerCancel);
-      scope.domElement.addEventListener('wheel', onMouseWheel, { passive: false });
+      scope.domElement.addEventListener('wheel', onMouseWheel, {passive: false});
       scope.domElement.addEventListener('pointermove', onMouseMove);
 
       if (scope._domElementKeyEvents !== null) {
@@ -280,7 +280,7 @@ class OrbitControls extends EventDispatcher {
       scope._listenersAttached = true;
     };
 
-    this.dispose = function() {
+    this.dispose = function () {
       scope.domElement.removeEventListener('contextmenu', onContextMenu);
 
       scope.domElement.removeEventListener('pointerdown', onPointerDown);
@@ -1093,17 +1093,9 @@ class OrbitControls extends EventDispatcher {
       return pointerPositions[pointer.pointerId];
     }
 
-    //
-
-    scope.domElement.addEventListener('contextmenu', onContextMenu);
-
-    scope.domElement.addEventListener('pointerdown', onPointerDown);
-    scope.domElement.addEventListener('pointercancel', onPointerCancel);
-    scope.domElement.addEventListener('wheel', onMouseWheel, {passive: false});
-    scope.domElement.addEventListener('pointermove', onMouseMove);
-
     // force an update at start
 
+    this.connect();
     this.update();
   }
 }
