@@ -95,6 +95,8 @@ export class WebGlGlobe extends EventTarget {
     }
 
     if (props.cameraFlyTo) {
+      // If cameraFlyTo is set, stop any auto-spin and fly to the new position
+      this.stopAutoSpin();
       this.renderer.flyCameraTo({
         renderMode: RenderMode.GLOBE,
         ...props.cameraFlyTo
