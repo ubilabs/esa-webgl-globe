@@ -30,7 +30,7 @@ flyToButton.addEventListener('click', () => {
       altitude: Math.random() * 20_000_000 + 2_000_000,
       duration: 2000,
       onAfterFly: () => {
-        globe.startAutoSpin(0.1, false);
+        globe.startAutoSpin(0.1, true);
         console.log('Fly to completed');
       }
     }
