@@ -343,6 +343,7 @@ export class Renderer extends EventTarget {
 
       if (t >= 1) {
         this.setCameraView(to);
+        const {onAfterFly} = this.flyToAnimation;
         this.flyToAnimation = undefined;
         this.globeControls.enabled = previousGlobeControlsEnabled;
         this.mapControls.enabled = previousMapControlsEnabled;
