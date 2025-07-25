@@ -6,9 +6,9 @@ import {MapControls} from 'three/examples/jsm/controls/MapControls';
 import {TileManager} from './tile-manager';
 import {MarkerHtml} from './marker-html';
 import {cameraViewToGlobePosition, globePositionToCameraView} from './lib/convert-spaces';
-import {RenderMode, RenderOptions} from './types/renderer';
+import {FlyToAnimation, RenderMode, RenderOptions} from './types/renderer';
 
-import { easeInQutQuad } from './lib/easing.js';
+import {easeInQutQuad} from './lib/easing.js';
 
 import type {RenderTile} from './types/tile';
 import type {CameraView} from './types/camera-view';
@@ -16,7 +16,6 @@ import type {MarkerProps} from './types/marker';
 import {MAP_HEIGHT, MAP_WIDTH} from './config';
 
 import {Atmosphere} from './atmosphere';
-import {easeInQutQuad} from './lib/easing.js';
 
 export class Renderer extends EventTarget {
   readonly container: HTMLElement;
