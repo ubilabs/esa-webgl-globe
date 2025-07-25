@@ -108,9 +108,7 @@ export class WebGlGlobe extends EventTarget {
         duration,
         onAfterFly
       );
-    }
-
-    if (props.cameraView) {
+    } else if (props.cameraView) {
       this.renderer.setCameraView({
         renderMode: RenderMode.GLOBE,
         lat: 0,
