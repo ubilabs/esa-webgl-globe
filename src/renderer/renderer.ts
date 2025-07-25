@@ -169,6 +169,7 @@ export class Renderer extends EventTarget {
     const from = this.getCameraView();
 
     if (!from) {
+      console.warn('Cannot fly to camera view, current camera view is undefined.');
       return;
     }
 
