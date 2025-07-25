@@ -138,7 +138,7 @@ export class WebGlGlobe extends EventTarget {
       this.container.addEventListener('wheel', stopAutoSpin, options);
       this.container.addEventListener('touchstart', stopAutoSpin, options);
     } else {
-      this.renderer.setcontrolsinteractionenabled(false);
+      this.renderer.setControlsInteractionEnabled(false);
     }
 
     const cameraView = this.renderer.getCameraView();
@@ -167,7 +167,7 @@ export class WebGlGlobe extends EventTarget {
     cancelAnimationFrame(this.spinRequestAnimationFrameId);
 
     // make sure controls are enabled
-    this.renderer.setcontrolsinteractionenabled(true);
+    this.renderer.setControlsInteractionEnabled(true);
     this.spinRequestAnimationFrameId = 0;
 
     if (this.spinAbortController) {

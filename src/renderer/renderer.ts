@@ -173,7 +173,7 @@ export class Renderer extends EventTarget {
       this.markersById[props.id] = new MarkerHtml(this, props);
     }
   }
-  setcontrolsinteractionenabled(enabled: boolean) {
+  setControlsInteractionEnabled(enabled: boolean) {
     this.controlsInteractionEnabled = enabled;
     this.updateControlsEnabled();
   }
