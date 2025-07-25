@@ -18,6 +18,7 @@ export type WebGlGlobeProps = Partial<{
   layers: LayerProps<any>[];
   renderMode: RenderMode;
   cameraView: Partial<CameraView>;
+  cameraFlyTo: Partial<CameraView>;
   markers: MarkerProps[];
   allowDownsampling: boolean;
   renderOptions: RenderOptions;
@@ -91,6 +92,13 @@ export class WebGlGlobe extends EventTarget {
 
     if (props.layers) {
       this.setLayers(props.layers);
+    }
+
+    if (props.cameraFlyTo) {
+      this.renderer.flyCameraTo({
+        renderMode: RenderMode.GLOBE,
+        ...props.cameraFlyTo
+      });
     }
 
     if (props.cameraView) {

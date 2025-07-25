@@ -35,6 +35,15 @@ export class Renderer extends EventTarget {
   private atmosphere: Atmosphere = new Atmosphere();
   private clock = new Clock();
 
+  private flyToAnimation?: {
+    from: CameraView;
+    to: CameraView;
+    startTime: number;
+    duration: number;
+    previousGlobeControlsEnabled: boolean;
+    previousMapControlsEnabled: boolean;
+  };
+
   constructor(container?: HTMLElement) {
     super();
 
@@ -119,6 +128,21 @@ export class Renderer extends EventTarget {
     return this.mapCamera;
   }
 
+  getCameraView(): CameraView | undefined {
+    if (this.renderMode === RenderMode.GLOBE) {
+      return globePositionToCameraView(this.globeCamera.position);
+    } else if (this.renderMode === RenderMode.MAP) {
+      return {
+        renderMode: RenderMode.MAP,
+        lat: this.mapCamera.position.y * 90,
+        lng: this.mapCamera.position.x * 90,
+        zoom: this.mapCamera.zoom,
+        altitude: 0
+      };
+    }
+    return undefined;
+  }
+
   setCameraView(cameraView: CameraView) {
     if (cameraView === this.cameraView) {
       return;
@@ -136,6 +160,48 @@ export class Renderer extends EventTarget {
       this.mapCamera.position.y = cameraView.lat / 90;
       this.mapCamera.zoom = cameraView.zoom;
       this.mapControls.target.copy(this.mapCamera.position);
+    }
+  }
+
+  flyCameraTo(cameraView: Partial<CameraView>, duration = 1000) {
+    const from = this.getCameraView();
+
+    if (!from) {
+      return;
+    }
+
+    // when the cameraView is not complete, we fill in the missing values
+    const updatedCameraView: CameraView = {
+      ...from,
+      ...cameraView
+    };
+
+    // We only support flying in globe mode
+    if (this.renderMode !== RenderMode.GLOBE || cameraView.renderMode !== RenderMode.GLOBE) {
+      this.setCameraView(updatedCameraView);
+      return;
+    }
+
+    // If an animation is already running, we update it.
+    // Otherwise, we start a new one and save the controls state.
+    if (this.flyToAnimation) {
+      this.flyToAnimation.from = from;
+      this.flyToAnimation.to = updatedCameraView;
+      this.flyToAnimation.startTime = Date.now();
+      this.flyToAnimation.duration = duration;
+    } else {
+      this.flyToAnimation = {
+        from: from,
+        to: updatedCameraView,
+        startTime: Date.now(),
+        duration: duration,
+        previousGlobeControlsEnabled: this.globeControls.enabled,
+        previousMapControlsEnabled: this.mapControls.enabled
+      };
+
+      // Disable user controls during animation
+      this.globeControls.enabled = false;
+      this.mapControls.enabled = false;
     }
   }
 
@@ -225,7 +291,6 @@ export class Renderer extends EventTarget {
       const event = new CustomEvent<CameraView>('cameraViewChanged', {detail: view});
       this.dispatchEvent(event);
     });
-
     const origUpdate = this.mapControls.update.bind(this.mapControls);
 
     // override the update-function to limit map bounds
@@ -259,15 +324,56 @@ export class Renderer extends EventTarget {
 
     if (this.globeControls.enabled) {
       this.globeControls.update(deltaTime);
-      const cameraDistance = this.globeCamera.position.length() - 1;
-      this.globeControls.rotateSpeed = Math.max(0.05, Math.min(1.0, cameraDistance - 0.2));
-    } else if (this.mapControls.enabled) {
-      this.mapControls.update(deltaTime);
+      if (this.flyToAnimation) {
+        const {
+          from,
+          to,
+          startTime,
+          duration,
+          previousGlobeControlsEnabled,
+          previousMapControlsEnabled
+        } = this.flyToAnimation;
+        const t = Math.min(1, (Date.now() - startTime) / duration);
+
+        // ease in out quad: https://easings.net/#easeInOutQuad
+        const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+        const easedT = ease(t);
+
+        if (t >= 1) {
+          this.setCameraView(to);
+          this.flyToAnimation = undefined;
+          this.globeControls.enabled = previousGlobeControlsEnabled;
+          this.mapControls.enabled = previousMapControlsEnabled;
+        } else {
+          let deltaLng = to.lng - from.lng;
+          if (deltaLng > 180) {
+            deltaLng -= 360;
+          } else if (deltaLng < -180) {
+            deltaLng += 360;
+          }
+
+          const interpolatedView: CameraView = {
+            renderMode: to.renderMode,
+            lat: from.lat + (to.lat - from.lat) * easedT,
+            lng: from.lng + deltaLng * easedT,
+            zoom: from.zoom + (to.zoom - from.zoom) * easedT,
+            altitude: from.altitude + (to.altitude - from.altitude) * easedT
+          };
+
+          this.setCameraView(interpolatedView);
+          this.globeCamera.lookAt(0, 0, 0);
+        }
+      } else if (this.globeControls.enabled) {
+        this.globeControls.update();
+        const cameraDistance = this.globeCamera.position.length() - 1;
+        this.globeControls.rotateSpeed = Math.max(0.05, Math.min(1.0, cameraDistance - 0.2));
+      } else if (this.mapControls.enabled) {
+        this.mapControls.update(deltaTime);
+      }
+
+      this.webglRenderer.render(this.scene, this.getCamera());
     }
-
-    this.webglRenderer.render(this.scene, this.getCamera());
   }
-
   setRenderOptions(renderOptions: RenderOptions) {
     this.atmosphere.setRenderOptions(renderOptions);
   }
