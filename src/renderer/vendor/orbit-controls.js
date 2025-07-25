@@ -285,7 +285,7 @@ class OrbitControls extends EventDispatcher {
 
       scope.domElement.removeEventListener('pointerdown', onPointerDown);
       scope.domElement.removeEventListener('pointercancel', onPointerCancel);
-      scope.domElement.removeEventListener('wheel', onMouseWheel);
+      scope.domElement.removeEventListener('wheel', onMouseWheel, {passive: false});
       scope.domElement.removeEventListener('pointermove', onMouseMove);
 
       scope.domElement.removeEventListener('pointermove', onPointerMove);
