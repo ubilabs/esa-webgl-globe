@@ -97,13 +97,16 @@ export class WebGlGlobe extends EventTarget {
     if (props.cameraFlyTo) {
       // If cameraFlyTo is set, stop any auto-spin and fly to the new position
       this.stopAutoSpin();
+
+      const {duration, onAfterFly, ...flyToOptions} = props.cameraFlyTo;
+
       this.renderer.flyCameraTo(
         {
           renderMode: RenderMode.GLOBE,
-          ...props.cameraFlyTo
+          ...flyToOptions,
         },
-        props.cameraFlyTo.duration,
-        props.cameraFlyTo.onAfterFly
+        duration,
+        onAfterFly
       );
     }
 
