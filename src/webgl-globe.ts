@@ -133,7 +133,7 @@ export class WebGlGlobe extends EventTarget {
     const stopAutoSpin = () => this.stopAutoSpin();
 
     if (enableInteraction) {
-      const options = { once: true, signal: this.spinAbortController.signal };
+      const options = {once: true, signal: this.spinAbortController.signal};
       this.container.addEventListener('mousedown', stopAutoSpin, options);
       this.container.addEventListener('wheel', stopAutoSpin, options);
       this.container.addEventListener('touchstart', stopAutoSpin, options);
@@ -141,15 +141,21 @@ export class WebGlGlobe extends EventTarget {
       this.renderer.setcontrolsinteractionenabled(false);
     }
 
-    let rot = 180;
-
     const cameraView = this.renderer.getCameraView();
+
+    if (!cameraView) {
+      console.error('Cannot start auto-spin: camera view is not available.');
+      return;
+    }
+
+    let rot = cameraView.lng + 180;
     const spin = () => {
       rot += speed;
       const lng = (rot % 360) - 180;
-      this.setProps({ cameraView: { ...cameraView, lng } });
+      this.setProps({cameraView: {...cameraView, lng}});
       this.spinRequestAnimationFrameId = requestAnimationFrame(spin);
     };
+
     this.spinRequestAnimationFrameId = requestAnimationFrame(spin);
   }
 
@@ -257,7 +263,7 @@ export class WebGlGlobe extends EventTarget {
         });
         this.dispatchEvent(newEvent);
       },
-      { signal: this.abortController.signal }
+      {signal: this.abortController.signal}
     );
   }
 
@@ -287,7 +293,7 @@ export class WebGlGlobe extends EventTarget {
 
 export interface WebGlGlobeEventMap {
   cameraViewChanged: CustomEvent<CameraView>;
-  layerLoadingStateChanged: CustomEvent<{ layer: LayerProps; state: LayerLoadingState }>;
+  layerLoadingStateChanged: CustomEvent<{layer: LayerProps; state: LayerLoadingState}>;
 }
 
 export interface WebGlGlobe {
