@@ -8,6 +8,8 @@ import {MarkerHtml} from './marker-html';
 import {cameraViewToGlobePosition, globePositionToCameraView} from './lib/convert-spaces';
 import {RenderMode, RenderOptions} from './types/renderer';
 
+import { easeInQutQuad } from './lib/easing.js';
+
 import type {RenderTile} from './types/tile';
 import type {CameraView} from './types/camera-view';
 import type {MarkerProps} from './types/marker';
