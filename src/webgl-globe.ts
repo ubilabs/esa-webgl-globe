@@ -18,7 +18,7 @@ export type WebGlGlobeProps = Partial<{
   layers: LayerProps<any>[];
   renderMode: RenderMode;
   cameraView: Partial<CameraView>;
-  cameraFlyTo: Partial<CameraView>;
+  cameraFlyTo: Partial<CameraView> & {duration?: number; onAfterFly?: () => void};
   markers: MarkerProps[];
   allowDownsampling: boolean;
   renderOptions: RenderOptions;
@@ -97,10 +97,14 @@ export class WebGlGlobe extends EventTarget {
     if (props.cameraFlyTo) {
       // If cameraFlyTo is set, stop any auto-spin and fly to the new position
       this.stopAutoSpin();
-      this.renderer.flyCameraTo({
-        renderMode: RenderMode.GLOBE,
-        ...props.cameraFlyTo
-      });
+      this.renderer.flyCameraTo(
+        {
+          renderMode: RenderMode.GLOBE,
+          ...props.cameraFlyTo
+        },
+        props.cameraFlyTo.duration,
+        props.cameraFlyTo.onAfterFly
+      );
     }
 
     if (props.cameraView) {

@@ -14,6 +14,7 @@ import type {MarkerProps} from './types/marker';
 import {MAP_HEIGHT, MAP_WIDTH} from './config';
 
 import {Atmosphere} from './atmosphere';
+import {easeInQutQuad} from './lib/easing.js';
 
 export class Renderer extends EventTarget {
   readonly container: HTMLElement;
@@ -40,6 +41,7 @@ export class Renderer extends EventTarget {
     to: CameraView;
     startTime: number;
     duration: number;
+    onAfterFly?: () => void;
     previousGlobeControlsEnabled: boolean;
     previousMapControlsEnabled: boolean;
   };
@@ -163,7 +165,7 @@ export class Renderer extends EventTarget {
     }
   }
 
-  flyCameraTo(cameraView: Partial<CameraView>, duration = 1000) {
+  flyCameraTo(cameraView: Partial<CameraView>, duration = 1000, onAfterFly?: () => void) {
     const from = this.getCameraView();
 
     if (!from) {
@@ -179,6 +181,7 @@ export class Renderer extends EventTarget {
     // We only support flying in globe mode
     if (this.renderMode !== RenderMode.GLOBE || cameraView.renderMode !== RenderMode.GLOBE) {
       this.setCameraView(updatedCameraView);
+      onAfterFly?.();
       return;
     }
 
@@ -189,12 +192,14 @@ export class Renderer extends EventTarget {
       this.flyToAnimation.to = updatedCameraView;
       this.flyToAnimation.startTime = Date.now();
       this.flyToAnimation.duration = duration;
+      this.flyToAnimation.onAfterFly = onAfterFly;
     } else {
       this.flyToAnimation = {
         from: from,
         to: updatedCameraView,
         startTime: Date.now(),
         duration: duration,
+        onAfterFly,
         previousGlobeControlsEnabled: this.globeControls.enabled,
         previousMapControlsEnabled: this.mapControls.enabled
       };
@@ -208,6 +213,7 @@ export class Renderer extends EventTarget {
   setMarkers(markerProps: MarkerProps[]) {
     // remove markers that are no longer needeed
     const newMarkerIds = markerProps.map(m => m.id);
+
     const toRemove = Object.keys(this.markersById).filter(id => !newMarkerIds.includes(id));
 
     for (const markerId of toRemove) {
@@ -321,58 +327,56 @@ export class Renderer extends EventTarget {
 
   private animationLoopUpdate() {
     const deltaTime = this.clock.getDelta();
+    if (this.flyToAnimation) {
+      const {
+        from,
+        to,
+        startTime,
+        duration,
+        previousGlobeControlsEnabled,
+        previousMapControlsEnabled,
+        onAfterFly
+      } = this.flyToAnimation;
+      const t = Math.min(1, (Date.now() - startTime) / duration);
 
-    if (this.globeControls.enabled) {
-      this.globeControls.update(deltaTime);
-      if (this.flyToAnimation) {
-        const {
-          from,
-          to,
-          startTime,
-          duration,
-          previousGlobeControlsEnabled,
-          previousMapControlsEnabled
-        } = this.flyToAnimation;
-        const t = Math.min(1, (Date.now() - startTime) / duration);
+      const easedT = easeInQutQuad(t);
 
-        // ease in out quad: https://easings.net/#easeInOutQuad
-        const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
-        const easedT = ease(t);
+      if (t >= 1) {
+        this.setCameraView(to);
+        this.flyToAnimation = undefined;
+        this.globeControls.enabled = previousGlobeControlsEnabled;
+        this.mapControls.enabled = previousMapControlsEnabled;
 
-        if (t >= 1) {
-          this.setCameraView(to);
-          this.flyToAnimation = undefined;
-          this.globeControls.enabled = previousGlobeControlsEnabled;
-          this.mapControls.enabled = previousMapControlsEnabled;
-        } else {
-          let deltaLng = to.lng - from.lng;
-          if (deltaLng > 180) {
-            deltaLng -= 360;
-          } else if (deltaLng < -180) {
-            deltaLng += 360;
-          }
-
-          const interpolatedView: CameraView = {
-            renderMode: to.renderMode,
-            lat: from.lat + (to.lat - from.lat) * easedT,
-            lng: from.lng + deltaLng * easedT,
-            zoom: from.zoom + (to.zoom - from.zoom) * easedT,
-            altitude: from.altitude + (to.altitude - from.altitude) * easedT
-          };
-
-          this.setCameraView(interpolatedView);
-          this.globeCamera.lookAt(0, 0, 0);
+        // Execute onAfterFly callback after the fly animation is done
+        onAfterFly?.();
+      } else {
+        let deltaLng = to.lng - from.lng;
+        if (deltaLng > 180) {
+          deltaLng -= 360;
+        } else if (deltaLng < -180) {
+          deltaLng += 360;
         }
-      } else if (this.globeControls.enabled) {
-        this.globeControls.update();
-        const cameraDistance = this.globeCamera.position.length() - 1;
-        this.globeControls.rotateSpeed = Math.max(0.05, Math.min(1.0, cameraDistance - 0.2));
-      } else if (this.mapControls.enabled) {
-        this.mapControls.update(deltaTime);
-      }
 
-      this.webglRenderer.render(this.scene, this.getCamera());
+        const interpolatedView: CameraView = {
+          renderMode: to.renderMode,
+          lat: from.lat + (to.lat - from.lat) * easedT,
+          lng: from.lng + deltaLng * easedT,
+          zoom: from.zoom + (to.zoom - from.zoom) * easedT,
+          altitude: from.altitude + (to.altitude - from.altitude) * easedT
+        };
+
+        this.setCameraView(interpolatedView);
+        this.globeCamera.lookAt(0, 0, 0);
+      }
+    } else if (this.globeControls.enabled) {
+      this.globeControls.update(deltaTime);
+      const cameraDistance = this.globeCamera.position.length() - 1;
+      this.globeControls.rotateSpeed = Math.max(0.05, Math.min(1.0, cameraDistance - 0.2));
+    } else if (this.mapControls.enabled) {
+      this.mapControls.update(deltaTime);
     }
+
+    this.webglRenderer.render(this.scene, this.getCamera());
   }
   setRenderOptions(renderOptions: RenderOptions) {
     this.atmosphere.setRenderOptions(renderOptions);
