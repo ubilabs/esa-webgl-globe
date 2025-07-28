@@ -120,12 +120,16 @@ export class WebGlGlobe extends EventTarget {
     cancelAnimationFrame(this.tileUpdateRafId);
   }
 
-  public enableAutoSpin(speed: number = 0.1, enableInteraction: boolean = false) {
-    this.renderer.setAutoSpin(true, speed, enableInteraction);
+  public enableAutoSpin(speed: number = 0.1) {
+    this.renderer.setAutoSpin(true, speed);
   }
 
   public stopAutoSpin() {
     this.renderer.setAutoSpin(false);
+  }
+
+  public setControlsInteractionEnabled(enabled: boolean) {
+    this.renderer.setControlsInteractionEnabled(enabled);
   }
 
   private setLayers(layers: LayerProps[]) {

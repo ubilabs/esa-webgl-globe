@@ -117,7 +117,7 @@ export class Renderer extends EventTarget {
     return this.mapCamera;
   }
 
-  setAutoSpin(isEnabled: boolean, speed?: number, enableInteraction?: boolean): void {
+  setAutoSpin(isEnabled: boolean, speed?: number): void {
     if (this.spinAbortController) {
       this.spinAbortController.abort();
       this.spinAbortController = null;
@@ -125,24 +125,14 @@ export class Renderer extends EventTarget {
 
     this.globeControls.spinning(isEnabled, speed);
 
-    if (isEnabled) {
-      const interaction = enableInteraction ?? true;
+    if (isEnabled && this.controlsInteractionEnabled) {
+      this.spinAbortController = new AbortController();
       const stopAutoSpin = () => this.setAutoSpin(false);
 
-      if (interaction) {
-        this.setControlsInteractionEnabled(true);
-        this.spinAbortController = new AbortController(); // Ensure the AbortController is instantiated
-
-        const options = {once: true, signal: this.spinAbortController.signal};
-
-        this.container.addEventListener('mousedown', stopAutoSpin, options);
-        this.container.addEventListener('wheel', stopAutoSpin, options);
-        this.container.addEventListener('touchstart', stopAutoSpin, options);
-      } else {
-        this.setControlsInteractionEnabled(false);
-      }
-    } else {
-      this.setControlsInteractionEnabled(true);
+      const options = {once: true, signal: this.spinAbortController.signal};
+      this.container.addEventListener('mousedown', stopAutoSpin, options);
+      this.container.addEventListener('wheel', stopAutoSpin, options);
+      this.container.addEventListener('touchstart', stopAutoSpin, options);
     }
   }
 
@@ -204,7 +194,7 @@ export class Renderer extends EventTarget {
       this.markersById[props.id] = new MarkerHtml(this, props);
     }
   }
-  setControlsInteractionEnabled(enabled: boolean) {
+  public setControlsInteractionEnabled(enabled: boolean) {
     this.controlsInteractionEnabled = enabled;
     this.updateControlsEnabled();
   }
