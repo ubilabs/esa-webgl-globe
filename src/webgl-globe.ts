@@ -235,6 +235,7 @@ export class WebGlGlobe extends EventTarget {
     this.resizeObserver.unobserve(this.container);
     this.abortController.abort();
     this.renderer.destroy();
+    this.renderer.getGlobeControls().disconnect()
     void this.tileSelector.destroy();
   }
 
