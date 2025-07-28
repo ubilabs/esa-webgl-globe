@@ -18,8 +18,10 @@ const globe = new WebGlGlobe(document.body, {
   cameraView: {lng: 0, lat: 0, altitude: distance}
 });
 
-globe.enableAutoSpin(1, true);
+globe.setControlsInteractionEnabled(false);
+globe.enableAutoSpin(1);
 
 setTimeout(() => {
   globe.stopAutoSpin();
+  globe.setControlsInteractionEnabled(true);
 }, 5000);
