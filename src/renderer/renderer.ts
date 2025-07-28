@@ -36,7 +36,6 @@ export class Renderer extends EventTarget {
   private controlsInteractionEnabled = true;
   private clock = new Clock();
   private spinAbortController: AbortController | null = null;
-  private spinRequestAnimationFrameId: number = 0;
 
   constructor(container?: HTMLElement) {
     super();
@@ -119,21 +118,31 @@ export class Renderer extends EventTarget {
   }
 
   setAutoSpin(isEnabled: boolean, speed?: number, enableInteraction?: boolean): void {
-    if (this.spinRequestAnimationFrameId) {
-      return;
+    if (this.spinAbortController) {
+      this.spinAbortController.abort();
+      this.spinAbortController = null;
     }
+
     this.globeControls.spinning(isEnabled, speed);
 
-    this.spinAbortController = new AbortController();
-    const stopAutoSpin = () => this.setAutoSpin(false);
+    if (isEnabled) {
+      const interaction = enableInteraction ?? true;
+      const stopAutoSpin = () => this.setAutoSpin(false);
 
-    if (enableInteraction) {
-      const options = {once: true, signal: this.spinAbortController.signal};
-      this.container.addEventListener('mousedown', stopAutoSpin, options);
-      this.container.addEventListener('wheel', stopAutoSpin, options);
-      this.container.addEventListener('touchstart', stopAutoSpin, options);
+      if (interaction) {
+        this.setControlsInteractionEnabled(true);
+        this.spinAbortController = new AbortController(); // Ensure the AbortController is instantiated
+
+        const options = {once: true, signal: this.spinAbortController.signal};
+
+        this.container.addEventListener('mousedown', stopAutoSpin, options);
+        this.container.addEventListener('wheel', stopAutoSpin, options);
+        this.container.addEventListener('touchstart', stopAutoSpin, options);
+      } else {
+        this.setControlsInteractionEnabled(false);
+      }
     } else {
-      this.renderer.setControlsInteractionEnabled(false);
+      this.setControlsInteractionEnabled(true);
     }
   }
 
