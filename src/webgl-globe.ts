@@ -120,60 +120,12 @@ export class WebGlGlobe extends EventTarget {
     cancelAnimationFrame(this.tileUpdateRafId);
   }
 
-  private spinAbortController: AbortController | null = null;
-
-  private spinRequestAnimationFrameId: number = 0;
-
-  public startAutoSpin(speed: number = 0.1, enableInteraction: boolean = false) {
-    if (this.spinRequestAnimationFrameId) {
-      return;
-    }
-
-    this.spinAbortController = new AbortController();
-    const stopAutoSpin = () => this.stopAutoSpin();
-
-    if (enableInteraction) {
-      const options = {once: true, signal: this.spinAbortController.signal};
-      this.container.addEventListener('mousedown', stopAutoSpin, options);
-      this.container.addEventListener('wheel', stopAutoSpin, options);
-      this.container.addEventListener('touchstart', stopAutoSpin, options);
-    } else {
-      this.renderer.setControlsInteractionEnabled(false);
-    }
-
-    const cameraView = this.renderer.getCameraView();
-
-    if (!cameraView) {
-      console.error('Cannot start auto-spin: camera view is not available.');
-      return;
-    }
-
-    let rot = cameraView.lng + 180;
-    const spin = () => {
-      rot += speed;
-      const lng = (rot % 360) - 180;
-      this.setProps({cameraView: {...cameraView, lng}});
-      this.spinRequestAnimationFrameId = requestAnimationFrame(spin);
-    };
-
-    this.spinRequestAnimationFrameId = requestAnimationFrame(spin);
+  public enableAutoSpin(speed: number = 0.1, enableInteraction: boolean = false) {
+    this.renderer.setAutoSpin(true, speed, enableInteraction);
   }
 
   public stopAutoSpin() {
-    if (!this.spinRequestAnimationFrameId) {
-      return;
-    }
-
-    cancelAnimationFrame(this.spinRequestAnimationFrameId);
-
-    // make sure controls are enabled
-    this.renderer.setControlsInteractionEnabled(true);
-    this.spinRequestAnimationFrameId = 0;
-
-    if (this.spinAbortController) {
-      this.spinAbortController.abort();
-      this.spinAbortController = null;
-    }
+    this.renderer.setAutoSpin(false);
   }
 
   private setLayers(layers: LayerProps[]) {

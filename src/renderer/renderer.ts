@@ -1,4 +1,4 @@
-import { OrthographicCamera, PerspectiveCamera, Scene, Vector2, WebGLRenderer } from 'three';
+import {Clock, OrthographicCamera, PerspectiveCamera, Scene, Vector2, WebGLRenderer} from 'three';
 
 // @ts-ignore
 import {OrbitControls} from './vendor/orbit-controls.js';
@@ -34,6 +34,9 @@ export class Renderer extends EventTarget {
   private rendererSize: Vector2 = new Vector2();
   private atmosphere: Atmosphere = new Atmosphere();
   private controlsInteractionEnabled = true;
+  private clock = new Clock();
+  private spinAbortController: AbortController | null = null;
+  private spinRequestAnimationFrameId: number = 0;
 
   constructor(container?: HTMLElement) {
     super();
@@ -113,6 +116,25 @@ export class Renderer extends EventTarget {
     if (this.renderMode === RenderMode.GLOBE) return this.globeCamera;
 
     return this.mapCamera;
+  }
+
+  setAutoSpin(isEnabled: boolean, speed?: number, enableInteraction?: boolean): void {
+    if (this.spinRequestAnimationFrameId) {
+      return;
+    }
+    this.globeControls.spinning(isEnabled, speed);
+
+    this.spinAbortController = new AbortController();
+    const stopAutoSpin = () => this.setAutoSpin(false);
+
+    if (enableInteraction) {
+      const options = {once: true, signal: this.spinAbortController.signal};
+      this.container.addEventListener('mousedown', stopAutoSpin, options);
+      this.container.addEventListener('wheel', stopAutoSpin, options);
+      this.container.addEventListener('touchstart', stopAutoSpin, options);
+    } else {
+      this.renderer.setControlsInteractionEnabled(false);
+    }
   }
 
   getCameraView(): CameraView | undefined {
@@ -241,12 +263,11 @@ export class Renderer extends EventTarget {
       this.dispatchEvent(event);
     });
 
-
     const origUpdate = this.mapControls.update.bind(this.mapControls);
 
     // override the update-function to limit map bounds
-    this.mapControls.update = () => {
-      origUpdate();
+    this.mapControls.update = (deltaTime?: number) => {
+      origUpdate(deltaTime);
 
       const camera = this.mapCamera;
       const controls = this.mapControls;
@@ -279,12 +300,14 @@ export class Renderer extends EventTarget {
   }
 
   private animationLoopUpdate() {
+    const deltaTime = this.clock.getDelta();
+
     if (this.globeControls.enabled) {
-      this.globeControls.update();
+      this.globeControls.update(deltaTime);
       const cameraDistance = this.globeCamera.position.length() - 1;
       this.globeControls.rotateSpeed = Math.max(0.05, Math.min(1.0, cameraDistance - 0.2));
     } else if (this.mapControls.enabled) {
-      this.mapControls.update();
+      this.mapControls.update(deltaTime);
     }
 
     this.webglRenderer.render(this.scene, this.getCamera());

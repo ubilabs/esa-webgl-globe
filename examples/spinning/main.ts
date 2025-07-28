@@ -18,7 +18,7 @@ const globe = new WebGlGlobe(document.body, {
   cameraView: {lng: 0, lat: 0, altitude: distance}
 });
 
-globe.startAutoSpin(0.1, true);
+globe.enableAutoSpin(1, true);
 
 setTimeout(() => {
   globe.stopAutoSpin();

@@ -139,6 +139,11 @@ class OrbitControls extends EventDispatcher {
       state = STATE.NONE;
     };
 
+    this.spinning = function (isAutoRotating, autoRotateSpeed) {
+      scope.autoRotate = isAutoRotating;
+      scope.autoRotateSpeed = autoRotateSpeed || scope.autoRotateSpeed;
+    };
+
     // this method is exposed, but perhaps it would be better if we can make it private...
     this.update = (function () {
       const offset = new Vector3();
