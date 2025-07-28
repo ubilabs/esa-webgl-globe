@@ -1,5 +1,5 @@
 // @ts-ignore
-import {orbitcontrols} from './vendor/orbit-controls.js';
+import {OrbitControls} from './vendor/orbit-controls.js';
 
 export class InteractionController {
   private globeControls: OrbitControls;
