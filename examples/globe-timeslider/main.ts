@@ -26,18 +26,18 @@ const panelSettings = {
 
 const panel = new Pane();
 const playbackFolder = panel.addFolder({title: 'Playback', expanded: true});
-playbackFolder.addInput(panelSettings.playback, 'speed', {min: 0.2, max: 3, label: 'speed (fps)'});
-playbackFolder.addInput(panelSettings.playback, 'waitForFrames');
-playbackFolder.addInput(panelSettings.playback, 'allowDownsampling');
+playbackFolder.addBinding(panelSettings.playback, 'speed', {min: 0.2, max: 3, label: 'speed (fps)'});
+playbackFolder.addBinding(panelSettings.playback, 'waitForFrames');
+playbackFolder.addBinding(panelSettings.playback, 'allowDownsampling');
 
 const basemapFolder = panel.addFolder({title: 'Basemap', expanded: true});
-basemapFolder.addInput(panelSettings.basemap, 'debug');
+basemapFolder.addBinding(panelSettings.basemap, 'debug');
 
 const dataFolder = panel.addFolder({title: 'Data Overlay', expanded: true});
-dataFolder.addInput(panelSettings.data, 'debug');
-dataFolder.addInput(panelSettings.data, 'limitZoom', {label: 'limit zoom'});
-dataFolder.addInput(panelSettings.data, 'minZoom', {min: 1, max: 7, step: 1});
-dataFolder.addInput(panelSettings.data, 'maxZoom', {min: 1, max: 7, step: 1});
+dataFolder.addBinding(panelSettings.data, 'debug');
+dataFolder.addBinding(panelSettings.data, 'limitZoom', {label: 'limit zoom'});
+dataFolder.addBinding(panelSettings.data, 'minZoom', {min: 1, max: 7, step: 1});
+dataFolder.addBinding(panelSettings.data, 'maxZoom', {min: 1, max: 7, step: 1});
 
 // @ts-ignore
 panel.containerElem_.style.zIndex = '999';
