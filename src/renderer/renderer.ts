@@ -33,9 +33,7 @@ export class Renderer extends EventTarget {
 
   private rendererSize: Vector2 = new Vector2();
   private atmosphere: Atmosphere = new Atmosphere();
-  private controlsInteractionEnabled = true;
   private clock = new Clock();
-  private spinAbortController: AbortController | null = null;
 
   constructor(container?: HTMLElement) {
     super();
@@ -72,6 +70,10 @@ export class Renderer extends EventTarget {
 
     const {width, height} = this.container.getBoundingClientRect();
     this.resize(width, height);
+  }
+
+  getGlobeControls(): OrbitControls {
+    return this.globeControls;
   }
 
   getRenderMode() {
@@ -117,25 +119,6 @@ export class Renderer extends EventTarget {
     return this.mapCamera;
   }
 
-  setAutoSpin(isEnabled: boolean, speed?: number): void {
-    if (this.spinAbortController) {
-      this.spinAbortController.abort();
-      this.spinAbortController = null;
-    }
-
-    this.globeControls.spinning(isEnabled, speed);
-
-    if (isEnabled && this.controlsInteractionEnabled) {
-      this.spinAbortController = new AbortController();
-      const stopAutoSpin = () => this.setAutoSpin(false);
-
-      const options = {once: true, signal: this.spinAbortController.signal};
-      this.container.addEventListener('mousedown', stopAutoSpin, options);
-      this.container.addEventListener('wheel', stopAutoSpin, options);
-      this.container.addEventListener('touchstart', stopAutoSpin, options);
-    }
-  }
-
   setCameraView(cameraView: CameraView) {
     if (cameraView === this.cameraView) {
       return;
@@ -178,11 +161,6 @@ export class Renderer extends EventTarget {
       // otherwise create the marker
       this.markersById[props.id] = new MarkerHtml(this, props);
     }
-  }
-
-  public setControlsInteractionEnabled(enabled: boolean) {
-    this.controlsInteractionEnabled = enabled;
-    this.updateControlsEnabled();
   }
 
   destroy() {
@@ -274,14 +252,6 @@ export class Renderer extends EventTarget {
 
     this.globeControls.enabled = this.renderMode === RenderMode.GLOBE;
     this.mapControls.enabled = this.renderMode === RenderMode.MAP;
-  }
-
-  private updateControlsEnabled() {
-    if (this.controlsInteractionEnabled) {
-      this.globeControls.connect();
-    } else {
-      this.globeControls.disconnect();
-    }
   }
 
   private animationLoopUpdate() {

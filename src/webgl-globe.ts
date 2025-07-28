@@ -4,6 +4,7 @@ import {Layer} from './loader/layer';
 import {RenderTile} from './renderer/types/tile';
 import {TileSelector} from './tile-selector/tile-selector';
 import {Renderer} from './renderer/renderer';
+import {InteractionController} from './renderer/interaction-controller';
 import {RenderMode, RenderOptions} from './renderer/types/renderer';
 import {LayerLoadingState} from './loader/types/layer';
 
@@ -32,6 +33,7 @@ export class WebGlGlobe extends EventTarget {
   private readonly scheduler: RequestScheduler<RenderTile>;
   private readonly renderer: Renderer;
   private readonly tileSelector: TileSelector;
+  private readonly interactionController: InteractionController;
   private abortController: AbortController;
 
   private layersById: Record<string, Layer> = {};
@@ -70,6 +72,11 @@ export class WebGlGlobe extends EventTarget {
     this.tileSelector = new TileSelector({
       workerUrl: WebGlGlobe.tileSelectorWorkerUrl
     });
+
+    this.interactionController = new InteractionController(
+      this.renderer.getGlobeControls(),
+      this.container
+    );
 
     this.setProps({...DEFAULT_PROPS, ...props});
 
@@ -120,16 +127,16 @@ export class WebGlGlobe extends EventTarget {
     cancelAnimationFrame(this.tileUpdateRafId);
   }
 
-  public enableAutoSpin(speed: number = 0.1) {
-    this.renderer.setAutoSpin(true, speed);
+  public startAutoSpin(speed: number = 0.1) {
+    this.interactionController.setAutoSpin(true, speed);
   }
 
   public stopAutoSpin() {
-    this.renderer.setAutoSpin(false);
+    this.interactionController.setAutoSpin(false);
   }
 
   public setControlsInteractionEnabled(enabled: boolean) {
-    this.renderer.setControlsInteractionEnabled(enabled);
+    this.interactionController.setControlsInteractionEnabled(enabled);
   }
 
   private setLayers(layers: LayerProps[]) {
