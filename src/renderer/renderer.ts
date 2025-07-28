@@ -50,7 +50,7 @@ export class Renderer extends EventTarget {
     renderer.setClearColor(0xffffff, 0);
     renderer.setAnimationLoop(this.animationLoopUpdate.bind(this));
 
-    // Set the pixel ratio to the minimum of the device's pixel ratio or 2, for optimal rendering performance
+    // for rendering performance, we don't use a pixel-ratio above 2
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
     this.webglRenderer = renderer;
@@ -179,6 +179,7 @@ export class Renderer extends EventTarget {
       this.markersById[props.id] = new MarkerHtml(this, props);
     }
   }
+
   public setControlsInteractionEnabled(enabled: boolean) {
     this.controlsInteractionEnabled = enabled;
     this.updateControlsEnabled();
