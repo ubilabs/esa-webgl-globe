@@ -136,21 +136,6 @@ export class Renderer extends EventTarget {
     }
   }
 
-  getCameraView(): CameraView | undefined {
-    if (this.renderMode === RenderMode.GLOBE) {
-      return globePositionToCameraView(this.globeCamera.position);
-    } else if (this.renderMode === RenderMode.MAP) {
-      return {
-        renderMode: RenderMode.MAP,
-        lat: this.mapCamera.position.y * 90,
-        lng: this.mapCamera.position.x * 90,
-        zoom: this.mapCamera.zoom,
-        altitude: 0
-      };
-    }
-    return undefined;
-  }
-
   setCameraView(cameraView: CameraView) {
     if (cameraView === this.cameraView) {
       return;
