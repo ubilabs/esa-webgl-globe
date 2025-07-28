@@ -279,7 +279,7 @@ export class Renderer extends EventTarget {
     if (this.controlsInteractionEnabled) {
       this.globeControls.connect();
     } else {
-      this.globeControls.dispose();
+      this.globeControls.disconnect();
     }
   }
 

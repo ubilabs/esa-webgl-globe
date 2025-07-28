@@ -285,7 +285,7 @@ class OrbitControls extends EventDispatcher {
       scope._listenersAttached = true;
     };
 
-    this.dispose = function () {
+    this.disconnect = function () {
       scope.domElement.removeEventListener('contextmenu', onContextMenu);
 
       scope.domElement.removeEventListener('pointerdown', onPointerDown);
