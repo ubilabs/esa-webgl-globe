@@ -11,7 +11,8 @@ export class InteractionController {
     this.globeControls = globeControls;
     this.container = container;
 
-    this.globeControls.enabled = true;
+    // Disable the default controls interaction
+    this.updateControlsEnabled(false);
   }
 
   public setAutoSpin(isEnabled: boolean, speed: number = 1): void {
@@ -24,7 +25,7 @@ export class InteractionController {
       this.spinAbortController = new AbortController();
       const stopAutoSpin = () => this.setAutoSpin(false);
 
-      const options = { once: true, signal: this.spinAbortController.signal };
+      const options = {once: true, signal: this.spinAbortController.signal};
       this.container.addEventListener('mousedown', stopAutoSpin, options);
       this.container.addEventListener('wheel', stopAutoSpin, options);
       this.container.addEventListener('touchstart', stopAutoSpin, options);
@@ -48,9 +49,8 @@ export class InteractionController {
   }
 
   private updateControlsEnabled(isEnabled: boolean): void {
+    // Enable or disable the controls by setting the pointer events CSS property
+    // If we disable the controls, the Three.js autoRoate does not work
     this.container.style.pointerEvents = isEnabled ? 'auto' : 'none';
   }
 }
-
-
-
