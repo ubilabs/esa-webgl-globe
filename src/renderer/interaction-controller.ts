@@ -2,8 +2,7 @@ import {OrbitControls} from './vendor/orbit-controls.js';
 import {CameraView} from './types/camera-view.js';
 import {RenderMode} from './types/renderer';
 import {Renderer} from './renderer';
-
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+import { lerp } from './lib/easing.js';
 
 export class InteractionController {
   private globeControls: OrbitControls;
@@ -93,29 +92,6 @@ export class InteractionController {
     }
   }
 
-  private abortCurrentSpin(): void {
-    if (this.spinAbortController) {
-      this.spinAbortController.abort();
-      this.spinAbortController = null;
-    }
-  }
-
-  private updateControlsEnabled(isEnabled: boolean): void {
-    // Enable or disable the controls by setting the pointer events CSS property
-    // If we disable the controls, the Three.js autoRoate does not work
-    this.container.style.pointerEvents = isEnabled ? 'auto' : 'none';
-  }
-
-  private calculateShortestLongitudeDelta(from: number, to: number) {
-    let delta = to - from;
-    if (delta > 180) {
-      delta -= 360;
-    } else if (delta < -180) {
-      delta += 360;
-    }
-    return delta;
-  }
-
   public updateCameraAnimation() {
     if (
       this.isAnimatingCamera &&
@@ -171,5 +147,28 @@ export class InteractionController {
         this.renderer.updateGlobeCamera(interpolatedView);
       }
     }
+  }
+
+  private abortCurrentSpin(): void {
+    if (this.spinAbortController) {
+      this.spinAbortController.abort();
+      this.spinAbortController = null;
+    }
+  }
+
+  private updateControlsEnabled(isEnabled: boolean): void {
+    // Enable or disable the controls by setting the pointer events CSS property
+    // If we disable the controls, the Three.js autoRoate does not work
+    this.container.style.pointerEvents = isEnabled ? 'auto' : 'none';
+  }
+
+  private calculateShortestLongitudeDelta(from: number, to: number) {
+    let delta = to - from;
+    if (delta > 180) {
+      delta -= 360;
+    } else if (delta < -180) {
+      delta += 360;
+    }
+    return delta;
   }
 }

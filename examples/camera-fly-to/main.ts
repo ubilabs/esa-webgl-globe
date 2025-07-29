@@ -22,6 +22,10 @@ const globe = new WebGlGlobe(document.getElementById('globe')!, {
 globe.setControlsInteractionEnabled(true)
 const flyToButton = document.getElementById('fly-to')!;
 
+globe.addEventListener('cameraViewChanged', (event: CustomEventInit) => {
+  console.log('camerachanged', event);
+});
+
 flyToButton.addEventListener('click', () => {
   globe.setProps({
     cameraView: {

@@ -1,4 +1,12 @@
-import {Clock, OrthographicCamera, PerspectiveCamera, Scene, Vector2, WebGLRenderer, Vector3} from 'three';
+import {
+  Clock,
+  OrthographicCamera,
+  PerspectiveCamera,
+  Scene,
+  Vector2,
+  WebGLRenderer,
+  Vector3
+} from 'three';
 
 // @ts-ignore
 import {OrbitControls} from './vendor/orbit-controls.js';
@@ -7,8 +15,6 @@ import {TileManager} from './tile-manager';
 import {MarkerHtml} from './marker-html';
 import {cameraViewToGlobePosition, globePositionToCameraView} from './lib/convert-spaces';
 import {RenderMode, RenderOptions} from './types/renderer';
-
-import { lerp } from './lib/easing.js';
 
 import type {RenderTile} from './types/tile';
 import type {CameraView} from './types/camera-view';
@@ -29,7 +35,6 @@ export class Renderer extends EventTarget {
   public mapControls: MapControls;
 
   private tileManager: TileManager;
-  private cameraView?: CameraView;
   private markersById: Record<string, MarkerHtml> = {};
   private renderMode: RenderMode = RenderMode.GLOBE;
 
@@ -135,8 +140,6 @@ export class Renderer extends EventTarget {
     }
     return undefined;
   }
-
-  
 
   setMarkers(markerProps: MarkerProps[]) {
     // remove markers that are no longer needeed
@@ -268,7 +271,6 @@ export class Renderer extends EventTarget {
 
   public updateGlobeCamera(cameraView: CameraView) {
     cameraViewToGlobePosition(cameraView, this.globeCamera.position);
-    this.cameraView = cameraView;
     this.globeCamera.lookAt(0, 0, 0);
   }
 
