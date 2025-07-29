@@ -18,21 +18,15 @@ const globe = new WebGlGlobe(document.getElementById('globe')!, {
   cameraView: {lng: 0, lat: 0, altitude: distance}
 });
 
-globe.startAutoSpin(0.1, true);
-
 const flyToButton = document.getElementById('fly-to')!;
 
 flyToButton.addEventListener('click', () => {
   globe.setProps({
-    cameraFlyTo: {
+    cameraView: {
       lng: Math.random() * 360 - 180,
       lat: Math.random() * 180 - 90,
       altitude: Math.random() * 20_000_000 + 2_000_000,
-      duration: 2000,
-      onAfterFly: () => {
-        globe.startAutoSpin(0.1, true);
-        console.log('Fly to completed');
-      }
+      interpolationFactor: 0.01 // Example: set a custom interpolation factor
     }
   });
 });

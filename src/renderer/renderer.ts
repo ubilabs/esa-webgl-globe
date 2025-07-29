@@ -1,4 +1,12 @@
-import {Clock, OrthographicCamera, PerspectiveCamera, Scene, Vector2, WebGLRenderer} from 'three';
+import {
+  Clock,
+  OrthographicCamera,
+  PerspectiveCamera,
+  Scene,
+  Vector2,
+  WebGLRenderer,
+  Vector3
+} from 'three';
 
 // @ts-ignore
 import {OrbitControls} from './vendor/orbit-controls.js';
@@ -8,14 +16,13 @@ import {MarkerHtml} from './marker-html';
 import {cameraViewToGlobePosition, globePositionToCameraView} from './lib/convert-spaces';
 import {RenderMode, RenderOptions} from './types/renderer';
 
-import {easeInQutQuad} from './lib/easing.js';
-
 import type {RenderTile} from './types/tile';
 import type {CameraView} from './types/camera-view';
 import type {MarkerProps} from './types/marker';
 import {MAP_HEIGHT, MAP_WIDTH} from './config';
 
 import {Atmosphere} from './atmosphere';
+import {WebGlGlobeProps} from '../webgl-globe.js';
 
 export class Renderer extends EventTarget {
   readonly container: HTMLElement;
@@ -37,14 +44,9 @@ export class Renderer extends EventTarget {
   private atmosphere: Atmosphere = new Atmosphere();
   private clock = new Clock();
 
-  private flyToAnimation?: {
-    from: CameraView;
-    to: CameraView;
-    startTime: number;
-    duration: number;
-    previousGlobeControlsEnabled: boolean;
-    previousMapControlsEnabled: boolean;
-  };
+  private targetCameraView?: CameraView;
+  private isAnimatingCamera: boolean = false;
+  private currentInterpolationFactor: number = 0.1; // Default interpolation factor
 
   constructor(container?: HTMLElement) {
     super();
@@ -145,60 +147,55 @@ export class Renderer extends EventTarget {
     return undefined;
   }
 
-  setCameraView(cameraView: CameraView, isAnimated = true, duration = 1000) {
-    if (cameraView === this.cameraView) {
+  setCameraView(newCameraView: Partial<CameraView>, isAnimated = true, interpolationFactor?: number) {
+    const currentView = this.getCameraView();
+
+    if (!currentView) {
+      console.warn('Cannot set camera view, current camera view is undefined.');
       return;
     }
 
-    if (cameraView.renderMode !== this.renderMode) {
-      this.setRenderMode(cameraView.renderMode);
+    const targetCameraView: CameraView = {
+      ...currentView,
+      ...newCameraView
+    };
+
+    if (targetCameraView === this.cameraView) {
+      return;
     }
 
-    const from = this.getCameraView();
+    if (targetCameraView.renderMode !== this.renderMode) {
+      this.setRenderMode(targetCameraView.renderMode);
+    }
 
-    if (!from || !isAnimated || duration === 0 || cameraView.renderMode !== RenderMode.GLOBE) {
+    if (!isAnimated || targetCameraView.renderMode !== RenderMode.GLOBE) {
+      // Immediately set the camera view if not animated or not in globe mode
       if (this.renderMode === RenderMode.GLOBE) {
-        cameraViewToGlobePosition(cameraView, this.globeCamera.position);
-        this.cameraView = cameraView;
+        cameraViewToGlobePosition(targetCameraView, this.globeCamera.position);
       } else if (this.renderMode === RenderMode.MAP) {
-        this.mapCamera.position.x = cameraView.lng / 90;
-        this.mapCamera.position.y = cameraView.lat / 90;
-        this.mapCamera.zoom = cameraView.zoom;
+        this.mapCamera.position.x = targetCameraView.lng / 90;
+        this.mapCamera.position.y = targetCameraView.lat / 90;
+        this.mapCamera.zoom = targetCameraView.zoom;
         this.mapControls.target.copy(this.mapCamera.position);
       }
-      // If an animation was running, stop it
-      if (this.flyToAnimation) {
-        this.globeControls.enabled = this.flyToAnimation.previousGlobeControlsEnabled;
-        this.mapControls.enabled = this.flyToAnimation.previousMapControlsEnabled;
-        this.flyToAnimation = undefined;
-      }
+      this.cameraView = targetCameraView;
+      // Stop any ongoing animation and re-enable controls
+      this.isAnimatingCamera = false;
+      this.globeControls.enabled = true;
+      this.mapControls.enabled = true;
       return;
     }
 
-    // If an animation is already running, we update it.
-    // Otherwise, we start a new one and save the controls state.
-    if (this.flyToAnimation) {
-      this.flyToAnimation.from = from;
-      this.flyToAnimation.to = cameraView;
-      this.flyToAnimation.startTime = Date.now();
-      this.flyToAnimation.duration = duration;
-    } else {
-      this.flyToAnimation = {
-        from: from,
-        to: cameraView,
-        startTime: Date.now(),
-        duration: duration,
-        previousGlobeControlsEnabled: this.globeControls.enabled,
-        previousMapControlsEnabled: this.mapControls.enabled
-      };
+    // Start or update animation
+    this.targetCameraView = targetCameraView;
+    this.isAnimatingCamera = true;
+    this.globeControls.enabled = false; // Disable controls during animation
+    this.mapControls.enabled = false;
 
-      // Disable user controls during animation
-      this.globeControls.enabled = false;
-      this.mapControls.enabled = false;
+    if (interpolationFactor !== undefined) {
+      this.currentInterpolationFactor = interpolationFactor;
     }
   }
-
-  
 
   setMarkers(markerProps: MarkerProps[]) {
     // remove markers that are no longer needeed
@@ -317,41 +314,60 @@ export class Renderer extends EventTarget {
 
   private animationLoopUpdate() {
     const deltaTime = this.clock.getDelta();
-    if (this.flyToAnimation) {
-      const {
-        from,
-        to,
-        startTime,
-        duration,
-        previousGlobeControlsEnabled,
-        previousMapControlsEnabled
-      } = this.flyToAnimation;
-      const t = Math.min(1, (Date.now() - startTime) / duration);
+    if (this.isAnimatingCamera && this.renderMode === RenderMode.GLOBE && this.targetCameraView) {
+      const currentView = this.getCameraView();
+      if (!currentView) {
+        this.isAnimatingCamera = false;
+        this.globeControls.enabled = true;
+        this.mapControls.enabled = true;
+        return;
+      }
 
-      const easedT = easeInQutQuad(t);
+      const interpolationFactor = this.currentInterpolationFactor;
+      // This prevents unnecessary minor adjustments, ensuring smoother animations and reducing computation.
+      const epsilon = 0.05;
 
-      if (t >= 1) {
-        this.setCameraView(to, false);
-        this.flyToAnimation = undefined;
-        this.globeControls.enabled = previousGlobeControlsEnabled;
-        this.mapControls.enabled = previousMapControlsEnabled;
+      let deltaLng = this.targetCameraView.lng - currentView.lng;
+      if (deltaLng > 180) {
+        deltaLng -= 360;
+      } else if (deltaLng < -180) {
+        deltaLng += 360;
+      }
+      let newLat =
+        currentView.lat + (this.targetCameraView.lat - currentView.lat) * interpolationFactor;
+      let newLng = currentView.lng + deltaLng * interpolationFactor;
+      let newZoom =
+        currentView.zoom + (this.targetCameraView.zoom - currentView.zoom) * interpolationFactor;
+      let newAltitude =
+        currentView.altitude +
+        (this.targetCameraView.altitude - currentView.altitude) * interpolationFactor;
+
+      const interpolatedView: CameraView = {
+        renderMode: this.targetCameraView.renderMode,
+        lat: newLat,
+        lng: newLng,
+        zoom: newZoom,
+        altitude: newAltitude
+      };
+
+      // Check if close enough to target
+      const latDiff = Math.abs(interpolatedView.lat - this.targetCameraView.lat);
+      const lngDiff = Math.abs(interpolatedView.lng - this.targetCameraView.lng);
+      const zoomDiff = Math.abs(interpolatedView.zoom - this.targetCameraView.zoom);
+      const altitudeDiff = Math.abs(interpolatedView.altitude - this.targetCameraView.altitude);
+
+      if (latDiff < epsilon && lngDiff < epsilon && zoomDiff < epsilon && altitudeDiff < epsilon) {
+        // Snap to target and stop animation
+        cameraViewToGlobePosition(this.targetCameraView, this.globeCamera.position);
+        this.cameraView = this.targetCameraView;
+        this.globeCamera.lookAt(0, 0, 0);
+        this.isAnimatingCamera = false;
+        this.globeControls.enabled = true;
+        this.mapControls.enabled = true;
       } else {
-        let deltaLng = to.lng - from.lng;
-        if (deltaLng > 180) {
-          deltaLng -= 360;
-        } else if (deltaLng < -180) {
-          deltaLng += 360;
-        }
-
-        const interpolatedView: CameraView = {
-          renderMode: to.renderMode,
-          lat: from.lat + (to.lat - from.lat) * easedT,
-          lng: from.lng + deltaLng * easedT,
-          zoom: from.zoom + (to.zoom - from.zoom) * easedT,
-          altitude: from.altitude + (to.altitude - from.altitude) * easedT
-        };
-
-        this.setCameraView(interpolatedView, false);
+        // Directly update camera position and internal cameraView
+        cameraViewToGlobePosition(interpolatedView, this.globeCamera.position);
+        this.cameraView = interpolatedView;
         this.globeCamera.lookAt(0, 0, 0);
       }
     } else if (this.globeControls.enabled) {

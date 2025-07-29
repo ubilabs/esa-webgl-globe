@@ -17,8 +17,7 @@ const TILESELECTOR_FPS = 15;
 export type WebGlGlobeProps = Partial<{
   layers: LayerProps<any>[];
   renderMode: RenderMode;
-  cameraView: Partial<CameraView>;
-  cameraFlyTo: Partial<CameraView> & {duration?: number; onAfterFly?: () => void};
+  cameraView: Partial<CameraView> & {isAnimated?: boolean; interpolationFactor?: number};
   markers: MarkerProps[];
   allowDownsampling: boolean;
   renderOptions: RenderOptions;
@@ -94,30 +93,9 @@ export class WebGlGlobe extends EventTarget {
       this.setLayers(props.layers);
     }
 
-    if (props.cameraFlyTo) {
-      // If cameraFlyTo is set, stop any auto-spin and fly to the new position
-      this.stopAutoSpin();
-
-      const {duration, onAfterFly, ...flyToOptions} = props.cameraFlyTo;
-
-      this.renderer.flyCameraTo(
-        {
-          renderMode: RenderMode.GLOBE,
-          ...flyToOptions,
-        },
-        duration,
-        onAfterFly
-      );
-    } else if (props.cameraView) {
-      this.renderer.setCameraView({
-        renderMode: RenderMode.GLOBE,
-        lat: 0,
-        lng: 0,
-        zoom: 0,
-        altitude: 0,
-
-        ...props.cameraView
-      });
+    if (props.cameraView) {
+      const {isAnimated, interpolationFactor, ...newCameraView} = props.cameraView;
+      this.renderer.setCameraView(newCameraView, isAnimated, interpolationFactor);
     }
 
     if (props.markers) {
@@ -250,7 +228,7 @@ export class WebGlGlobe extends EventTarget {
     this.resizeObserver.unobserve(this.container);
     this.abortController.abort();
     this.renderer.destroy();
-    this.renderer.getGlobeControls().disconnect()
+    this.renderer.getGlobeControls().disconnect();
     void this.tileSelector.destroy();
   }
 
