@@ -18,6 +18,8 @@ const globe = new WebGlGlobe(document.getElementById('globe')!, {
   cameraView: {lng: 0, lat: 0, altitude: distance}
 });
 
+// globe.startAutoSpin(1)
+globe.setControlsInteractionEnabled(true)
 const flyToButton = document.getElementById('fly-to')!;
 
 flyToButton.addEventListener('click', () => {

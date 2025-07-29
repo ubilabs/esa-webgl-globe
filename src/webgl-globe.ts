@@ -75,7 +75,8 @@ export class WebGlGlobe extends EventTarget {
 
     this.interactionController = new InteractionController(
       this.renderer.getGlobeControls(),
-      this.container
+      this.container,
+      this.renderer
     );
 
     this.setProps({...DEFAULT_PROPS, ...props});
@@ -95,7 +96,7 @@ export class WebGlGlobe extends EventTarget {
 
     if (props.cameraView) {
       const {isAnimated, interpolationFactor, ...newCameraView} = props.cameraView;
-      this.renderer.setCameraView(newCameraView, isAnimated, interpolationFactor);
+      this.interactionController.setCameraView(newCameraView, isAnimated, interpolationFactor);
     }
 
     if (props.markers) {
@@ -174,6 +175,7 @@ export class WebGlGlobe extends EventTarget {
     const loop = () => {
       this.tileUpdateRafId = requestAnimationFrame(loop);
       this.updateRenderTiles();
+      this.interactionController.updateCameraAnimation();
     };
 
     this.tileUpdateRafId = requestAnimationFrame(loop);

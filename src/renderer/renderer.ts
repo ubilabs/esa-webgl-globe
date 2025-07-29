@@ -26,7 +26,7 @@ export class Renderer extends EventTarget {
   private readonly mapCamera: OrthographicCamera = new OrthographicCamera();
 
   private globeControls: OrbitControls;
-  private mapControls: MapControls;
+  public mapControls: MapControls;
 
   private tileManager: TileManager;
   private cameraView?: CameraView;
@@ -36,10 +36,6 @@ export class Renderer extends EventTarget {
   private rendererSize: Vector2 = new Vector2();
   private atmosphere: Atmosphere = new Atmosphere();
   private clock = new Clock();
-
-  private targetCameraView?: CameraView;
-  private isAnimatingCamera: boolean = false;
-  private currentInterpolationFactor: number = 0.1; // Default interpolation factor
 
   constructor(container?: HTMLElement) {
     super();
@@ -140,55 +136,7 @@ export class Renderer extends EventTarget {
     return undefined;
   }
 
-  setCameraView(newCameraView: Partial<CameraView>, isAnimated = true, interpolationFactor?: number) {
-    const currentView = this.getCameraView();
-
-    if (!currentView) {
-      console.warn('Cannot set camera view, current camera view is undefined.');
-      return;
-    }
-
-    const targetCameraView: CameraView = {
-      ...currentView,
-      ...newCameraView
-    };
-
-    if (targetCameraView === this.cameraView) {
-      return;
-    }
-
-    if (targetCameraView.renderMode !== this.renderMode) {
-      this.setRenderMode(targetCameraView.renderMode);
-    }
-
-    if (!isAnimated || targetCameraView.renderMode !== RenderMode.GLOBE) {
-      // Immediately set the camera view if not animated or not in globe mode
-      if (this.renderMode === RenderMode.GLOBE) {
-        cameraViewToGlobePosition(targetCameraView, this.globeCamera.position);
-      } else if (this.renderMode === RenderMode.MAP) {
-        this.mapCamera.position.x = targetCameraView.lng / 90;
-        this.mapCamera.position.y = targetCameraView.lat / 90;
-        this.mapCamera.zoom = targetCameraView.zoom;
-        this.mapControls.target.copy(this.mapCamera.position);
-      }
-      this.cameraView = targetCameraView;
-      // Stop any ongoing animation and re-enable controls
-      this.isAnimatingCamera = false;
-      this.globeControls.enabled = true;
-      this.mapControls.enabled = true;
-      return;
-    }
-
-    // Start or update animation
-    this.targetCameraView = targetCameraView;
-    this.isAnimatingCamera = true;
-    this.globeControls.enabled = false; // Disable controls during animation
-    this.mapControls.enabled = false;
-
-    if (interpolationFactor !== undefined) {
-      this.currentInterpolationFactor = interpolationFactor;
-    }
-  }
+  
 
   setMarkers(markerProps: MarkerProps[]) {
     // remove markers that are no longer needeed
@@ -307,59 +255,7 @@ export class Renderer extends EventTarget {
 
   private animationLoopUpdate() {
     const deltaTime = this.clock.getDelta();
-    if (this.isAnimatingCamera && this.renderMode === RenderMode.GLOBE && this.targetCameraView) {
-      const currentView = this.getCameraView();
-      if (!currentView) {
-        this.isAnimatingCamera = false;
-        this.globeControls.enabled = true;
-        this.mapControls.enabled = true;
-        return;
-      }
-
-      const interpolationFactor = this.currentInterpolationFactor;
-      // This prevents unnecessary minor adjustments, ensuring smoother animations and reducing computation.
-      const epsilon = 0.05;
-
-      let deltaLng = this.targetCameraView.lng - currentView.lng;
-      if (deltaLng > 180) {
-        deltaLng -= 360;
-      } else if (deltaLng < -180) {
-        deltaLng += 360;
-      }
-      let newLat = lerp(currentView.lat, this.targetCameraView.lat, interpolationFactor);
-      let newLng = lerp(currentView.lng, currentView.lng + deltaLng, interpolationFactor);
-      let newZoom = lerp(currentView.zoom, this.targetCameraView.zoom, interpolationFactor);
-      let newAltitude = lerp(currentView.altitude, this.targetCameraView.altitude, interpolationFactor);
-
-      const interpolatedView: CameraView = {
-        renderMode: this.targetCameraView.renderMode,
-        lat: newLat,
-        lng: newLng,
-        zoom: newZoom,
-        altitude: newAltitude
-      };
-
-      // Check if close enough to target
-      const latDiff = Math.abs(interpolatedView.lat - this.targetCameraView.lat);
-      const lngDiff = Math.abs(interpolatedView.lng - this.targetCameraView.lng);
-      const zoomDiff = Math.abs(interpolatedView.zoom - this.targetCameraView.zoom);
-      const altitudeDiff = Math.abs(interpolatedView.altitude - this.targetCameraView.altitude);
-
-      if (latDiff < epsilon && lngDiff < epsilon && zoomDiff < epsilon && altitudeDiff < epsilon) {
-        // Snap to target and stop animation
-        cameraViewToGlobePosition(this.targetCameraView, this.globeCamera.position);
-        this.cameraView = this.targetCameraView;
-        this.globeCamera.lookAt(0, 0, 0);
-        this.isAnimatingCamera = false;
-        this.globeControls.enabled = true;
-        this.mapControls.enabled = true;
-      } else {
-        // Directly update camera position and internal cameraView
-        cameraViewToGlobePosition(interpolatedView, this.globeCamera.position);
-        this.cameraView = interpolatedView;
-        this.globeCamera.lookAt(0, 0, 0);
-      }
-    } else if (this.globeControls.enabled) {
+    if (this.globeControls.enabled) {
       this.globeControls.update(deltaTime);
       const cameraDistance = this.globeCamera.position.length() - 1;
       this.globeControls.rotateSpeed = Math.max(0.05, Math.min(1.0, cameraDistance - 0.2));
@@ -369,6 +265,13 @@ export class Renderer extends EventTarget {
 
     this.webglRenderer.render(this.scene, this.getCamera());
   }
+
+  public updateGlobeCamera(cameraView: CameraView) {
+    cameraViewToGlobePosition(cameraView, this.globeCamera.position);
+    this.cameraView = cameraView;
+    this.globeCamera.lookAt(0, 0, 0);
+  }
+
   setRenderOptions(renderOptions: RenderOptions) {
     this.atmosphere.setRenderOptions(renderOptions);
   }
