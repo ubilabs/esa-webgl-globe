@@ -1,12 +1,4 @@
-import {
-  Clock,
-  OrthographicCamera,
-  PerspectiveCamera,
-  Scene,
-  Vector2,
-  WebGLRenderer,
-  Vector3
-} from 'three';
+import {Clock, OrthographicCamera, PerspectiveCamera, Scene, Vector2, WebGLRenderer, Vector3} from 'three';
 
 // @ts-ignore
 import {OrbitControls} from './vendor/orbit-controls.js';
@@ -16,13 +8,14 @@ import {MarkerHtml} from './marker-html';
 import {cameraViewToGlobePosition, globePositionToCameraView} from './lib/convert-spaces';
 import {RenderMode, RenderOptions} from './types/renderer';
 
+import { lerp } from './lib/easing.js';
+
 import type {RenderTile} from './types/tile';
 import type {CameraView} from './types/camera-view';
 import type {MarkerProps} from './types/marker';
 import {MAP_HEIGHT, MAP_WIDTH} from './config';
 
 import {Atmosphere} from './atmosphere';
-import {WebGlGlobeProps} from '../webgl-globe.js';
 
 export class Renderer extends EventTarget {
   readonly container: HTMLElement;
@@ -333,14 +326,10 @@ export class Renderer extends EventTarget {
       } else if (deltaLng < -180) {
         deltaLng += 360;
       }
-      let newLat =
-        currentView.lat + (this.targetCameraView.lat - currentView.lat) * interpolationFactor;
-      let newLng = currentView.lng + deltaLng * interpolationFactor;
-      let newZoom =
-        currentView.zoom + (this.targetCameraView.zoom - currentView.zoom) * interpolationFactor;
-      let newAltitude =
-        currentView.altitude +
-        (this.targetCameraView.altitude - currentView.altitude) * interpolationFactor;
+      let newLat = lerp(currentView.lat, this.targetCameraView.lat, interpolationFactor);
+      let newLng = lerp(currentView.lng, currentView.lng + deltaLng, interpolationFactor);
+      let newZoom = lerp(currentView.zoom, this.targetCameraView.zoom, interpolationFactor);
+      let newAltitude = lerp(currentView.altitude, this.targetCameraView.altitude, interpolationFactor);
 
       const interpolatedView: CameraView = {
         renderMode: this.targetCameraView.renderMode,

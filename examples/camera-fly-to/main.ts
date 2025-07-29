@@ -26,7 +26,7 @@ flyToButton.addEventListener('click', () => {
       lng: Math.random() * 360 - 180,
       lat: Math.random() * 180 - 90,
       altitude: Math.random() * 20_000_000 + 2_000_000,
-      interpolationFactor: 0.01 // Example: set a custom interpolation factor
+      interpolationFactor: 0.1 // Example: set a custom interpolation factor
     }
   });
 });
