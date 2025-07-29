@@ -41,6 +41,7 @@ export class Renderer extends EventTarget {
   private rendererSize: Vector2 = new Vector2();
   private atmosphere: Atmosphere = new Atmosphere();
   private clock = new Clock();
+  private baseFov = 30;
 
   constructor(container?: HTMLElement) {
     super();
@@ -105,6 +106,8 @@ export class Renderer extends EventTarget {
     const aspectRatio = width / height;
 
     this.globeCamera.aspect = aspectRatio;
+    // adjust fov to fit screen
+    this.globeCamera.fov = this.baseFov / Math.min(aspectRatio, 1.0);
     this.globeCamera.updateProjectionMatrix();
 
     const halfWidth = MAP_WIDTH / 2;
