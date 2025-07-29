@@ -1,4 +1,3 @@
-// @ts-ignore
 import {OrbitControls} from './vendor/orbit-controls.js';
 import {CameraView} from './types/camera-view.js';
 import {RenderMode} from './types/renderer';
@@ -107,6 +106,16 @@ export class InteractionController {
     this.container.style.pointerEvents = isEnabled ? 'auto' : 'none';
   }
 
+  private calculateShortestLongitudeDelta(from: number, to: number) {
+    let delta = to - from;
+    if (delta > 180) {
+      delta -= 360;
+    } else if (delta < -180) {
+      delta += 360;
+    }
+    return delta;
+  }
+
   public updateCameraAnimation() {
     if (
       this.isAnimatingCamera &&
@@ -124,12 +133,10 @@ export class InteractionController {
       const interpolationFactor = this.currentInterpolationFactor;
       const epsilon = 1e-6; // Threshold for "close enough"
 
-      let deltaLng = this.targetCameraView.lng - currentView.lng;
-      if (deltaLng > 180) {
-        deltaLng -= 360;
-      } else if (deltaLng < -180) {
-        deltaLng += 360;
-      }
+      const deltaLng = this.calculateShortestLongitudeDelta(
+        currentView.lng,
+        this.targetCameraView.lng
+      );
       let newLat = lerp(currentView.lat, this.targetCameraView.lat, interpolationFactor);
       let newLng = lerp(currentView.lng, currentView.lng + deltaLng, interpolationFactor);
       let newZoom = lerp(currentView.zoom, this.targetCameraView.zoom, interpolationFactor);
