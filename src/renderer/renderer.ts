@@ -6,7 +6,7 @@ import {MapControls} from 'three/examples/jsm/controls/MapControls';
 import {TileManager} from './tile-manager';
 import {MarkerHtml} from './marker-html';
 import {cameraViewToGlobePosition, globePositionToCameraView} from './lib/convert-spaces';
-import {FlyToAnimation, RenderMode, RenderOptions} from './types/renderer';
+import {RenderMode, RenderOptions} from './types/renderer';
 
 import {easeInQutQuad} from './lib/easing.js';
 
@@ -42,7 +42,6 @@ export class Renderer extends EventTarget {
     to: CameraView;
     startTime: number;
     duration: number;
-    onAfterFly?: () => void;
     previousGlobeControlsEnabled: boolean;
     previousMapControlsEnabled: boolean;
   };
@@ -146,7 +145,7 @@ export class Renderer extends EventTarget {
     return undefined;
   }
 
-  setCameraView(cameraView: CameraView) {
+  setCameraView(cameraView: CameraView, isAnimated = true, duration = 1000) {
     if (cameraView === this.cameraView) {
       return;
     }
@@ -155,35 +154,24 @@ export class Renderer extends EventTarget {
       this.setRenderMode(cameraView.renderMode);
     }
 
-    if (this.renderMode === RenderMode.GLOBE) {
-      cameraViewToGlobePosition(cameraView, this.globeCamera.position);
-      this.cameraView = cameraView;
-    } else if (this.renderMode === RenderMode.MAP) {
-      this.mapCamera.position.x = cameraView.lng / 90;
-      this.mapCamera.position.y = cameraView.lat / 90;
-      this.mapCamera.zoom = cameraView.zoom;
-      this.mapControls.target.copy(this.mapCamera.position);
-    }
-  }
-
-  flyCameraTo(cameraView: Partial<CameraView>, duration = 1000, onAfterFly?: () => void) {
     const from = this.getCameraView();
 
-    if (!from) {
-      console.warn('Cannot fly to camera view, current camera view is undefined.');
-      return;
-    }
-
-    // when the cameraView is not complete, we fill in the missing values
-    const updatedCameraView: CameraView = {
-      ...from,
-      ...cameraView
-    };
-
-    // We only support flying in globe mode
-    if (this.renderMode !== RenderMode.GLOBE || cameraView.renderMode !== RenderMode.GLOBE) {
-      this.setCameraView(updatedCameraView);
-      onAfterFly?.();
+    if (!from || !isAnimated || duration === 0 || cameraView.renderMode !== RenderMode.GLOBE) {
+      if (this.renderMode === RenderMode.GLOBE) {
+        cameraViewToGlobePosition(cameraView, this.globeCamera.position);
+        this.cameraView = cameraView;
+      } else if (this.renderMode === RenderMode.MAP) {
+        this.mapCamera.position.x = cameraView.lng / 90;
+        this.mapCamera.position.y = cameraView.lat / 90;
+        this.mapCamera.zoom = cameraView.zoom;
+        this.mapControls.target.copy(this.mapCamera.position);
+      }
+      // If an animation was running, stop it
+      if (this.flyToAnimation) {
+        this.globeControls.enabled = this.flyToAnimation.previousGlobeControlsEnabled;
+        this.mapControls.enabled = this.flyToAnimation.previousMapControlsEnabled;
+        this.flyToAnimation = undefined;
+      }
       return;
     }
 
@@ -191,17 +179,15 @@ export class Renderer extends EventTarget {
     // Otherwise, we start a new one and save the controls state.
     if (this.flyToAnimation) {
       this.flyToAnimation.from = from;
-      this.flyToAnimation.to = updatedCameraView;
+      this.flyToAnimation.to = cameraView;
       this.flyToAnimation.startTime = Date.now();
       this.flyToAnimation.duration = duration;
-      this.flyToAnimation.onAfterFly = onAfterFly;
     } else {
       this.flyToAnimation = {
         from: from,
-        to: updatedCameraView,
+        to: cameraView,
         startTime: Date.now(),
         duration: duration,
-        onAfterFly,
         previousGlobeControlsEnabled: this.globeControls.enabled,
         previousMapControlsEnabled: this.mapControls.enabled
       };
@@ -211,6 +197,8 @@ export class Renderer extends EventTarget {
       this.mapControls.enabled = false;
     }
   }
+
+  
 
   setMarkers(markerProps: MarkerProps[]) {
     // remove markers that are no longer needeed
@@ -336,21 +324,17 @@ export class Renderer extends EventTarget {
         startTime,
         duration,
         previousGlobeControlsEnabled,
-        previousMapControlsEnabled,
-        onAfterFly
+        previousMapControlsEnabled
       } = this.flyToAnimation;
       const t = Math.min(1, (Date.now() - startTime) / duration);
 
       const easedT = easeInQutQuad(t);
 
       if (t >= 1) {
-        this.setCameraView(to);
+        this.setCameraView(to, false);
         this.flyToAnimation = undefined;
         this.globeControls.enabled = previousGlobeControlsEnabled;
         this.mapControls.enabled = previousMapControlsEnabled;
-
-        // Execute onAfterFly callback after the fly animation is done
-        onAfterFly?.();
       } else {
         let deltaLng = to.lng - from.lng;
         if (deltaLng > 180) {
@@ -367,7 +351,7 @@ export class Renderer extends EventTarget {
           altitude: from.altitude + (to.altitude - from.altitude) * easedT
         };
 
-        this.setCameraView(interpolatedView);
+        this.setCameraView(interpolatedView, false);
         this.globeCamera.lookAt(0, 0, 0);
       }
     } else if (this.globeControls.enabled) {
