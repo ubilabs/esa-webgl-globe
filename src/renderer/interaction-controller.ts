@@ -1,3 +1,4 @@
+//@ts-ignore
 import {OrbitControls} from './vendor/orbit-controls.js';
 import {CameraView} from './types/camera-view.js';
 import {RenderMode} from './types/renderer';

@@ -1,12 +1,4 @@
-import {
-  Clock,
-  OrthographicCamera,
-  PerspectiveCamera,
-  Scene,
-  Vector2,
-  WebGLRenderer,
-  Vector3
-} from 'three';
+import {Clock, OrthographicCamera, PerspectiveCamera, Scene, Vector2, WebGLRenderer} from 'three';
 
 // @ts-ignore
 import {OrbitControls} from './vendor/orbit-controls.js';
