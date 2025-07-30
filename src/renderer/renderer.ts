@@ -1,4 +1,12 @@
-import {Clock, OrthographicCamera, PerspectiveCamera, Scene, Vector2, WebGLRenderer} from 'three';
+import {
+  Clock,
+  OrthographicCamera,
+  PerspectiveCamera,
+  Scene,
+  Vector2,
+  WebGLRenderer,
+  Vector3
+} from 'three';
 
 // @ts-ignore
 import {OrbitControls} from './vendor/orbit-controls.js';
@@ -24,10 +32,9 @@ export class Renderer extends EventTarget {
   private readonly mapCamera: OrthographicCamera = new OrthographicCamera();
 
   private globeControls: OrbitControls;
-  private mapControls: MapControls;
+  public mapControls: MapControls;
 
   private tileManager: TileManager;
-  private cameraView?: CameraView;
   private markersById: Record<string, MarkerHtml> = {};
   private renderMode: RenderMode = RenderMode.GLOBE;
 
@@ -119,29 +126,25 @@ export class Renderer extends EventTarget {
     return this.mapCamera;
   }
 
-  setCameraView(cameraView: CameraView) {
-    if (cameraView === this.cameraView) {
-      return;
-    }
-
-    if (cameraView.renderMode !== this.renderMode) {
-      this.setRenderMode(cameraView.renderMode);
-    }
-
+  getCameraView(): CameraView | undefined {
     if (this.renderMode === RenderMode.GLOBE) {
-      cameraViewToGlobePosition(cameraView, this.globeCamera.position);
-      this.cameraView = cameraView;
+      return globePositionToCameraView(this.globeCamera.position);
     } else if (this.renderMode === RenderMode.MAP) {
-      this.mapCamera.position.x = cameraView.lng / 90;
-      this.mapCamera.position.y = cameraView.lat / 90;
-      this.mapCamera.zoom = cameraView.zoom;
-      this.mapControls.target.copy(this.mapCamera.position);
+      return {
+        renderMode: RenderMode.MAP,
+        lat: this.mapCamera.position.y * 90,
+        lng: this.mapCamera.position.x * 90,
+        zoom: this.mapCamera.zoom,
+        altitude: 0
+      };
     }
+    return undefined;
   }
 
   setMarkers(markerProps: MarkerProps[]) {
     // remove markers that are no longer needeed
     const newMarkerIds = markerProps.map(m => m.id);
+
     const toRemove = Object.keys(this.markersById).filter(id => !newMarkerIds.includes(id));
 
     for (const markerId of toRemove) {
@@ -225,7 +228,6 @@ export class Renderer extends EventTarget {
       const event = new CustomEvent<CameraView>('cameraViewChanged', {detail: view});
       this.dispatchEvent(event);
     });
-
     const origUpdate = this.mapControls.update.bind(this.mapControls);
 
     // override the update-function to limit map bounds
@@ -256,7 +258,6 @@ export class Renderer extends EventTarget {
 
   private animationLoopUpdate() {
     const deltaTime = this.clock.getDelta();
-
     if (this.globeControls.enabled) {
       this.globeControls.update(deltaTime);
       const cameraDistance = this.globeCamera.position.length() - 1;
@@ -266,6 +267,11 @@ export class Renderer extends EventTarget {
     }
 
     this.webglRenderer.render(this.scene, this.getCamera());
+  }
+
+  public updateGlobeCamera(cameraView: CameraView) {
+    cameraViewToGlobePosition(cameraView, this.globeCamera.position);
+    this.globeCamera.lookAt(0, 0, 0);
   }
 
   setRenderOptions(renderOptions: RenderOptions) {

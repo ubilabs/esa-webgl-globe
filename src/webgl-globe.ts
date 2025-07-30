@@ -17,7 +17,7 @@ const TILESELECTOR_FPS = 15;
 export type WebGlGlobeProps = Partial<{
   layers: LayerProps<any>[];
   renderMode: RenderMode;
-  cameraView: Partial<CameraView>;
+  cameraView: Partial<CameraView> & {isAnimated?: boolean; interpolationFactor?: number};
   markers: MarkerProps[];
   allowDownsampling: boolean;
   renderOptions: RenderOptions;
@@ -75,7 +75,8 @@ export class WebGlGlobe extends EventTarget {
 
     this.interactionController = new InteractionController(
       this.renderer.getGlobeControls(),
-      this.container
+      this.container,
+      this.renderer
     );
 
     this.setProps({...DEFAULT_PROPS, ...props});
@@ -94,15 +95,8 @@ export class WebGlGlobe extends EventTarget {
     }
 
     if (props.cameraView) {
-      this.renderer.setCameraView({
-        renderMode: RenderMode.GLOBE,
-        lat: 0,
-        lng: 0,
-        zoom: 0,
-        altitude: 0,
-
-        ...props.cameraView
-      });
+      const {isAnimated, interpolationFactor, ...newCameraView} = props.cameraView;
+      this.interactionController.setCameraView(newCameraView, isAnimated, interpolationFactor);
     }
 
     if (props.markers) {
@@ -181,6 +175,7 @@ export class WebGlGlobe extends EventTarget {
     const loop = () => {
       this.tileUpdateRafId = requestAnimationFrame(loop);
       this.updateRenderTiles();
+      this.interactionController.updateCameraAnimation();
     };
 
     this.tileUpdateRafId = requestAnimationFrame(loop);
@@ -235,7 +230,7 @@ export class WebGlGlobe extends EventTarget {
     this.resizeObserver.unobserve(this.container);
     this.abortController.abort();
     this.renderer.destroy();
-    this.renderer.getGlobeControls().disconnect()
+    this.renderer.getGlobeControls().disconnect();
     void this.tileSelector.destroy();
   }
 
