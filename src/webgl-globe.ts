@@ -4,6 +4,7 @@ import {Layer} from './loader/layer';
 import {RenderTile} from './renderer/types/tile';
 import {TileSelector} from './tile-selector/tile-selector';
 import {Renderer} from './renderer/renderer';
+import {InteractionController} from './renderer/interaction-controller';
 import {RenderMode, RenderOptions} from './renderer/types/renderer';
 import {LayerLoadingState} from './loader/types/layer';
 
@@ -32,6 +33,8 @@ export class WebGlGlobe extends EventTarget {
   private readonly scheduler: RequestScheduler<RenderTile>;
   private readonly renderer: Renderer;
   private readonly tileSelector: TileSelector;
+  private readonly interactionController: InteractionController;
+  private abortController: AbortController;
 
   private layersById: Record<string, Layer> = {};
 
@@ -60,6 +63,7 @@ export class WebGlGlobe extends EventTarget {
     this.resizeObserver = new ResizeObserver(() => {
       this.resize();
     });
+    this.abortController = new AbortController();
 
     this.scheduler = new RequestScheduler();
 
@@ -68,6 +72,11 @@ export class WebGlGlobe extends EventTarget {
     this.tileSelector = new TileSelector({
       workerUrl: WebGlGlobe.tileSelectorWorkerUrl
     });
+
+    this.interactionController = new InteractionController(
+      this.renderer.getGlobeControls(),
+      this.container
+    );
 
     this.setProps({...DEFAULT_PROPS, ...props});
 
@@ -116,6 +125,18 @@ export class WebGlGlobe extends EventTarget {
   stop() {
     clearInterval(this.tileSelectorIntervalId);
     cancelAnimationFrame(this.tileUpdateRafId);
+  }
+
+  public startAutoSpin(speed: number = 0.1) {
+    this.interactionController.setAutoSpin(true, speed);
+  }
+
+  public stopAutoSpin() {
+    this.interactionController.setAutoSpin(false);
+  }
+
+  public setControlsInteractionEnabled(enabled: boolean) {
+    this.interactionController.setControlsInteractionEnabled(enabled);
   }
 
   private setLayers(layers: LayerProps[]) {
@@ -197,16 +218,24 @@ export class WebGlGlobe extends EventTarget {
     this.resizeObserver.observe(this.container);
 
     // Dispatch camera view changed event
-    this.renderer.addEventListener('cameraViewChanged', (event: CustomEventInit<CameraView>) => {
-      // create a new event since we cannot dispatch the same event twice
-      const newEvent = new CustomEvent<CameraView>('cameraViewChanged', {detail: event.detail});
-      this.dispatchEvent(newEvent);
-    });
+    this.renderer.addEventListener(
+      'cameraViewChanged',
+      (event: CustomEventInit<CameraView>) => {
+        const newEvent = new CustomEvent<CameraView>('cameraViewChanged', {
+          detail: event.detail
+        });
+        this.dispatchEvent(newEvent);
+      },
+      {signal: this.abortController.signal}
+    );
   }
 
   destroy() {
+    this.stopAutoSpin();
     this.resizeObserver.unobserve(this.container);
+    this.abortController.abort();
     this.renderer.destroy();
+    this.renderer.getGlobeControls().disconnect()
     void this.tileSelector.destroy();
   }
 
