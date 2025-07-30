@@ -115,10 +115,10 @@ class OrbitControls extends EventDispatcher {
       return this.object.position.distanceTo(this.target);
     };
 
-    this.listenToKeyEvents = function (domElement) {
-      domElement.addEventListener('keydown', onKeyDown);
-      this._domElementKeyEvents = domElement;
-    };
+    // this.listenToKeyEvents = function (domElement) {
+    //   domElement.addEventListener('keydown', onKeyDown);
+    //   this._domElementKeyEvents = domElement;
+    // };
 
     this.saveState = function () {
       scope.target0.copy(scope.target);

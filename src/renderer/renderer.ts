@@ -1,7 +1,6 @@
 import {Clock, OrthographicCamera, PerspectiveCamera, Scene, Vector2, WebGLRenderer} from 'three';
 
-// @ts-ignore
-import {OrbitControls} from './vendor/orbit-controls.js';
+import {OrbitControls} from './vendor/orbit-controls';
 import {MapControls} from 'three/examples/jsm/controls/MapControls';
 import {TileManager} from './tile-manager';
 import {MarkerHtml} from './marker-html';
@@ -254,7 +253,8 @@ export class Renderer extends EventTarget {
   private animationLoopUpdate() {
     const deltaTime = this.clock.getDelta();
     if (this.globeControls.enabled) {
-      this.globeControls.update(deltaTime);
+      this.globeControls.update();
+      // this.globeControls.update(deltaTime);
       const cameraDistance = this.globeCamera.position.length() - 1;
       this.globeControls.rotateSpeed = Math.max(0.05, Math.min(1.0, cameraDistance - 0.2));
     } else if (this.mapControls.enabled) {
