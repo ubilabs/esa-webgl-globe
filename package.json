@@ -13,8 +13,8 @@
       "default": "./dist/esa-webgl-globe.esm.js"
     },
     "./worker": {
-      "default": "./dist/tile-selector-worker.js",
-      "types": "./dist/types/tile-selector/tile-selector-worker.d.ts"
+      "types": "./dist/types/tile-selector/tile-selector-worker.d.ts",
+      "default": "./dist/tile-selector-worker.js"
     },
     "./textures/": "./dist/textures/"
   },
