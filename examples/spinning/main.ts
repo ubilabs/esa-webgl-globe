@@ -5,6 +5,12 @@ import {WebGlGlobe, LayerProps} from '../../src';
 const distance = 20_000_000;
 
 const globe = new WebGlGlobe(document.body, {
+  renderOptions: {
+    atmosphereEnabled: true,
+    shadingEnabled: true,
+    atmosphereStrength: 0.8,
+    atmosphereColor: [0.58, 0.79, 1] // {r: 148, g: 201, b: 255}
+  },
   layers: [
     {
       id: 'basemap',
@@ -18,9 +24,9 @@ const globe = new WebGlGlobe(document.body, {
   cameraView: {lng: 0, lat: 0, altitude: distance, isAnimated: false}
 });
 
-globe.setControlsInteractionEnabled( true );
-globe.startAutoSpin(1);
+globe.setControlsInteractionEnabled(true);
+globe.startAutoSpin();
 
 setTimeout(() => {
   globe.stopAutoSpin();
-}, 2000);
+}, 5000);
