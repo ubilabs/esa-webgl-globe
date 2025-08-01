@@ -254,7 +254,6 @@ export class Renderer extends EventTarget {
     const deltaTime = this.clock.getDelta();
     if (this.globeControls.enabled) {
       this.globeControls.update();
-      // this.globeControls.update(deltaTime);
       const cameraDistance = this.globeCamera.position.length() - 1;
       this.globeControls.rotateSpeed = Math.max(0.05, Math.min(1.0, cameraDistance - 0.2));
     } else if (this.mapControls.enabled) {
