@@ -2,9 +2,17 @@ import '../style.css';
 
 import {WebGlGlobe, LayerProps} from '../../src';
 
-const distance = 20_000_000;
+const distance = 22584000;
 
-const globe = new WebGlGlobe(document.body, {
+const nav = document.querySelector<HTMLDivElement>('.nav');
+
+if (nav) {
+  nav.style.width = Math.min(window.innerWidth / 2, window.innerHeight - 60) + 'px';
+}
+
+const globeContainer = document.querySelector<HTMLDivElement>('#globe-container');
+
+const globe = new WebGlGlobe(globeContainer!, {
   renderOptions: {
     atmosphereEnabled: true,
     shadingEnabled: true,
@@ -25,7 +33,7 @@ const globe = new WebGlGlobe(document.body, {
 });
 
 globe.setControlsInteractionEnabled(true);
-globe.startAutoSpin();
+// globe.startAutoSpin();
 
 setTimeout(() => {
   globe.stopAutoSpin();

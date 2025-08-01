@@ -30,9 +30,12 @@ export class Renderer extends EventTarget {
   private renderMode: RenderMode = RenderMode.GLOBE;
 
   private rendererSize: Vector2 = new Vector2();
+  private targetSize: Vector2 = new Vector2();
+  private isResizing: boolean = false;
   private atmosphere: Atmosphere = new Atmosphere();
   private clock = new Clock();
   private baseFov = 30;
+  private resizeObserver: ResizeObserver;
 
   constructor(container?: HTMLElement) {
     super();
@@ -68,6 +71,8 @@ export class Renderer extends EventTarget {
     this.configureControls();
 
     const {width, height} = this.container.getBoundingClientRect();
+    this.rendererSize.set(width, height);
+    this.targetSize.set(width, height);
     this.resize(width, height);
   }
 
@@ -91,9 +96,8 @@ export class Renderer extends EventTarget {
   }
 
   resize(width: number, height: number) {
-    this.rendererSize.set(width, height);
-    this.webglRenderer.setSize(width, height);
-
+    this.targetSize.set(width, height);
+    this.isResizing = true;
     const aspectRatio = width / height;
 
     this.globeCamera.aspect = aspectRatio;
@@ -161,6 +165,7 @@ export class Renderer extends EventTarget {
   }
 
   destroy() {
+    this.resizeObserver.disconnect();
     this.webglRenderer.dispose();
     this.webglRenderer.setAnimationLoop(null);
     this.webglRenderer.domElement.remove();
@@ -252,6 +257,25 @@ export class Renderer extends EventTarget {
 
   private animationLoopUpdate() {
     const deltaTime = this.clock.getDelta();
+
+    if (this.isResizing) {
+      this.rendererSize.lerp(this.targetSize, 0.1);
+      if (this.rendererSize.distanceTo(this.targetSize) < 1) {
+        this.rendererSize.copy(this.targetSize);
+        this.isResizing = false;
+      }
+      this.webglRenderer.setSize(this.rendererSize.x, this.rendererSize.y);
+
+      const aspectRatio = this.rendererSize.x / this.rendererSize.y;
+      this.globeCamera.aspect = aspectRatio;
+      this.globeCamera.updateProjectionMatrix();
+
+      const halfWidth = MAP_WIDTH / 2;
+      this.mapCamera.top = halfWidth / aspectRatio;
+      this.mapCamera.bottom = -halfWidth / aspectRatio;
+      this.mapCamera.updateProjectionMatrix();
+    }
+
     if (this.globeControls.enabled) {
       this.globeControls.update();
       const cameraDistance = this.globeCamera.position.length() - 1;

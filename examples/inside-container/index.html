@@ -13,6 +13,7 @@
         background: white !important;
       }
       #container {
+        transition: all 2s ease-in-out;
         width: 50vw;
         height: 50vh;
         background: #111;
@@ -24,6 +25,7 @@
     </style>
   </head>
   <body>
+    <button id="resize-container">Click to resize container</button>
     <div id="container"></div>
     <div id="info">An example rendering the globe inside a container div element.</div>
     <script type="module" src="main.ts"></script>
