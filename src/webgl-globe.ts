@@ -121,7 +121,7 @@ export class WebGlGlobe extends EventTarget {
     cancelAnimationFrame(this.tileUpdateRafId);
   }
 
-  public startAutoSpin(speed: number = 0.1) {
+  public startAutoSpin(speed: number = 0.5) {
     this.interactionController.setAutoSpin(true, speed);
   }
 
