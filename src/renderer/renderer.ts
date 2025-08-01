@@ -35,7 +35,7 @@ export class Renderer extends EventTarget {
   private atmosphere: Atmosphere = new Atmosphere();
   private clock = new Clock();
   private baseFov = 30;
-  private resizeObserver: ResizeObserver;
+  private resizeObserver: ResizeObserver | null = null;
 
   constructor(container?: HTMLElement) {
     super();
@@ -165,7 +165,7 @@ export class Renderer extends EventTarget {
   }
 
   destroy() {
-    this.resizeObserver.disconnect();
+    this.resizeObserver!.disconnect();
     this.webglRenderer.dispose();
     this.webglRenderer.setAnimationLoop(null);
     this.webglRenderer.domElement.remove();
