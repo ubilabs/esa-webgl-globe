@@ -113,7 +113,10 @@ export class InteractionController {
       }
 
       const interpolationFactor = this.currentInterpolationFactor;
-      const epsilon = 1e-6; // Threshold for "close enough"
+
+      // thresholds for "close enough"
+      const epsilonCoords = 0.15; 
+      const epsilonAltitutde = 50000
 
       const deltaLng = this.calculateShortestLongitudeDelta(
         currentView.lng,
@@ -142,7 +145,7 @@ export class InteractionController {
       const zoomDiff = Math.abs(interpolatedView.zoom - this.targetCameraView.zoom);
       const altitudeDiff = Math.abs(interpolatedView.altitude - this.targetCameraView.altitude);
 
-      if (latDiff < epsilon && lngDiff < epsilon && zoomDiff < epsilon && altitudeDiff < epsilon) {
+      if (latDiff < epsilonCoords && lngDiff < epsilonCoords && zoomDiff < epsilonCoords && altitudeDiff < epsilonAltitutde) {
         // Snap to target and stop animation
         this.renderer.updateGlobeCamera(this.targetCameraView);
         this.isAnimatingCamera = false;
