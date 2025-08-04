@@ -3,7 +3,6 @@ import {CameraView} from './types/camera-view.js';
 import {RenderMode} from './types/renderer';
 import {Renderer} from './renderer';
 import {lerp} from './lib/easing.js';
-import {cameraViewToGlobePosition} from './lib/convert-spaces';
 
 export class InteractionController {
   private globeControls: OrbitControls;
