@@ -156,6 +156,13 @@ export class Renderer extends EventTarget {
     return undefined;
   }
 
+  public updateMapCamera(cameraView: CameraView) {
+    this.mapCamera.position.x = cameraView.lng / 90;
+    this.mapCamera.position.y = cameraView.lat / 90;
+    this.mapCamera.zoom = cameraView.zoom;
+    this.mapControls.target.copy(this.mapCamera.position);
+  }
+
   setMarkers(markerProps: MarkerProps[]) {
     // remove markers that are no longer needeed
     const newMarkerIds = markerProps.map(m => m.id);

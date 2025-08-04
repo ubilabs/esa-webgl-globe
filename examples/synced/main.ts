@@ -1,6 +1,6 @@
 import '../style.css';
 
-import {WebGlGlobe} from '../../src';
+import {RenderMode, WebGlGlobe} from '../../src';
 import type {LayerProps} from '../../src';
 
 const globes: WebGlGlobe[] = [];
@@ -47,16 +47,20 @@ const globes: WebGlGlobe[] = [];
     globes.push(
       new WebGlGlobe(container, {
         layers: globeLayers,
-        cameraView: {lng: 0, lat: 0, altitude: 20_000_000}
+        cameraView: {lng: 0, lat: 0, altitude: 20_000_000, renderMode: RenderMode.GLOBE}
       })
     );
   }
 
   for (const globe of globes) {
-    const otherGlobes = globes.filter(g => g !== globe);
+    const otherGlobes = globes;
 
+    globe.setControlsInteractionEnabled(true);
     globe.addEventListener('cameraViewChanged', (event: CustomEventInit) => {
-      otherGlobes.forEach(other => other.setProps({cameraView: event.detail}));
+      (console.log('sync camera view', event.detail),
+        otherGlobes.forEach(other =>
+          other.setProps({cameraView: {...event.detail, isAnimated: false}})
+        ));
     });
   }
 })();

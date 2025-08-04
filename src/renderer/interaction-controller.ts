@@ -2,7 +2,8 @@ import {OrbitControls} from './vendor/orbit-controls';
 import {CameraView} from './types/camera-view.js';
 import {RenderMode} from './types/renderer';
 import {Renderer} from './renderer';
-import { lerp } from './lib/easing.js';
+import {lerp} from './lib/easing.js';
+import {cameraViewToGlobePosition} from './lib/convert-spaces';
 
 export class InteractionController {
   private globeControls: OrbitControls;
@@ -14,6 +15,7 @@ export class InteractionController {
   private targetCameraView?: CameraView;
   private isAnimatingCamera: boolean = false;
   private currentInterpolationFactor: number = 0.1; // Default interpolation factor
+  // private cameraView?: CameraView;
 
   constructor(globeControls: OrbitControls, container: HTMLElement, renderer: Renderer) {
     this.globeControls = globeControls;
@@ -46,6 +48,7 @@ export class InteractionController {
     this.updateControlsEnabled(enabled);
   }
 
+
   public setCameraView(
     newCameraView: Partial<CameraView>,
     isAnimated = true,
@@ -71,9 +74,13 @@ export class InteractionController {
       this.renderer.setRenderMode(targetCameraView.renderMode);
     }
 
-    if (!isAnimated || targetCameraView.renderMode !== RenderMode.GLOBE) {
-      // Immediately set the camera view if not animated or not in globe mode
-      this.renderer.updateGlobeCamera(targetCameraView);
+    if (!isAnimated) {
+      // Immediately set the camera view if not animated
+      if (targetCameraView.renderMode === RenderMode.GLOBE) {
+        this.renderer.updateGlobeCamera(targetCameraView);
+      } else if (targetCameraView.renderMode === RenderMode.MAP) {
+        this.renderer.updateMapCamera(targetCameraView);
+      }
       // Stop any ongoing animation and re-enable controls
       this.isAnimatingCamera = false;
       this.globeControls.enabled = true;
