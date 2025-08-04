@@ -33,8 +33,32 @@ const globe = new WebGlGlobe(globeContainer!, {
 });
 
 globe.setControlsInteractionEnabled(true);
-// globe.startAutoSpin();
+
+globe.addEventListener(
+  'cameraViewChanged',
+  () => {
+    console.log("asdf")
+    globe.startAutoSpin();
+  },
+  {once: true}
+);
+
+// setTimeout(() => {
+//   globe.stopAutoSpin();
+// }, 1000);
 
 setTimeout(() => {
-  globe.stopAutoSpin();
-}, 5000);
+  globe.setProps({
+    cameraView: {
+      lng: 0,
+      lat: 25,
+      altitude: distance * 0.5,
+      isAnimated: true,
+      interpolationFactor: 0.01
+    }
+  });
+}, 0);
+
+// setTimeout(() => {
+//   globe.startAutoSpin();
+// }, 3000);
