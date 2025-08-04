@@ -3,7 +3,10 @@ import {WebGlGlobe} from '../../src';
 import {getMarkerHtml} from '../marker/get-marker-html';
 import type {LayerProps} from '../../src';
 
-const globe = new WebGlGlobe(document.getElementById('container')!, {
+const globe = new WebGlGlobe(document.body, {
+  cameraView: {
+    // altitude: 25840000,
+  },
   layers: [
     {
       id: 'basemap',
@@ -26,6 +29,20 @@ globe.setProps({
       onClick: id => alert(id)
     }
   ]
+});
+
+const button = document.getElementById('resize-container')!;
+
+button.addEventListener('click', () => {
+  // toggle the size of the container
+  const container = document.getElementById('container')!;
+  if (container.style.width === '100%') {
+    container.style.width = '50%';
+    container.style.height = '50%';
+  } else {
+    container.style.width = '100%';
+    container.style.height = '100%';
+  }
 });
 
 // @ts-ignore

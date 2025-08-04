@@ -32,7 +32,7 @@ export class Renderer extends EventTarget {
   private rendererSize: Vector2 = new Vector2();
   private atmosphere: Atmosphere = new Atmosphere();
   private clock = new Clock();
-  private baseFov = 30;
+  private baseHorizontalFov: number;
 
   constructor(container?: HTMLElement) {
     super();
@@ -59,6 +59,13 @@ export class Renderer extends EventTarget {
     this.tileManager = new TileManager(this.scene);
 
     this.configureCameras();
+
+    const globeRadius = 1;
+    const cameraDistance = this.globeCamera.position.length();
+    const viewportPercentage = 0.4;
+    // this calculates the required horizontal fov to take up 35% of the viewport
+    const fovInRadians = 2 * Math.atan(globeRadius / (cameraDistance * viewportPercentage));
+    this.baseHorizontalFov = fovInRadians * (180 / Math.PI);
 
     this.globeControls = new OrbitControls(this.globeCamera, this.container);
     this.mapControls = new MapControls(this.mapCamera, this.container);
@@ -91,14 +98,28 @@ export class Renderer extends EventTarget {
   }
 
   resize(width: number, height: number) {
+    // get the size of the window
     this.rendererSize.set(width, height);
+
     this.webglRenderer.setSize(width, height);
 
     const aspectRatio = width / height;
 
     this.globeCamera.aspect = aspectRatio;
-    // adjust fov to fit screen
-    this.globeCamera.fov = this.baseFov / Math.min(aspectRatio, 1.0);
+
+    // We want the globe to occupy a fixed percentage of the viewport *width*.
+    // The camera's `fov` property is the *vertical* field of view.
+    // We need to calculate the vertical FOV that will result in our desired *horizontal* FOV.
+    // The relationship is: tan(hFOV / 2) = tan(vFOV / 2) * aspect
+    // So, vFOV = 2 * atan(tan(hFOV / 2) / aspect)
+    let hFov = this.baseHorizontalFov;
+    if (width <= 767) {
+      hFov = 30;
+    }
+    const hFovRadians = hFov * (Math.PI / 180);
+    const vFovRadians = 2 * Math.atan(Math.tan(hFovRadians / 2) / aspectRatio);
+    this.globeCamera.fov = vFovRadians * (180 / Math.PI);
+
     this.globeCamera.updateProjectionMatrix();
 
     const halfWidth = MAP_WIDTH / 2;
