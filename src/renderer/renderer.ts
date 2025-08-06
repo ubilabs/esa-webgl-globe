@@ -108,13 +108,14 @@ export class Renderer extends EventTarget {
     this.globeCamera.aspect = aspectRatio;
 
     // We want the globe to occupy a fixed percentage of the viewport *width*.
+    // This is because of the way the globe has to match to navigation in FE Desktop version
     // The camera's `fov` property is the *vertical* field of view.
     // We need to calculate the vertical FOV that will result in our desired *horizontal* FOV.
     // The relationship is: tan(hFOV / 2) = tan(vFOV / 2) * aspect
     // So, vFOV = 2 * atan(tan(hFOV / 2) / aspect)
     let hFov = this.baseHorizontalFov;
     if (width <= 767) {
-      hFov = 30;
+      hFov = 27;
     }
     const hFovRadians = hFov * (Math.PI / 180);
     const vFovRadians = 2 * Math.atan(Math.tan(hFovRadians / 2) / aspectRatio);

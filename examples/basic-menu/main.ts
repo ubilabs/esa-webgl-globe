@@ -2,7 +2,7 @@ import '../style.css';
 
 import {WebGlGlobe, LayerProps} from '../../src';
 
-const distance = 22584000;
+const distance = 25840000
 const nav = document.querySelector<HTMLDivElement>('.nav');
 
 

@@ -14,7 +14,6 @@ export class InteractionController {
   private targetCameraView?: CameraView;
   private isAnimatingCamera: boolean = false;
   private currentInterpolationFactor: number = 0.1; // Default interpolation factor
-  // private cameraView?: CameraView;
 
   constructor(globeControls: OrbitControls, container: HTMLElement, renderer: Renderer) {
     this.globeControls = globeControls;
@@ -116,7 +115,7 @@ export class InteractionController {
 
       // thresholds for "close enough"
       const epsilonCoords = 0.15; 
-      const epsilonAltitutde = 50000
+      const epsilonAlt = 50000
 
       const deltaLng = this.calculateShortestLongitudeDelta(
         currentView.lng,
@@ -145,7 +144,7 @@ export class InteractionController {
       const zoomDiff = Math.abs(interpolatedView.zoom - this.targetCameraView.zoom);
       const altitudeDiff = Math.abs(interpolatedView.altitude - this.targetCameraView.altitude);
 
-      if (latDiff < epsilonCoords && lngDiff < epsilonCoords && zoomDiff < epsilonCoords && altitudeDiff < epsilonAltitutde) {
+      if (latDiff < epsilonCoords && lngDiff < epsilonCoords && zoomDiff < epsilonCoords && altitudeDiff < epsilonAlt) {
         // Snap to target and stop animation
         this.renderer.updateGlobeCamera(this.targetCameraView);
         this.isAnimatingCamera = false;
