@@ -1,6 +1,6 @@
 import '../style.css';
 
-import {WebGlGlobe} from '../../src';
+import {RenderMode, WebGlGlobe} from '../../src';
 import type {LayerProps} from '../../src';
 
 const globes: WebGlGlobe[] = [];
@@ -52,11 +52,28 @@ const globes: WebGlGlobe[] = [];
     );
   }
 
+  const projectionBtn = document.getElementById('projection');
+
+  let currentProjection = RenderMode.GLOBE;
+
+  projectionBtn?.addEventListener('click', () => {
+    currentProjection = currentProjection === RenderMode.GLOBE ? RenderMode.MAP : RenderMode.GLOBE;
+    for (const globe of globes) {
+      globe.setProps({
+        renderMode: currentProjection
+      });
+    }
+  });
+
   for (const globe of globes) {
     const otherGlobes = globes.filter(g => g !== globe);
+    globe.setControlsInteractionEnabled(true);
 
     globe.addEventListener('cameraViewChanged', (event: CustomEventInit) => {
-      otherGlobes.forEach(other => other.setProps({cameraView: event.detail}));
+      otherGlobes.forEach(other => {
+      // console.log("event", event.detail)
+          return other.setProps({ cameraView: event.detail });
+      });
     });
   }
 })();
