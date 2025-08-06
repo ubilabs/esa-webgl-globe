@@ -63,7 +63,8 @@ export class Renderer extends EventTarget {
     const globeRadius = 1;
     const cameraDistance = this.globeCamera.position.length();
     const viewportPercentage = 0.4;
-    // this calculates the required horizontal fov to take up 35% of the viewport
+    // this calculates the required horizontal fov to take up 40% of the viewport
+    
     const fovInRadians = 2 * Math.atan(globeRadius / (cameraDistance * viewportPercentage));
     this.baseHorizontalFov = fovInRadians * (180 / Math.PI);
 
@@ -98,7 +99,6 @@ export class Renderer extends EventTarget {
   }
 
   resize(width: number, height: number) {
-    // get the size of the window
     this.rendererSize.set(width, height);
 
     this.webglRenderer.setSize(width, height);

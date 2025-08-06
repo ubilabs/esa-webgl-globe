@@ -5,7 +5,6 @@ import {WebGlGlobe, LayerProps} from '../../src';
 const distance = 22584000;
 const nav = document.querySelector<HTMLDivElement>('.nav');
 
-// Here we instantiate the globe like in FE app
 
 if (nav) {
   if (window.innerWidth <= 767) {
@@ -16,6 +15,8 @@ if (nav) {
 }
 
 const globeContainer = document.querySelector<HTMLDivElement>('#globe-container');
+
+// Here we instantiate the globe like in FE app
 const globe = new WebGlGlobe(globeContainer!, {
   renderOptions: {
     atmosphereEnabled: true,
