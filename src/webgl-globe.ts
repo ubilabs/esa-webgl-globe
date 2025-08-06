@@ -17,7 +17,7 @@ const TILESELECTOR_FPS = 15;
 export type WebGlGlobeProps = Partial<{
   layers: LayerProps<any>[];
   renderMode: RenderMode;
-  cameraView: Partial<CameraView> & {isAnimated?: boolean; interpolationFactor?: number};
+  cameraView: Partial<CameraView>;
   markers: MarkerProps[];
   allowDownsampling: boolean;
   renderOptions: RenderOptions;

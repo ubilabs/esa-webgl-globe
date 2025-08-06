@@ -235,6 +235,8 @@ export class Renderer extends EventTarget {
     this.globeControls.minPolarAngle = 0;
     this.globeControls.minDistance = 1.01; // ~ zoom level 11
     this.globeControls.addEventListener('change', () => {
+      if (this.renderMode !== RenderMode.GLOBE) return;
+
       const event = new CustomEvent<CameraView>('cameraViewChanged', {
         detail: globePositionToCameraView(this.globeCamera.position)
       });
@@ -248,12 +250,13 @@ export class Renderer extends EventTarget {
     this.mapControls.minZoom = 1;
     this.mapControls.maxZoom = 20;
     this.mapControls.addEventListener('change', () => {
+      if (this.renderMode !== RenderMode.MAP) return;
       // camera-position is x [-2..2] and y [-1..1]
       const lng = this.mapCamera.position.x * 90;
       const lat = this.mapCamera.position.y * 90;
       const zoom = this.mapCamera.zoom;
 
-      const view: CameraView = {renderMode: RenderMode.MAP, lat, lng, zoom, altitude: 0};
+      const view: CameraView = {renderMode: RenderMode.MAP, lat, lng, zoom, altitude: 0, isAnimated: false};
       const event = new CustomEvent<CameraView>('cameraViewChanged', {detail: view});
       this.dispatchEvent(event);
     });
