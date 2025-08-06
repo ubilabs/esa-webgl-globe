@@ -46,7 +46,6 @@ export class InteractionController {
     this.updateControlsEnabled(enabled);
   }
 
-
   public setCameraView(
     newCameraView: Partial<CameraView>,
     isAnimated = true,
@@ -114,8 +113,8 @@ export class InteractionController {
       const interpolationFactor = this.currentInterpolationFactor;
 
       // thresholds for "close enough"
-      const epsilonCoords = 0.15; 
-      const epsilonAlt = 50000
+      const epsilonCoords = 0.15;
+      const epsilonAlt = 50000;
 
       const deltaLng = this.calculateShortestLongitudeDelta(
         currentView.lng,
@@ -144,7 +143,12 @@ export class InteractionController {
       const zoomDiff = Math.abs(interpolatedView.zoom - this.targetCameraView.zoom);
       const altitudeDiff = Math.abs(interpolatedView.altitude - this.targetCameraView.altitude);
 
-      if (latDiff < epsilonCoords && lngDiff < epsilonCoords && zoomDiff < epsilonCoords && altitudeDiff < epsilonAlt) {
+      if (
+        latDiff < epsilonCoords &&
+        lngDiff < epsilonCoords &&
+        zoomDiff < epsilonCoords &&
+        altitudeDiff < epsilonAlt
+      ) {
         // Snap to target and stop animation
         this.renderer.updateGlobeCamera(this.targetCameraView);
         this.isAnimatingCamera = false;
