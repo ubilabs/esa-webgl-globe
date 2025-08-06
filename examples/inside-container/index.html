@@ -5,10 +5,26 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Example Renderer Only</title>
+    <style>
+      body {
+        display: grid;
+        place-items: center;
+        height: 100%;
+        background: white !important;
+      }
+      #container {
+        width: 50vw;
+        height: 50vh;
+        background: #111;
+      }
+      .myMarker {
+        height: 32px;
+        margin: -16px;
+      }
+    </style>
   </head>
   <body>
     <div id="container"></div>
-   <button id="resize-container">Click to resize container</button>
     <div id="info">An example rendering the globe inside a container div element.</div>
     <script type="module" src="main.ts"></script>
   </body>

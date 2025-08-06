@@ -2,23 +2,9 @@ import '../style.css';
 
 import {WebGlGlobe, LayerProps} from '../../src';
 
-const distance = 22584000;
+const distance = 20_000_000;
 
-const nav = document.querySelector<HTMLDivElement>('.nav');
-
-if (nav) {
-  nav.style.width = Math.min(window.innerWidth / 2, window.innerHeight - 60) + 'px';
-}
-
-const globeContainer = document.querySelector<HTMLDivElement>('#globe-container');
-
-const globe = new WebGlGlobe(globeContainer!, {
-  renderOptions: {
-    atmosphereEnabled: true,
-    shadingEnabled: true,
-    atmosphereStrength: 0.8,
-    atmosphereColor: [0.58, 0.79, 1] // {r: 148, g: 201, b: 255}
-  },
+const globe = new WebGlGlobe(document.body, {
   layers: [
     {
       id: 'basemap',
@@ -29,36 +15,12 @@ const globe = new WebGlGlobe(globeContainer!, {
         `https://storage.googleapis.com/esa-cfs-tiles/1.9.0/basemaps/colored/${zoom}/${x}/${y}.png`
     } as LayerProps<{}>
   ],
-  cameraView: {lng: 0, lat: 0, altitude: distance, isAnimated: false}
+  cameraView: {lng: 0, lat: 0, altitude: distance}
 });
 
-globe.setControlsInteractionEnabled(true);
-
-globe.addEventListener(
-  'cameraViewChanged',
-  () => {
-    console.log("asdf")
-    globe.startAutoSpin();
-  },
-  {once: true}
-);
-
-// setTimeout(() => {
-//   globe.stopAutoSpin();
-// }, 1000);
+globe.setControlsInteractionEnabled( true );
+globe.startAutoSpin(1);
 
 setTimeout(() => {
-  globe.setProps({
-    cameraView: {
-      lng: 0,
-      lat: 25,
-      altitude: distance * 0.5,
-      isAnimated: true,
-      interpolationFactor: 0.01
-    }
-  });
-}, 0);
-
-// setTimeout(() => {
-//   globe.startAutoSpin();
-// }, 3000);
+  globe.stopAutoSpin();
+}, 2000);
