@@ -10,7 +10,13 @@ import {RenderMode, RenderOptions} from './types/renderer';
 import type {RenderTile} from './types/tile';
 import type {CameraView} from './types/camera-view';
 import type {MarkerProps} from './types/marker';
-import {MAP_HEIGHT, MAP_WIDTH} from './config';
+import {
+  GLOBE_VIEWPORT_WIDTH_PERCENTAGE,
+  MAP_HEIGHT,
+  MAP_WIDTH,
+  MOBILE_BREAKPOINT_WIDTH,
+  MOBILE_HORIZONTAL_FOV
+} from './config';
 
 import {Atmosphere} from './atmosphere';
 
@@ -62,10 +68,10 @@ export class Renderer extends EventTarget {
 
     const globeRadius = 1;
     const cameraDistance = this.globeCamera.position.length();
-    const viewportPercentage = 0.4;
-    // this calculates the required horizontal fov to take up 40% of the viewport
-    
-    const fovInRadians = 2 * Math.atan(globeRadius / (cameraDistance * viewportPercentage));
+
+    // this calculates the required horizontal fov to take up GLOBE_VIEWPORT_WIDTH_PERCENTAGE (40%) of the viewport
+    const fovInRadians =
+      2 * Math.atan(globeRadius / (cameraDistance * GLOBE_VIEWPORT_WIDTH_PERCENTAGE));
     this.baseHorizontalFov = fovInRadians * (180 / Math.PI);
 
     this.globeControls = new OrbitControls(this.globeCamera, this.container);
@@ -114,8 +120,8 @@ export class Renderer extends EventTarget {
     // The relationship is: tan(hFOV / 2) = tan(vFOV / 2) * aspect
     // So, vFOV = 2 * atan(tan(hFOV / 2) / aspect)
     let hFov = this.baseHorizontalFov;
-    if (width <= 767) {
-      hFov = 27;
+    if (width <= MOBILE_BREAKPOINT_WIDTH) {
+      hFov = MOBILE_HORIZONTAL_FOV;
     }
     const hFovRadians = hFov * (Math.PI / 180);
     const vFovRadians = 2 * Math.atan(Math.tan(hFovRadians / 2) / aspectRatio);
