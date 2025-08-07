@@ -16,3 +16,9 @@ export const ZOOM_SEGMENT_MAP: Record<number, number> = {
 
 export const MAP_WIDTH = 4;
 export const MAP_HEIGHT = 2;
+
+export const GLOBE_VIEWPORT_WIDTH_PERCENTAGE = 0.4;
+
+// make sure this aligns with the bp in the FE app
+export const MOBILE_BREAKPOINT_WIDTH = 767
+export const MOBILE_HORIZONTAL_FOV = 27

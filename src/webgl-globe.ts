@@ -17,7 +17,7 @@ const TILESELECTOR_FPS = 15;
 export type WebGlGlobeProps = Partial<{
   layers: LayerProps<any>[];
   renderMode: RenderMode;
-  cameraView: Partial<CameraView> & {isAnimated?: boolean; interpolationFactor?: number};
+  cameraView: Partial<CameraView>;
   markers: MarkerProps[];
   allowDownsampling: boolean;
   renderOptions: RenderOptions;
@@ -74,7 +74,6 @@ export class WebGlGlobe extends EventTarget {
     });
 
     this.interactionController = new InteractionController(
-      this.renderer.getGlobeControls(),
       this.container,
       this.renderer
     );
@@ -121,7 +120,7 @@ export class WebGlGlobe extends EventTarget {
     cancelAnimationFrame(this.tileUpdateRafId);
   }
 
-  public startAutoSpin(speed: number = 0.1) {
+  public startAutoSpin(speed: number = 0.5) {
     this.interactionController.setAutoSpin(true, speed);
   }
 

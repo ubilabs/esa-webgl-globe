@@ -79,11 +79,13 @@ export class Atmosphere extends Group {
   private initShadingSprite() {
     const {shading: shadingTextureUrl} = WebGlGlobe.getTextureUrls();
 
+    const map = loader.load(shadingTextureUrl);
+    map.premultiplyAlpha = true;
+
     const sprite = new Sprite(
       new SpriteMaterial({
-        map: loader.load(shadingTextureUrl, texture => {
-          texture.premultiplyAlpha = true;
-        }),
+        map,
+        premultipliedAlpha: true,
         blending: MultiplyBlending,
         depthWrite: false,
         depthTest: false,

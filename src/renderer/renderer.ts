@@ -1,7 +1,6 @@
 import {Clock, OrthographicCamera, PerspectiveCamera, Scene, Vector2, WebGLRenderer} from 'three';
 
-// @ts-ignore
-import {OrbitControls} from './vendor/orbit-controls.js';
+import {OrbitControls} from './vendor/orbit-controls';
 import {MapControls} from 'three/examples/jsm/controls/MapControls';
 import {TileManager} from './tile-manager';
 import {MarkerHtml} from './marker-html';
@@ -11,7 +10,13 @@ import {RenderMode, RenderOptions} from './types/renderer';
 import type {RenderTile} from './types/tile';
 import type {CameraView} from './types/camera-view';
 import type {MarkerProps} from './types/marker';
-import {MAP_HEIGHT, MAP_WIDTH} from './config';
+import {
+  GLOBE_VIEWPORT_WIDTH_PERCENTAGE,
+  MAP_HEIGHT,
+  MAP_WIDTH,
+  MOBILE_BREAKPOINT_WIDTH,
+  MOBILE_HORIZONTAL_FOV
+} from './config';
 
 import {Atmosphere} from './atmosphere';
 
@@ -23,7 +28,7 @@ export class Renderer extends EventTarget {
   private readonly globeCamera: PerspectiveCamera = new PerspectiveCamera();
   private readonly mapCamera: OrthographicCamera = new OrthographicCamera();
 
-  private globeControls: OrbitControls;
+  public globeControls: OrbitControls;
   public mapControls: MapControls;
 
   private tileManager: TileManager;
@@ -33,7 +38,7 @@ export class Renderer extends EventTarget {
   private rendererSize: Vector2 = new Vector2();
   private atmosphere: Atmosphere = new Atmosphere();
   private clock = new Clock();
-  private baseFov = 30;
+  private baseHorizontalFov: number;
 
   constructor(container?: HTMLElement) {
     super();
@@ -60,6 +65,14 @@ export class Renderer extends EventTarget {
     this.tileManager = new TileManager(this.scene);
 
     this.configureCameras();
+
+    const globeRadius = 1;
+    const cameraDistance = this.globeCamera.position.length();
+
+    // this calculates the required horizontal fov to take up GLOBE_VIEWPORT_WIDTH_PERCENTAGE (40%) of the viewport
+    const fovInRadians =
+      2 * Math.atan(globeRadius / (cameraDistance * GLOBE_VIEWPORT_WIDTH_PERCENTAGE));
+    this.baseHorizontalFov = fovInRadians * (180 / Math.PI);
 
     this.globeControls = new OrbitControls(this.globeCamera, this.container);
     this.mapControls = new MapControls(this.mapCamera, this.container);
@@ -93,13 +106,27 @@ export class Renderer extends EventTarget {
 
   resize(width: number, height: number) {
     this.rendererSize.set(width, height);
+
     this.webglRenderer.setSize(width, height);
 
     const aspectRatio = width / height;
 
     this.globeCamera.aspect = aspectRatio;
-    // adjust fov to fit screen
-    this.globeCamera.fov = this.baseFov / Math.min(aspectRatio, 1.0);
+
+    // We want the globe to occupy a fixed percentage of the viewport *width*.
+    // This is because of the way the globe has to match to navigation in FE Desktop version
+    // The camera's `fov` property is the *vertical* field of view.
+    // We need to calculate the vertical FOV that will result in our desired *horizontal* FOV.
+    // The relationship is: tan(hFOV / 2) = tan(vFOV / 2) * aspect
+    // So, vFOV = 2 * atan(tan(hFOV / 2) / aspect)
+    let hFov = this.baseHorizontalFov;
+    if (width <= MOBILE_BREAKPOINT_WIDTH) {
+      hFov = MOBILE_HORIZONTAL_FOV;
+    }
+    const hFovRadians = hFov * (Math.PI / 180);
+    const vFovRadians = 2 * Math.atan(Math.tan(hFovRadians / 2) / aspectRatio);
+    this.globeCamera.fov = vFovRadians * (180 / Math.PI);
+
     this.globeCamera.updateProjectionMatrix();
 
     const halfWidth = MAP_WIDTH / 2;
@@ -134,6 +161,13 @@ export class Renderer extends EventTarget {
       };
     }
     return undefined;
+  }
+
+  public updateMapCamera(cameraView: CameraView) {
+    this.mapCamera.position.x = cameraView.lng / 90;
+    this.mapCamera.position.y = cameraView.lat / 90;
+    this.mapCamera.zoom = cameraView.zoom;
+    this.mapControls.target.copy(this.mapCamera.position);
   }
 
   setMarkers(markerProps: MarkerProps[]) {
@@ -201,6 +235,7 @@ export class Renderer extends EventTarget {
     this.globeControls.minPolarAngle = 0;
     this.globeControls.minDistance = 1.01; // ~ zoom level 11
     this.globeControls.addEventListener('change', () => {
+
       const event = new CustomEvent<CameraView>('cameraViewChanged', {
         detail: globePositionToCameraView(this.globeCamera.position)
       });
@@ -219,7 +254,7 @@ export class Renderer extends EventTarget {
       const lat = this.mapCamera.position.y * 90;
       const zoom = this.mapCamera.zoom;
 
-      const view: CameraView = {renderMode: RenderMode.MAP, lat, lng, zoom, altitude: 0};
+      const view: CameraView = {renderMode: RenderMode.MAP, lat, lng, zoom, altitude: 0, isAnimated: false};
       const event = new CustomEvent<CameraView>('cameraViewChanged', {detail: view});
       this.dispatchEvent(event);
     });
@@ -254,7 +289,7 @@ export class Renderer extends EventTarget {
   private animationLoopUpdate() {
     const deltaTime = this.clock.getDelta();
     if (this.globeControls.enabled) {
-      this.globeControls.update(deltaTime);
+      this.globeControls.update();
       const cameraDistance = this.globeCamera.position.length() - 1;
       this.globeControls.rotateSpeed = Math.max(0.05, Math.min(1.0, cameraDistance - 0.2));
     } else if (this.mapControls.enabled) {

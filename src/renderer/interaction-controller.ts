@@ -1,12 +1,9 @@
-//@ts-ignore
-import {OrbitControls} from './vendor/orbit-controls.js';
 import {CameraView} from './types/camera-view.js';
 import {RenderMode} from './types/renderer';
 import {Renderer} from './renderer';
-import { lerp } from './lib/easing.js';
+import {lerp} from './lib/easing.js';
 
 export class InteractionController {
-  private globeControls: OrbitControls;
   private container: HTMLElement;
   private renderer: Renderer;
   private controlsInteractionEnabled = false;
@@ -16,8 +13,7 @@ export class InteractionController {
   private isAnimatingCamera: boolean = false;
   private currentInterpolationFactor: number = 0.1; // Default interpolation factor
 
-  constructor(globeControls: OrbitControls, container: HTMLElement, renderer: Renderer) {
-    this.globeControls = globeControls;
+  constructor(container: HTMLElement, renderer: Renderer) {
     this.container = container;
     this.renderer = renderer;
 
@@ -28,8 +24,8 @@ export class InteractionController {
   public setAutoSpin(isEnabled: boolean, speed: number = 1): void {
     this.abortCurrentSpin();
 
-    this.globeControls.autoRotate = isEnabled;
-    this.globeControls.autoRotateSpeed = speed;
+    this.renderer.globeControls.autoRotate = isEnabled;
+    this.renderer.globeControls.autoRotateSpeed = speed;
 
     if (isEnabled && this.controlsInteractionEnabled) {
       this.spinAbortController = new AbortController();
@@ -68,16 +64,16 @@ export class InteractionController {
       return;
     }
 
-    if (targetCameraView.renderMode !== this.renderer.getRenderMode()) {
-      this.renderer.setRenderMode(targetCameraView.renderMode);
-    }
-
-    if (!isAnimated || targetCameraView.renderMode !== RenderMode.GLOBE) {
-      // Immediately set the camera view if not animated or not in globe mode
-      this.renderer.updateGlobeCamera(targetCameraView);
+    if (!isAnimated) {
+      // Immediately set the camera view if not animated
+      if (targetCameraView.renderMode === RenderMode.GLOBE) {
+        this.renderer.updateGlobeCamera(targetCameraView);
+      } else if (targetCameraView.renderMode === RenderMode.MAP) {
+        this.renderer.updateMapCamera(targetCameraView);
+      }
       // Stop any ongoing animation and re-enable controls
       this.isAnimatingCamera = false;
-      this.globeControls.enabled = true;
+      this.renderer.globeControls.enabled = true;
       this.renderer.mapControls.enabled = true;
       return;
     }
@@ -85,7 +81,7 @@ export class InteractionController {
     // Start or update animation
     this.targetCameraView = targetCameraView;
     this.isAnimatingCamera = true;
-    this.globeControls.enabled = false; // Disable controls during animation
+    this.renderer.globeControls.enabled = false; // Disable controls during animation
     this.renderer.mapControls.enabled = false;
 
     if (interpolationFactor !== undefined) {
@@ -100,15 +96,18 @@ export class InteractionController {
       this.targetCameraView
     ) {
       const currentView = this.renderer.getCameraView();
+
       if (!currentView) {
         this.isAnimatingCamera = false;
-        this.globeControls.enabled = true;
-        this.renderer.mapControls.enabled = true;
+        this.renderer.globeControls.enabled = true;
         return;
       }
 
       const interpolationFactor = this.currentInterpolationFactor;
-      const epsilon = 1e-6; // Threshold for "close enough"
+
+      // thresholds for "close enough"
+      const epsilonCoords = 0.15;
+      const epsilonAlt = 50000;
 
       const deltaLng = this.calculateShortestLongitudeDelta(
         currentView.lng,
@@ -137,12 +136,16 @@ export class InteractionController {
       const zoomDiff = Math.abs(interpolatedView.zoom - this.targetCameraView.zoom);
       const altitudeDiff = Math.abs(interpolatedView.altitude - this.targetCameraView.altitude);
 
-      if (latDiff < epsilon && lngDiff < epsilon && zoomDiff < epsilon && altitudeDiff < epsilon) {
+      if (
+        latDiff < epsilonCoords &&
+        lngDiff < epsilonCoords &&
+        zoomDiff < epsilonCoords &&
+        altitudeDiff < epsilonAlt
+      ) {
         // Snap to target and stop animation
         this.renderer.updateGlobeCamera(this.targetCameraView);
         this.isAnimatingCamera = false;
-        this.globeControls.enabled = true;
-        this.renderer.mapControls.enabled = true;
+        this.renderer.globeControls.enabled = true;
       } else {
         // Directly update camera position and internal cameraView
         this.renderer.updateGlobeCamera(interpolatedView);

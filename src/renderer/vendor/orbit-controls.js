@@ -115,6 +115,9 @@ class OrbitControls extends EventDispatcher {
       return this.object.position.distanceTo(this.target);
     };
 
+    /**
+     * @private
+     */
     this.listenToKeyEvents = function (domElement) {
       domElement.addEventListener('keydown', onKeyDown);
       this._domElementKeyEvents = domElement;

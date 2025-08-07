@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Example Layer</title>
+  </head>
+  <style>
+    .nav {
+      height: 100%;
+      outline: 1px solid red;
+      z-index: 0;
+      margin-inline: auto;
+    }
+
+    #globe-container {
+      position: absolute !important;
+      top: 0;
+      right: 0;
+      height: 100%;
+      width: 100%;
+      z-index: 1;
+    }
+  </style>
+  <body>
+    <div id="info">Globe with nav dimensions</div>
+<!-- This is an example illustrating the globe being rendered within a container that matches the
+    dimensions of the nav element -->
+    <div class="nav"></div>
+    <div id="globe-container"></div>
+    <script type="module" src="main.ts"></script>
+  </body>
+</html>

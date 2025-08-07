@@ -6,5 +6,8 @@ export type CameraView = {
   lat: number;
   altitude: number;
   zoom: number;
+  isAnimated?: boolean;
+  interpolationFactor?: number;
 };
+
 export type LatLngAltitude = {lat: number; lng: number; altitude: number};
