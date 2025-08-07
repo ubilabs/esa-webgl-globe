@@ -74,7 +74,6 @@ export class WebGlGlobe extends EventTarget {
     });
 
     this.interactionController = new InteractionController(
-      this.renderer.getGlobeControls(),
       this.container,
       this.renderer
     );
