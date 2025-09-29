@@ -130,8 +130,12 @@ export class Renderer extends EventTarget {
     let hFovRadians = hFov * (Math.PI / 180);
 
     // Ensure the globe fits vertically, especially on wide aspect ratios.
+    // For wider aspect ratios (smaller heights), we increase the padding.
+    const basePadding = 1.1;
+    const dynamicPadding = 0.2 * Math.max(0, aspectRatio - 1.5);
+    const PADDING = basePadding + dynamicPadding;
+
     // The minimum FOV to fit the globe with atmosphere at the reference distance.
-    const PADDING = 1.05; // 5% padding
     const minFovForGlobe = 2 * Math.asin(effectiveRadius / cameraDistance) * PADDING;
     // The hFov needed to maintain the aspect ratio while fitting vertically.
     const hFovRequiredByAspect = 2 * Math.atan(Math.tan(minFovForGlobe / 2) * aspectRatio);
