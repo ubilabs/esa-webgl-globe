@@ -38,7 +38,6 @@ export class Renderer extends EventTarget {
   private rendererSize: Vector2 = new Vector2();
   private atmosphere: Atmosphere = new Atmosphere();
   private clock = new Clock();
-  private baseHorizontalFov: number;
 
   constructor(container?: HTMLElement) {
     super();
@@ -65,14 +64,6 @@ export class Renderer extends EventTarget {
     this.tileManager = new TileManager(this.scene);
 
     this.configureCameras();
-
-    const globeRadius = 1;
-    const cameraDistance = this.globeCamera.position.length();
-
-    // this calculates the required horizontal fov to take up GLOBE_VIEWPORT_WIDTH_PERCENTAGE (40%) of the viewport
-    const fovInRadians =
-      2 * Math.atan(globeRadius / (cameraDistance * GLOBE_VIEWPORT_WIDTH_PERCENTAGE));
-    this.baseHorizontalFov = fovInRadians * (180 / Math.PI);
 
     this.globeControls = new OrbitControls(this.globeCamera, this.container);
     this.mapControls = new MapControls(this.mapCamera, this.container);
@@ -119,11 +110,36 @@ export class Renderer extends EventTarget {
     // We need to calculate the vertical FOV that will result in our desired *horizontal* FOV.
     // The relationship is: tan(hFOV / 2) = tan(vFOV / 2) * aspect
     // So, vFOV = 2 * atan(tan(hFOV / 2) / aspect)
-    let hFov = this.baseHorizontalFov;
+    const globeRadius = 1;
+    const cameraDistance = 5; // Use initial distance as reference for sizing
+
+    // The atmosphere sprite is slightly larger than the globe model. To prevent it
+    // from being clipped, we must base our calculations on its size.
+    // The scale factor is derived from the texture properties in `atmosphere.ts`.
+    const atmosphereScaleFactor = 2048 / 1997;
+    const effectiveRadius = globeRadius * atmosphereScaleFactor;
+
+    const baseHorizontalFovInRadians =
+      2 * Math.atan(effectiveRadius / (cameraDistance * GLOBE_VIEWPORT_WIDTH_PERCENTAGE));
+
+    let hFov = baseHorizontalFovInRadians * (180 / Math.PI);
     if (width <= MOBILE_BREAKPOINT_WIDTH) {
       hFov = MOBILE_HORIZONTAL_FOV;
     }
-    const hFovRadians = hFov * (Math.PI / 180);
+
+    let hFovRadians = hFov * (Math.PI / 180);
+
+    // Ensure the globe fits vertically, especially on wide aspect ratios.
+    // The minimum FOV to fit the globe with atmosphere at the reference distance.
+    const PADDING = 1.05; // 5% padding
+    const minFovForGlobe = 2 * Math.asin(effectiveRadius / cameraDistance) * PADDING;
+    // The hFov needed to maintain the aspect ratio while fitting vertically.
+    const hFovRequiredByAspect = 2 * Math.atan(Math.tan(minFovForGlobe / 2) * aspectRatio);
+
+    if (hFovRadians < hFovRequiredByAspect) {
+      hFovRadians = hFovRequiredByAspect;
+    }
+
     const vFovRadians = 2 * Math.atan(Math.tan(hFovRadians / 2) / aspectRatio);
     this.globeCamera.fov = vFovRadians * (180 / Math.PI);
 
@@ -207,7 +223,7 @@ export class Renderer extends EventTarget {
     this.globeCamera.fov = 35;
     this.globeCamera.aspect = aspectRatio;
     this.globeCamera.near = 0.001;
-    this.globeCamera.far = 100;
+    this.globeCamera.far = 1000;
     this.globeCamera.zoom = 1;
     this.globeCamera.position.set(0, 0, 5);
     this.globeCamera.updateProjectionMatrix();
