@@ -218,6 +218,7 @@ export class TileSelectorImpl implements ITileSelectorImpl {
     this.rendererUtils = new WebGLUtils(
       this.renderer.getContext(),
       this.renderer.extensions,
+      // @ts-ignore expected 2 arguments but got 3
       this.renderer.capabilities
     );
   }
