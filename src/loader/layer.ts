@@ -1,4 +1,4 @@
-import {LRUCache} from 'lru-cache';
+import LRU from 'lru-cache';
 import {getEmptyImageBitmap} from './lib/get-empty-imagebitmap';
 import {renderDebugInfo} from './lib/render-debug-info';
 import type {RenderTile} from '../renderer/types/tile';
@@ -27,8 +27,8 @@ export class Layer<TUrlParameters extends Record<string, string | number> = {}> 
   visibleMinZoomTileIds: Set<TileId> = new Set();
   minZoomTileset: Set<TileId> | null = null;
 
-  cache: LRUCache<string, RenderTile> = new LRUCache({max: 500});
-  responseCache: LRUCache<string, Promise<ImageBitmap>> = new LRUCache({max: 1});
+  cache: LRU<string, RenderTile> = new LRU({max: 500});
+  responseCache: LRU<string, Promise<ImageBitmap>> = new LRU({max: 1});
 
   constructor(
     scheduler: RequestScheduler<RenderTile>,

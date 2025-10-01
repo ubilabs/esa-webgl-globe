@@ -1,6 +1,5 @@
-import {LRUCache} from 'lru-cache';
-
-import {CanvasTexture, NearestFilter, NearestMipmapNearestFilter, Scene} from 'three';
+import LRU from 'lru-cache';
+import {CanvasTexture, NearestFilter, NearestMipmapNearestFilter, RGBAFormat, Scene} from 'three';
 
 import {Tile} from './tile';
 import type {RenderTile} from './types/tile';
@@ -10,7 +9,7 @@ export class TileManager {
   readonly scene: Scene;
   tiles: Record<string, Tile>;
   // optimisation for image textures to prevent multiple GPU uploads for same image data
-  textureCache: LRUCache<string, CanvasTexture> = new LRUCache({max: 1});
+  textureCache: LRU<string, CanvasTexture> = new LRU({max: 1});
 
   private renderMode: RenderMode = RenderMode.GLOBE;
 
@@ -111,6 +110,7 @@ export class TileManager {
     const cachedTexture = useCache ? this.textureCache.get(renderTile.url) : null;
     const texture = cachedTexture || new CanvasTexture(renderTile.data!);
 
+    texture.format = RGBAFormat;
     texture.flipY = true;
     texture.needsUpdate = true;
     texture.minFilter = NearestMipmapNearestFilter;
