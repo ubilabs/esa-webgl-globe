@@ -36,7 +36,7 @@
     "@probe.gl/stats": "^4.0.3",
     "@tweakpane/core": "^1.1.4",
     "lru-cache": "^7.14.1",
-    "rollup": "^3.21.5",
+    "rollup": "^3.30.0",
     "three": "^0.152.2",
     "tweakpane": "^3.1.4"
   },
